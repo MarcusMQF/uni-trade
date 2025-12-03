@@ -1,0 +1,47 @@
+<resources>
+    <string name="app_name">UniTrade</string>
+    
+    <!-- Profile Page -->
+    <string name="back">后退</string>
+    <string name="more_options">更多选项</string>
+    <string name="profile_picture">个人资料图片</string>
+    <string name="edit_profile_picture">编辑个人资料图片</string>
+    <string name="star">星星</string>
+    <string name="rate">评分</string>
+    <string name="favorites">收藏</string>
+    <string name="history">历史</string>
+    <string name="recently_viewed">最近查看</string>
+    <string name="view_all">查看全部</string>
+    <string name="profile_title">个人资料</string>
+    <string name="profile_username">John Doe</string>
+    <string name="profile_bio">个人简介</string>
+    <string name="profile_bio_text">精选优惠。学生专属</string>
+    <string name="profile_overall_rating">综合评分</string>
+    <string name="profile_rating_value">1.0</string>
+    <string name="profile_rate">评分</string>
+    <string name="profile_favourites">收藏</string>
+    <string name="profile_history">历史</string>
+    
+    <!-- Bottom Navigation -->
+    <string name="home">主页</string>
+    <string name="chat">聊天</string>
+    <string name="sell">卖</string>
+    <string name="stats">统计</string>
+    <string name="profile">个人资料</string>
+    <string name="support_about"><![CDATA[支持与关于]]></string>
+    <string name="help_support"><![CDATA[帮助与支持]]></string>
+    <string name="buy_sell"><![CDATA[买卖]]></string>
+    <string name="help__support"><![CDATA[帮助与支持]]></string>
+    <string name="cards">卡</string>
+    <string name="bank_accounts">银行账户</string>
+    <string name="digital_wallets">数字钱包</string>
+    <string name="payment_method_icon">付款方式</string>
+    <string name="set_as_default">设为默认</string>
+    <string name="edit">编辑</string>
+    <string name="remove">移除</string>
+        <string name="edit_profile_button">编辑个人资料</string>
+        <string name="sell_item_title">出售物品</string>
+        <string name="settings_language">语言</string>
+
+
+</resources>

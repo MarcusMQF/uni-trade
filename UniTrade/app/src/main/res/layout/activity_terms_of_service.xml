@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF"
+    android:fitsSystemWindows="true">
+
+    <!-- FIXED TOP TOOLBAR -->
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/appBarTermsOfService"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        app:title="Terms of Service"
+        app:titleTextColor="@android:color/white"/>
+
+    <!-- SCROLLABLE CONTENT -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingVertical="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Header -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:paddingBottom="24dp"
+                android:paddingHorizontal="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Terms of Service"
+                    android:textSize="28sp"
+                    android:textStyle="bold"
+                    android:textColor="#0D47A1"/>
+
+                <TextView
+                    android:id="@+id/tvLastUpdated"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    tools:text="Last updated: 30 November 2023"
+                    android:textSize="14sp"
+                    android:textColor="#546e7a"/>
+
+            </LinearLayout>
+
+            <!-- Section 1: Introduction -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="2dp"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginBottom="12dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="1. Introduction"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#0D47A1"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Welcome to UniTrade! These Terms of Service govern your use of our application and services. By using our app, you agree to these terms."
+                        android:lineSpacingExtra="4dp"
+                        android:textColor="#37474f"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Section 2: User Accounts -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="2dp"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginBottom="12dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="2. User Accounts"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#0D47A1"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="To access certain features, you must create an account. You are responsible for maintaining the confidentiality of your account information and for all activities that occur under your account."
+                        android:lineSpacingExtra="4dp"
+                        android:textColor="#37474f"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Section 3: Prohibited Conduct -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="2dp"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginBottom="12dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="3. Prohibited Conduct"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#0D47A1"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="You agree not to engage in any of the following prohibited activities: illegal activities, posting of offensive material, or interfering with the service."
+                        android:lineSpacingExtra="4dp"
+                        android:textColor="#37474f"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+            
+             <!-- Section 4: Disclaimers -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="2dp"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginBottom="12dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="4. Disclaimers"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#0D47A1"/>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="The service is provided on an 'as is' and 'as available' basis. UniTrade makes no warranties, expressed or implied, and hereby disclaims all other warranties."
+                        android:lineSpacingExtra="4dp"
+                        android:textColor="#37474f"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

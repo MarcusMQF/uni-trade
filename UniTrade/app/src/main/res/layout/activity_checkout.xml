@@ -1,0 +1,335 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF"
+    android:fitsSystemWindows="true">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/appBarCheckout"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="-2dp"
+        android:elevation="4dp"
+        app:title="Checkout" />
+
+    <!-- SCROLL AREA -->
+    <ScrollView
+        android:id="@+id/scrollArea"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="16dp"
+        android:layout_above="@+id/bottomBar"
+        android:layout_below="@id/appBarCheckout">
+
+        <LinearLayout
+            android:id="@+id/contentLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- RECEIVING METHOD ROW -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:paddingVertical="12dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Receiving Method"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/bg_spinner_white"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp">
+
+                    <Spinner
+                        android:id="@+id/spinnerReceivingMethod"
+                        android:layout_width="match_parent"
+                        android:layout_height="35dp"
+                        android:background="@android:color/transparent"
+                        android:paddingEnd="30dp"
+                        android:spinnerMode="dropdown" />
+
+                    <ImageView
+                        android:id="@+id/spinnerArrow"
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:src="@drawable/ic_dropdown" />
+                </RelativeLayout>
+
+            </LinearLayout>
+
+            <!-- DELIVERY ADDRESS LAYOUT -->
+            <LinearLayout
+                android:id="@+id/layoutDeliveryAddress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                android:paddingVertical="10dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Delivery Address"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/edtDeliveryAddress"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="20dp"
+                    android:hint="Add Delivery Address"
+                    android:textColor="#6F6F6F"
+                    android:textColorHint="#A0A0A0"
+                    android:textSize="15sp"
+                    android:background="@android:color/transparent"
+                    android:padding="0dp"
+                    android:inputType="textPostalAddress" />
+            </LinearLayout>
+            <!-- QR BUTTON -->
+            <Button
+                android:id="@+id/btnScanQR"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:layout_marginTop="6dp"
+                android:backgroundTint="#52C8A2"
+                android:text="Scan QR For Payment"
+                android:textColor="@android:color/white"
+                android:textStyle="bold"
+                app:icon="@drawable/ic_qr"
+                app:iconGravity="textStart" />
+
+            <!-- QR PAYMENT SECTION (Hidden by default) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/layoutQrPayment"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:layout_marginStart="30dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginEnd="30dp"
+                android:layout_marginBottom="20dp"
+                android:padding="20dp"
+                app:cardBackgroundColor="@android:color/white"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:strokeColor="#DDDDDD"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="10dp"
+                    android:orientation="vertical"
+                    android:padding="50dp">
+
+                    <TextView
+                        android:id="@+id/txtQrTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingBottom="12dp"
+                        android:text="QR Payment"
+                        android:textColor="#144337"
+                        android:textSize="17sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:id="@+id/imgQrCode"
+                        android:layout_width="200dp"
+                        android:layout_height="200dp"
+                        android:layout_gravity="center"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/qr_pic_1" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- UPLOAD RECEIPT -->
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:layout_marginTop="6dp"
+                android:backgroundTint="#CFE7E2"
+                android:text="Upload Receipt"
+                android:textColor="#1E1E1E"
+                app:icon="@drawable/ic_upload"
+                app:iconGravity="textStart"
+                app:iconTint="#000000" />
+
+
+
+            <!-- TABLE HEADER -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="16dp"
+                android:layout_marginStart="6dp" >
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="0.8"
+                    android:text="ITEMS"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="DESCRIPTION"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="PRICE"
+                    android:textStyle="bold"/>
+            </LinearLayout>
+
+            <!-- MULTIPLE ITEMS CONTAINER (dynamic rows will be added here) -->
+            <LinearLayout
+                android:id="@+id/itemsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="10dp" />
+
+            <!-- TOTAL SECTION -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="6dp"
+                android:padding="6dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView android:text="Subtotal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"/>
+
+                    <TextView
+                        android:id="@+id/txtSubtotal"
+                        android:layout_height="wrap_content"
+                        android:layout_width="wrap_content"
+                        android:text="RM17.98" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id= "@+id/txtDelivery"
+                        android:text="Delivery"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        android:layout_weight="1"/>
+
+                    <TextView
+                        android:id="@+id/txtDeliveryFee"
+                        android:text="RM 3.00"
+                        android:visibility="gone"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView android:text="Platform Fee(3%)"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"/>
+
+                    <TextView android:text="RM0.54"
+                        android:layout_height="wrap_content"
+                        android:layout_width="wrap_content"/>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView android:text="Total" android:textStyle="bold"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"/>
+
+                    <TextView android:id="@+id/txtTotal"
+                        android:textStyle="bold"
+                        android:text="RM21.52"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- FIXED BOTTOM BAR -->
+    <LinearLayout
+        android:id="@+id/bottomBar"
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:background="#FFFFFF"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:gravity="center_vertical"
+        android:elevation="6dp"
+        android:layout_alignParentBottom="true">
+
+        <Button
+            android:id="@+id/btnPlaceOrder"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:backgroundTint="#144337"
+            android:text="Place Order"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <!-- FLOATING CART BUTTON -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/btnChatWithSeller"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/scrollArea"
+        android:layout_alignParentEnd="true"
+        android:layout_margin="20dp"
+        android:layout_marginBottom="577dp"
+        android:src="@drawable/ic_chat_with_seller"
+        app:backgroundTint="#3CB39B"
+        app:fabCustomSize="64dp"
+        app:maxImageSize="36dp"
+        app:tint="@android:color/white" />
+
+</RelativeLayout>
+
+

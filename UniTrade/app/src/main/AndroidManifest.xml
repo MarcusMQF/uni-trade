@@ -114,13 +114,9 @@
             android:name=".ReportProblemActivity"
             android:exported="false" />
         <activity
-            android:name=".TicketHistoryActivity"
+            android:name=".AddTicketActivity"
             android:exported="false" />
 
-        <activity
-            android:name=".TermsOfServiceActivity"
-            android:exported="false"
-            tools:ignore="DuplicateActivity" />
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"

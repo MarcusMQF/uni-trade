@@ -12,6 +12,15 @@ import androidx.appcompat.widget.Toolbar;
 
 public class SettingsActivity extends BaseActivity {
 
+    private ActivityResultLauncher<Intent> editProfileLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK) {
+                    // Optionally refresh data or show a message
+                    Toast.makeText(this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
+                }
+            });
+
     private ActivityResultLauncher<Intent> currencyActivityLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
@@ -58,7 +67,7 @@ public class SettingsActivity extends BaseActivity {
                 User dummyUser = new User("u1", "User", "User Name", "email@example.com", "0123456789", "", 0.0, 0.0, System.currentTimeMillis(), "Bio",0L);
                 intent.putExtra("user_to_edit", dummyUser);
             }
-            startActivity(intent);
+            editProfileLauncher.launch(intent);
         });
 
         // Account Section
@@ -78,7 +87,11 @@ public class SettingsActivity extends BaseActivity {
 
         // Support & About Section
         setupSettingItem(R.id.setting_help_support, HelpSupportActivity.class);
-        setupSettingItem(R.id.setting_report_problem, ReportProblemActivity.class);
+
+        findViewById(R.id.setting_report_problem).setOnClickListener(v -> {
+            Intent intent = new Intent(this, ReportProblemActivity.class);
+            startActivity(intent);
+        });
 
         // Legal Section
         setupSettingItem(R.id.setting_terms_of_service, TermsOfServiceActivity.class);

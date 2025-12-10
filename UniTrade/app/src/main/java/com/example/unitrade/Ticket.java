@@ -10,16 +10,22 @@ import java.util.Locale;
 
 public class Ticket implements Parcelable {
 
+    public static final String STATUS_NOT_SEEN = "Not Seen Yet";
+    public static final String STATUS_IN_PROGRESS = "In Progress";
+    public static final String STATUS_RESOLVED = "Resolved";
+
     private String subject;
     private String description;
     private Uri attachmentUri;
     private long timestamp;
+    private String status;
 
     public Ticket(String subject, String description, Uri attachmentUri, long timestamp) {
         this.subject = subject;
         this.description = description;
         this.attachmentUri = attachmentUri;
         this.timestamp = timestamp;
+        this.status = STATUS_NOT_SEEN; // Default status for new tickets
     }
 
     // Getters
@@ -27,6 +33,11 @@ public class Ticket implements Parcelable {
     public String getDescription() { return description; }
     public Uri getAttachmentUri() { return attachmentUri; }
     public long getTimestamp() { return timestamp; }
+    public String getStatus() { return status; }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
 
     public String getFormattedTimestamp() {
         SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", Locale.getDefault());
@@ -39,6 +50,7 @@ public class Ticket implements Parcelable {
         description = in.readString();
         attachmentUri = in.readParcelable(Uri.class.getClassLoader());
         timestamp = in.readLong();
+        status = in.readString();
     }
 
     public static final Creator<Ticket> CREATOR = new Creator<Ticket>() {
@@ -64,5 +76,6 @@ public class Ticket implements Parcelable {
         dest.writeString(description);
         dest.writeParcelable(attachmentUri, flags);
         dest.writeLong(timestamp);
+        dest.writeString(status);
     }
 }

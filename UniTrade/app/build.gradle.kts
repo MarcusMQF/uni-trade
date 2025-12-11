@@ -50,6 +50,7 @@ dependencies {
 
     // Add these lines for Glide
     implementation("com.github.bumptech.glide:glide:4.16.0")
+    implementation(libs.play.services.location)
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
     // Add this line for MPAndroidChart

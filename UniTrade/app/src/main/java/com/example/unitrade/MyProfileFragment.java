@@ -1,75 +1,46 @@
 package com.example.unitrade;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.LayoutInflater;
-import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MyProfileFragment extends Fragment {
+public final class MyProfileFragment extends Fragment {
 
-    // ───────────────────────────────
-    // USER DATA
-    // ───────────────────────────────
+    // ---------------------------------
+    // USER + PRODUCT LIST
+    // ---------------------------------
     private User viewedUser;
 
-    // ───────────────────────────────
-    // UI COMPONENTS
-    // ───────────────────────────────
-    private ImageView imgProfile;
-    private ImageButton btnEditProfile;
+    private RecyclerView recyclerMyProducts;
+    private ProfileProductAdapter productAdapter;
+    private final List<Product> userProducts = new ArrayList<>();
 
-    private TextView txtUsername;
-    private TextView txtUserDescription;
+    private LinearLayout emptyState;   // <-- your include view
+    private TextView txtEmptyTitle, txtEmptySubtitle;
+    private Button btnSellItem;
 
-    private TextView txtFullName;
-    private TextView txtEmail;
-    private TextView txtPhone;
 
-    private TextView txtLastSeen;
-
-    // ⭐ NEW: Rating UI
-    private ImageView star1, star2, star3, star4, star5;
-    private TextView txtRating;
-
-    private Handler lastSeenHandler = new Handler(Looper.getMainLooper());
-    private Runnable lastSeenRunnable;
-
-    // ───────────────────────────────
-    // ACTIVITY RESULT LAUNCHER
-    // ───────────────────────────────
-    private final ActivityResultLauncher<Intent> editProfileLauncher =
-            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
-                    this::handleEditProfileResult);
-
-    // ───────────────────────────────
-    // FRAGMENT LIFECYCLE
-    // ───────────────────────────────
+    // ---------------------------------
+    // LIFECYCLE
+    // ---------------------------------
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -79,208 +50,155 @@ public class MyProfileFragment extends Fragment {
         return inflater.inflate(R.layout.fragment_my_profile, container, false);
     }
 
-    @Override
-    public void onViewCreated(@NonNull View view,
-                              @Nullable Bundle savedInstanceState) {
 
-        super.onViewCreated(view, savedInstanceState);
+    @Override
+    public void onViewCreated(@NonNull View v, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(v, savedInstanceState);
 
         viewedUser = SampleData.getUserById(requireContext(), "u1");
-        
-        // Load the last seen time from shared preferences
-        loadLastSeenTimestamp();
 
-        bindViews(view);
+        bindViews(v);
+        setupRecycler();
+        loadUserProducts();
+        updateUI();
         showUserData();
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        startLastSeenUpdates();
-    }
 
-    @Override
-    public void onPause() {
-        super.onPause();
-        stopLastSeenUpdates();
-    }
+    // ---------------------------------
+    // BIND VIEWS
+    // ---------------------------------
+    private void bindViews(View v) {
 
-    // ───────────────────────────────
-    // BIND UI VIEWS
-    // ───────────────────────────────
-    private void bindViews(View view) {
+        recyclerMyProducts = v.findViewById(R.id.recyclerMyProducts);
 
-        imgProfile = view.findViewById(R.id.imgProfile);
-        btnEditProfile = view.findViewById(R.id.btnEditProfile);
+        // EMPTY STATE VIEWS
+        emptyState = v.findViewById(R.id.emptyListingState);
+        txtEmptyTitle = emptyState.findViewById(R.id.txtEmptyTitle);
+        txtEmptySubtitle = emptyState.findViewById(R.id.txtEmptySubtitle);
+        btnSellItem = emptyState.findViewById(R.id.btnShopNow);
 
-        txtUsername = view.findViewById(R.id.txtUsername);
-        txtLastSeen = view.findViewById(R.id.txtLastSeen);
-        txtUserDescription = view.findViewById(R.id.txtUserDescription);
-
-        txtFullName = view.findViewById(R.id.txtFullName);
-        txtEmail = view.findViewById(R.id.txtEmail);
-        txtPhone = view.findViewById(R.id.txtPhone);
-
-        // ⭐ BIND STARS + RATING
-        star1 = view.findViewById(R.id.star1);
-        star2 = view.findViewById(R.id.star2);
-        star3 = view.findViewById(R.id.star3);
-        star4 = view.findViewById(R.id.star4);
-        star5 = view.findViewById(R.id.star5);
-        txtRating = view.findViewById(R.id.txtRating);
-
-        LinearLayout reviewButton = view.findViewById(R.id.reviewButton);
-        LinearLayout cartButton = view.findViewById(R.id.cartButton);
-        LinearLayout historyButton = view.findViewById(R.id.historyButton);
-
-        if (btnEditProfile != null) {
-            btnEditProfile.setOnClickListener(v -> {
-                Intent intent = new Intent(getActivity(), EditProfileActivity.class);
-                intent.putExtra("user_to_edit", viewedUser);
-                editProfileLauncher.launch(intent);
-            });
-        }
-
-        reviewButton.setOnClickListener(v -> {
-            Intent intent = new Intent(getActivity(), RatingReviewsActivity.class);
-            intent.putExtra("user_to_view", viewedUser);
-            intent.putExtra("hide_fab", true);
-            startActivity(intent);
-        });
-
-        cartButton.setOnClickListener(v -> {
-            Intent intent = new Intent(getActivity(), ShoppingCartActivity.class);
-            intent.putParcelableArrayListExtra("cart", new ArrayList<>(CartManager.cartList));
-            startActivity(intent);
-        });
-
-        historyButton.setOnClickListener(v -> {
-            Intent intent = new Intent(getActivity(), HistoryActivity.class);
-            startActivity(intent);
-        });
-    }
-
-    // ───────────────────────────────
-    // DISPLAY USER DATA ON SCREEN
-    // ───────────────────────────────
-    private void showUserData() {
-
-        if (viewedUser == null) return;
-
-        txtUsername.setText(viewedUser.getUsername());
-        txtLastSeen.setText("Last seen: " + viewedUser.getLastSeenString());
-        txtUserDescription.setText(viewedUser.getBio());
-
-        txtFullName.setText(viewedUser.getFullName());
-        txtEmail.setText(viewedUser.getEmail());
-        txtPhone.setText(viewedUser.getPhoneNumber());
-
-        loadRatingStars(viewedUser.getOverallRating());
-
-        // Load profile image
-        if (imgProfile != null && getActivity() != null && !getActivity().isFinishing()) {
-            Glide.with(this)
-                    .load(viewedUser.getProfileImageUrl())
-                    .circleCrop()
-                    .placeholder(R.drawable.profile_pic_1)
-                    .into(imgProfile);
-        }
-    }
-
-    // ───────────────────────────────
-    // ⭐ UPDATE STAR RATING DISPLAY
-    // ───────────────────────────────
-    private void loadRatingStars(double rating) {
-
-        txtRating.setText(String.format("%.1f", rating));
-
-        ImageView[] stars = {star1, star2, star3, star4, star5};
-
-        for (int i = 0; i < stars.length; i++) {
-
-            double starPosition = i + 1;        // 1 → star1, 2 → star2, ...
-
-            if (rating >= starPosition) {
-                // FULL STAR
-                stars[i].setImageResource(R.drawable.ic_star_filled);
-
-            } else if (rating >= starPosition - 0.5) {
-                // HALF STAR (example: 3.4 fills 3 stars + half star)
-                stars[i].setImageResource(R.drawable.ic_star_half);
-
-            } else {
-                // EMPTY STAR
-                stars[i].setImageResource(R.drawable.ic_star_outline);
-            }
-        }
-    }
-
-    private void loadLastSeenTimestamp() {
-        if (getContext() == null || viewedUser == null) {
-            return;
-        }
-
-        SharedPreferences sharedPreferences = getContext().getSharedPreferences("LoginPrefs", Context.MODE_PRIVATE);
-        String jsonLoginHistory = sharedPreferences.getString("login_history", null);
-        Gson gson = new Gson();
-        Type type = new TypeToken<ArrayList<LoginHistoryItem>>() {}.getType();
-        List<LoginHistoryItem> loginHistory = gson.fromJson(jsonLoginHistory, type);
-
-        long lastSeenTimestamp;
-
-        if (loginHistory != null && !loginHistory.isEmpty()) {
-            if (loginHistory.size() > 1) {
-                // The previous session is the second to last in the list
-                lastSeenTimestamp = loginHistory.get(loginHistory.size() - 2).getTimestamp();
-            } else {
-                // If this is the first session, "last seen" is the start of this session
-                lastSeenTimestamp = loginHistory.get(0).getTimestamp();
-            }
-        } else {
-            // Fallback if there's no history, although login should create it.
-            // In this case, it will just be "Just now".
-            lastSeenTimestamp = System.currentTimeMillis();
-        }
-        
-        viewedUser.setLastSeen(lastSeenTimestamp);
+        btnSellItem.setText("List an Item");
+        btnSellItem.setOnClickListener(view -> openSellFragmentForNew());
     }
 
 
-    // ───────────────────────────────
-    // HANDLE RESULT FROM EDIT PROFILE
-    // ───────────────────────────────
-    private void handleEditProfileResult(ActivityResult result) {
+    // ---------------------------------
+    // SETUP RECYCLER
+    // ---------------------------------
+    private void setupRecycler() {
 
-        if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+        recyclerMyProducts.setLayoutManager(new GridLayoutManager(getContext(), 2));
 
-            User updatedUser = result.getData().getParcelableExtra("updated_user");
+        productAdapter = new ProfileProductAdapter(
+                requireContext(),
+                userProducts
+        );
 
-            if (updatedUser != null) {
-                viewedUser = updatedUser;
-                showUserData();
+        recyclerMyProducts.setAdapter(productAdapter);
 
-                Toast.makeText(getContext(),
-                        "Profile updated successfully",
-                        Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
-    private void startLastSeenUpdates() {
-        lastSeenRunnable = new Runnable() {
+        productAdapter.setOnProductActionListener(new ProfileProductAdapter.OnProductActionListener() {
             @Override
-            public void run() {
-                if (viewedUser != null) {
-                    txtLastSeen.setText("Last seen: " + viewedUser.getLastSeenString());
-                }
-                lastSeenHandler.postDelayed(this, 60000); // Update every minute
+            public void onEdit(Product p) {
+                requestEdit(p);   // 📌 open SellFragment for editing
             }
-        };
-        lastSeenHandler.post(lastSeenRunnable);
+
+            @Override
+            public void onDelete(Product p) {
+                // Optional — if you want delete later
+            }
+        });
     }
 
-    private void stopLastSeenUpdates() {
-        lastSeenHandler.removeCallbacks(lastSeenRunnable);
+
+    // ---------------------------------
+    // LOAD USER PRODUCTS
+    // ---------------------------------
+    private void loadUserProducts() {
+        userProducts.clear();
+
+        for (Product p : SampleData.generateSampleProducts(requireContext())) {
+            if (p.getSellerId().equals(viewedUser.getId())) {
+                userProducts.add(p);
+            }
+        }
+    }
+
+
+    // ---------------------------------
+    // UPDATE UI BASED ON ITEM COUNT
+    // ---------------------------------
+    private void updateUI() {
+        if (userProducts.isEmpty()) {
+            recyclerMyProducts.setVisibility(View.GONE);
+            emptyState.setVisibility(View.VISIBLE);
+
+            txtEmptyTitle.setText("No listings yet");
+            txtEmptySubtitle.setText("Start listing your items.");
+
+        } else {
+            recyclerMyProducts.setVisibility(View.VISIBLE);
+            emptyState.setVisibility(View.GONE);
+        }
+    }
+
+
+    // ---------------------------------
+    // CLICK ACTION: EDIT LISTING
+    // ---------------------------------
+    private void openSellFragmentForEdit(Product product) {
+
+        Intent intent = new Intent(getActivity(), MainActivity.class);
+
+        intent.putExtra("editMode", true);
+        intent.putExtra("product_to_edit", product);
+        intent.putExtra("openSellFragment", true);
+        intent.putExtra("fromExternal", true);
+
+        startActivity(intent);
+    }
+
+
+    // ---------------------------------
+    // CLICK ACTION: ADD NEW LISTING
+    // ---------------------------------
+    private void openSellFragmentForNew() {
+
+        Intent intent = new Intent(getActivity(), MainActivity.class);
+        intent.putExtra("openSellFragment", true);
+        intent.putExtra("fromExternal", true);
+
+        startActivity(intent);
+    }
+
+
+    // ---------------------------------
+    // SHOW USER DATA (PROFILE HEADER)
+    // ---------------------------------
+    private void showUserData() {
+        // If you want I can fill your full header code here.
+    }
+
+
+    // ---------------------------------
+    // PUBLIC METHODS USED BY ADAPTER
+    // ---------------------------------
+    public void requestEdit(Product p) {
+        openSellFragmentForEdit(p);
+    }
+
+    public void requestDelete(Product p) {
+
+        ConfirmDialog.show(
+                getContext(),
+                "Delete Listing?",
+                "Do you want to delete this item?",
+                "Delete",
+                () -> {
+                    userProducts.remove(p);
+                    productAdapter.notifyDataSetChanged();
+                    updateUI();
+                }
+        );
     }
 }

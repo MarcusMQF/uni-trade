@@ -318,6 +318,46 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Product Listings Section -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardProductListings"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@android:color/white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/txtProductListingTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Products Listed"
+                        android:textColor="#009688"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+
+                    <include
+                        android:id="@+id/emptyListingState"
+                        layout="@layout/layout_empty_list"
+                        android:visibility="gone"/>
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerMyProducts"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false"
+                        android:paddingTop="12dp"/>
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- Action Buttons -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"

@@ -18,8 +18,14 @@ public class SettingsActivity extends BaseActivity {
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK) {
-                    // Optionally refresh data or show a message
-                    Toast.makeText(this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
+                    // Save the updated user info
+                    if (result.getData() != null) {
+                        User updatedUser = result.getData().getParcelableExtra("updated_user");
+                        if (updatedUser != null) {
+                            SampleData.updateUser(this, updatedUser);
+                            Toast.makeText(this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
+                        }
+                    }
                 }
             });
 
@@ -28,6 +34,14 @@ public class SettingsActivity extends BaseActivity {
             result -> {
                 if (result.getResultCode() == RESULT_OK) {
                     recreate(); // Recreate the activity to apply changes
+                }
+            });
+
+    private ActivityResultLauncher<Intent> languageActivityLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK) {
+                    recreate(); // Recreate the activity to apply language changes
                 }
             });
 
@@ -82,7 +96,10 @@ public class SettingsActivity extends BaseActivity {
         // Preferences Section
         setupSettingItem(R.id.setting_notifications, NotificationSettingsActivity.class);
         setupSettingItem(R.id.setting_privacy, PrivacyPolicyActivity.class);
-        setupSettingItem(R.id.setting_language, LanguageActivity.class);
+        findViewById(R.id.setting_language).setOnClickListener(v -> {
+            Intent intent = new Intent(this, LanguageActivity.class);
+            languageActivityLauncher.launch(intent);
+        });
         findViewById(R.id.setting_currency).setOnClickListener(v -> {
             Intent intent = new Intent(this, CurrencyActivity.class);
             currencyActivityLauncher.launch(intent);

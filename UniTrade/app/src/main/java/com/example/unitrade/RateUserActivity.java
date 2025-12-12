@@ -15,6 +15,8 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
+import java.util.List;
+
 public class RateUserActivity extends BaseActivity {
 
     private ImageView star1, star2, star3, star4, star5;
@@ -159,9 +161,21 @@ public class RateUserActivity extends BaseActivity {
                     ratingRole.equals("buyer") ? "user" : "seller"
             );
 
+            // Recalculate and update the user's rating
+            List<Review> allReviews = SampleData.generateReviewsForUser(this, targetUser);
+            allReviews.add(review);
+
+            double totalRating = 0;
+            for (Review r : allReviews) {
+                totalRating += r.getRating();
+            }
+            double newOverallRating = totalRating / allReviews.size();
+            targetUser.setOverallRating(newOverallRating);
+
             // Send back to RatingReviewsActivity
             Intent data = new Intent();
             data.putExtra("new_review", review);
+            data.putExtra("updated_user", targetUser);
             setResult(RESULT_OK, data);
 
             Toast.makeText(this, "Review submitted!", Toast.LENGTH_SHORT).show();

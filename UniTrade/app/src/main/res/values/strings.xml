@@ -21,6 +21,16 @@
     <string name="profile_rate">Rate</string>
     <string name="profile_favourites">Favourites</string>
     <string name="profile_history">History</string>
+    <string name="last_seen">Last seen: Just now</string>
+    <string name="personal_information">Personal Information</string>
+    <string name="full_name">Full Name</string>
+    <string name="email">Email</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="address">Address</string>
+    <string name="no_address_set">No address set</string>
+    <string name="loading">Loading...</string>
+    <string name="reviews">Reviews</string>
+    <string name="username">Username</string>
     
     <!-- Bottom Navigation -->
     <string name="home">Home</string>
@@ -28,19 +38,38 @@
     <string name="sell">Sell</string>
     <string name="stats">Stats</string>
     <string name="profile">Profile</string>
-    <string name="support_about"><![CDATA[Support & About]]></string>
-    <string name="help_support"><![CDATA[Help & Support]]></string>
-    <string name="buy_sell"><![CDATA[Buy & Sell]]></string>
-    <string name="help__support"><![CDATA[Help & Support]]></string>
-    <string name="cards">Cards</string>
-    <string name="bank_accounts">Bank accounts</string>
-    <string name="digital_wallets">Digital wallets</string>
-    <string name="payment_method_icon">Payment method</string>
-    <string name="set_as_default">Set as default</string>
-    <string name="edit">Edit</string>
-    <string name="remove">Remove</string>
-        <string name="edit_profile_button">Edit Profile</string>
-        <string name="sell_item_title">Sell Item</string>
-        <string name="settings_language">Language</string>
+    
+    <!-- Settings Page -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_edit_profile">Edit Profile</string>
+    <string name="settings_login_security">Login &amp; Security</string>
+    <string name="settings_preferences">Preferences</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_privacy_policy">Privacy &amp; Policy</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_currency">Currency</string>
+    <string name="settings_support_about">Support &amp; About</string>
+    <string name="settings_help_support">Help &amp; Support</string>
+    <string name="settings_report_problem">Report a Problem</string>
+    <string name="settings_legal">Legal</string>
+    <string name="settings_terms_of_service">Terms of Service</string>
+    <string name="settings_logout">Logout</string>
+
+    <!-- Edit Profile Page -->
+    <string name="edit_profile_title">Edit Profile</string>
+    <string name="new_address">New Address</string>
+    <string name="add_address">Add Address</string>
+    <string name="addresses">Addresses</string>
+    <string name="save_changes">Save Changes</string>
+
+    <!-- Transaction Statistics Page -->
+    <string name="transaction_statistics_title">Transaction Statistics</string>
+    <string name="today">Today</string>
+    <string name="view_all_transactions">View All Transactions</string>
+    <string name="buy">Buy</string>
+    <string name="sell_item_title">Sell Item</string>
+    <string name="profit">Profit</string>
+    <string name="recent_transactions">Recent Transactions</string>
 
 </resources>

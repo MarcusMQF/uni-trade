@@ -40,9 +40,13 @@ public class RatingReviewsActivity extends BaseActivity{
                     if (result.getResultCode() == RESULT_OK) {
 
                         Review newReview = result.getData().getParcelableExtra("new_review");
+                        User updatedUser = result.getData().getParcelableExtra("updated_user");
 
                         if (newReview != null) {
                             allReviews.add(0, newReview);   // add to top of list
+                            if (updatedUser != null) {
+                                user = updatedUser;
+                            }
                             refreshReviewUI();
                         }
                     }
@@ -102,6 +106,12 @@ public class RatingReviewsActivity extends BaseActivity{
         // Description (bio)
         txtUserDescription.setText(user.getBio());
 
+        // Add click listener to profile image
+        imgUserProfile.setOnClickListener(v -> {
+            Intent intent = new Intent(RatingReviewsActivity.this, UserProfileActivity.class);
+            intent.putExtra("user_to_view", user);
+            startActivity(intent);
+        });
 
         // Load reviews
         allReviews = SampleData.generateReviewsForUser(this, user);
@@ -158,6 +168,8 @@ public class RatingReviewsActivity extends BaseActivity{
         double userAvg = userCount == 0 ? 0 : userCount / (double) userCount;
         double sellerAvg = sellerCount == 0 ? 0 : sellerCount / (double) sellerCount;
 
+        user.setOverallRating(overall);
+
         ((TextView) findViewById(R.id.txtOverallRating))
                 .setText(String.format("%.1f", overall));
 
@@ -169,6 +181,11 @@ public class RatingReviewsActivity extends BaseActivity{
 
         // Refresh ViewPager contents
         viewPagerReviews.setAdapter(new ReviewsPagerAdapter(this, user, allReviews));
+
+        // Send the updated user back to the profile page
+        Intent resultIntent = new Intent();
+        resultIntent.putExtra("updated_user", user);
+        setResult(RESULT_OK, resultIntent);
     }
 
 }

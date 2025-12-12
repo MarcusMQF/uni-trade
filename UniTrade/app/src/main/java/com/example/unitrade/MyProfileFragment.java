@@ -71,6 +71,10 @@ public class MyProfileFragment extends Fragment {
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
                     this::handleEditProfileResult);
 
+    private final ActivityResultLauncher<Intent> reviewLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
+                    this::handleReviewResult);
+
     // ───────────────────────────────
     // FRAGMENT LIFECYCLE
     // ───────────────────────────────
@@ -89,21 +93,19 @@ public class MyProfileFragment extends Fragment {
 
         super.onViewCreated(view, savedInstanceState);
 
-        viewedUser = loadUserFromPrefs();
-        if (viewedUser == null) {
-            viewedUser = SampleData.getUserById(requireContext(), "u1");
-        }
-
-        // Load the last seen time from shared preferences
-        loadLastSeenTimestamp();
-
         bindViews(view);
-        showUserData();
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        // Reload user data every time the fragment is displayed
+        viewedUser = loadUserFromPrefs();
+        if (viewedUser == null) {
+            viewedUser = SampleData.getUserById(requireContext(), "u1");
+        }
+        loadLastSeenTimestamp();
+        showUserData();
         startLastSeenUpdates();
     }
 
@@ -154,7 +156,7 @@ public class MyProfileFragment extends Fragment {
             Intent intent = new Intent(getActivity(), RatingReviewsActivity.class);
             intent.putExtra("user_to_view", viewedUser);
             intent.putExtra("hide_fab", true);
-            startActivity(intent);
+            reviewLauncher.launch(intent);
         });
 
         cartButton.setOnClickListener(v -> {
@@ -208,7 +210,7 @@ public class MyProfileFragment extends Fragment {
 
         ImageView[] stars = {star1, star2, star3, star4, star5};
 
-        for (int i = 0; i < stars.length; i++) {
+        for (int i = 0; i < 5; i++) {
 
             double starPosition = i + 1;        // 1 → star1, 2 → star2, ...
 
@@ -259,7 +261,7 @@ public class MyProfileFragment extends Fragment {
 
 
     // ───────────────────────────────
-    // HANDLE RESULT FROM EDIT PROFILE
+    // HANDLE ACTIVITY RESULTS
     // ───────────────────────────────
     private void handleEditProfileResult(ActivityResult result) {
 
@@ -275,6 +277,18 @@ public class MyProfileFragment extends Fragment {
                 Toast.makeText(getContext(),
                         "Profile updated successfully",
                         Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private void handleReviewResult(ActivityResult result) {
+        if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+            User updatedUser = result.getData().getParcelableExtra("updated_user");
+            if (updatedUser != null) {
+                viewedUser = updatedUser;
+                saveUserToPrefs(updatedUser);
+                showUserData();
+                Toast.makeText(getContext(), "Rating updated", Toast.LENGTH_SHORT).show();
             }
         }
     }

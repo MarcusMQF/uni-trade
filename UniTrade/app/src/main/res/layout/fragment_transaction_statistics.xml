@@ -114,7 +114,7 @@
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@android:drawable/ic_menu_myplaces"
+                            android:src="@android:drawable/arrow_down_float"
                             app:tint="@color/red" />
 
                         <TextView
@@ -148,7 +148,7 @@
                         <ImageView
                             android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:src="@android:drawable/ic_menu_myplaces"
+                            android:src="@android:drawable/arrow_up_float"
                             app:tint="@color/green" />
 
                         <TextView

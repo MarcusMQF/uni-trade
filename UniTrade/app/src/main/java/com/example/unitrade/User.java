@@ -71,6 +71,13 @@ public class User implements Parcelable {
     }
 
 
+    // Inside User.java
+
+    public void setOverallRating(double overallRating) {
+        this.overallRating = overallRating;
+    }
+
+
     // Getters
     public String getId() { return id; }
     public String getUsername() { return username; }

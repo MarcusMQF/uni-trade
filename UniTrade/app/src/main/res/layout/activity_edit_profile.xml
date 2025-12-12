@@ -19,8 +19,9 @@
             android:id="@+id/appBarEditProfile"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:title="Edit Profile"
-            app:titleTextColor="@android:color/white" />
+            app:title="@string/edit_profile_title"
+            app:titleTextColor="@android:color/white"
+            app:navigationIcon="?attr/homeAsUpIndicator" />
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -82,7 +83,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="12dp"
-                        android:hint="Full Name">
+                        android:hint="@string/full_name">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etFullName"
@@ -112,7 +113,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="12dp"
-                        android:hint="Email">
+                        android:hint="@string/email">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etEmail"
@@ -127,7 +128,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="12dp"
-                        android:hint="Phone Number">
+                        android:hint="@string/phone_number">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etPhone"
@@ -141,7 +142,7 @@
                         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Bio">
+                        android:hint="@string/profile_bio">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/eTBio"
@@ -173,7 +174,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Addresses"
+                        android:text="@string/addresses"
                         android:textAppearance="?attr/textAppearanceHeadline6"
                         android:layout_marginBottom="8dp"/>
 
@@ -190,7 +191,7 @@
                             android:layout_width="0dp"
                             android:layout_weight="1"
                             android:layout_height="wrap_content"
-                            android:hint="New Address">
+                            android:hint="@string/new_address">
 
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/etNewAddress"
@@ -216,7 +217,7 @@
                         style="@style/Widget.MaterialComponents.Button.TextButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Add Address"
+                        android:text="@string/add_address"
                         android:layout_gravity="end"
                         android:layout_marginBottom="8dp"/>
 
@@ -237,7 +238,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:paddingVertical="14dp"
-                android:text="Save Changes"
+                android:text="@string/save_changes"
                 android:textSize="16sp"
                 app:cornerRadius="16dp" />
 

@@ -166,14 +166,20 @@ public class ProductDetailActivity extends BaseActivity {
                     .circleCrop()
                     .into(imgSeller);
             Log.d(TAG, "onCreate: seller info set");
+
+            imgSeller.setOnClickListener(v -> {
+                Intent intent = new Intent(ProductDetailActivity.this, UserProfileActivity.class);
+                intent.putExtra("user_to_view", seller);
+                startActivity(intent);
+            });
         }
 
         // ---------------------------------
-        // Visit Seller Profile
+        // Visit Seller Profile -> Changed to RatingReviewActivity
         // ---------------------------------
         btnVisitProfile.setOnClickListener(v -> {
             if (seller != null) {
-                Intent intent = new Intent(ProductDetailActivity.this, UserProfileActivity.class);
+                Intent intent = new Intent(ProductDetailActivity.this, RatingReviewsActivity.class);
                 intent.putExtra("user_to_view", seller);
                 startActivity(intent);
             }
@@ -231,16 +237,7 @@ public class ProductDetailActivity extends BaseActivity {
             intent.putParcelableArrayListExtra("checkoutItems", tempList);
             startActivity(intent);
         });
-
-
-        btnVisitProfile.setOnClickListener(v -> {
-
-            if (seller != null) {
-                Intent intent = new Intent(ProductDetailActivity.this, UserProfileActivity.class);
-                intent.putExtra("user_to_view", seller); // pass Parcelable user
-                startActivity(intent);
-            }
-        });
+        
         Log.d(TAG, "onCreate: finished");
     }
 

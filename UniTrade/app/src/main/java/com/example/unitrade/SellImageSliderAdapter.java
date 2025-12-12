@@ -50,7 +50,7 @@ public class SellImageSliderAdapter
         return new ViewHolder(view);
     }
 
-
+    // ---------------------------------------------------------
     @Override
     public void onBindViewHolder(
             @NonNull ViewHolder holder,
@@ -61,20 +61,11 @@ public class SellImageSliderAdapter
 
         String imgUrl = imageList.get(position);
 
-
-        if (imgUrl == null || imgUrl.isEmpty()) {
-            holder.imgPreview.setImageResource(R.drawable.upload_pic);
-            holder.btnRemove.setVisibility(View.GONE);
-            return;
-        }
-
-        holder.btnRemove.setVisibility(View.VISIBLE);
-
         Glide.with(context)
                 .load(Uri.parse(imgUrl))
                 .centerCrop()
-                .placeholder(R.drawable.upload_pic)
-                .error(R.drawable.upload_pic)
+                .placeholder(R.drawable.bg_rounded_border)
+                .error(R.drawable.bg_rounded_border)
                 .into(holder.imgPreview);
 
         holder.btnRemove.setOnClickListener(v -> {

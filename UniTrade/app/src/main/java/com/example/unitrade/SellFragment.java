@@ -328,29 +328,32 @@ public class SellFragment extends Fragment {
 
     private void showSelectedImages() {
 
-        List<String> imagesToDisplay = new ArrayList<>();
-
+        // 🔥 CASE 1: NO IMAGES → SHOW DEFAULT PLACEHOLDER
         if (selectedImages.isEmpty()) {
-            // 🔥 Force ONE placeholder image
-            imagesToDisplay.add(""); // empty string triggers placeholder
-        } else {
-            imagesToDisplay.addAll(selectedImages);
+            layoutImagePlaceholder.setVisibility(View.VISIBLE);
+            viewPagerSellImages.setVisibility(View.GONE);
+            tabDotsSell.setVisibility(View.GONE);
+            return;
         }
 
+        // 🔥 CASE 2: HAS IMAGES → SHOW VIEWPAGER
         layoutImagePlaceholder.setVisibility(View.GONE);
         viewPagerSellImages.setVisibility(View.VISIBLE);
+        tabDotsSell.setVisibility(View.VISIBLE);
 
         sellImageAdapter =
                 new SellImageSliderAdapter(
                         requireContext(),
-                        imagesToDisplay,
+                        selectedImages,
                         () -> {
                             imagesModified = true;
 
-                            // 🔥 sync adapter → fragment
+                            // sync adapter → fragment
                             selectedImages.clear();
                             selectedImages.addAll(sellImageAdapter.getImages());
 
+                            // 🔥 IMPORTANT: re-check after deletion
+                            showSelectedImages();
                             updateImageUploadButtonUI();
                         }
                 );
@@ -360,6 +363,7 @@ public class SellFragment extends Fragment {
         new TabLayoutMediator(tabDotsSell, viewPagerSellImages, (t, p) -> {})
                 .attach();
     }
+
 
 
     // FILL EDIT FORM --------------------------------------------------------

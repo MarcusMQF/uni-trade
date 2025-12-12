@@ -8,6 +8,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
@@ -28,22 +29,35 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // -----------------------------
+        // --------------------------------------------------
+        // Ensure user session exists
+        // --------------------------------------------------
+        if (UserSession.get() == null) {
+            User defaultUser = SampleData.generateSampleUsers(this).get(0);
+            UserSession.set(defaultUser);
+        }
+
+        // --------------------------------------------------
         // Toolbar
-        // -----------------------------
+        // --------------------------------------------------
         MaterialToolbar toolbar = findViewById(R.id.appBarMain);
         setSupportActionBar(toolbar);
 
-        // -----------------------------
-        // Navigation
-        // -----------------------------
+        Drawable overflow = toolbar.getOverflowIcon();
+        if (overflow != null) overflow.setTint(Color.WHITE);
+
+        // --------------------------------------------------
+        // NavHost + NavController
+        // --------------------------------------------------
         NavHostFragment navHostFragment =
                 (NavHostFragment) getSupportFragmentManager()
                         .findFragmentById(R.id.NHFMain);
+
         navController = navHostFragment.getNavController();
 
         bottomNav = findViewById(R.id.bottom_navigation);
 
+        // Top-level destinations
         appBarConfiguration = new AppBarConfiguration.Builder(
                 R.id.nav_home,
                 R.id.nav_chat,
@@ -55,69 +69,98 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(bottomNav, navController);
 
-        // Tint overflow menu icon
-        Drawable overflow = toolbar.getOverflowIcon();
-        if (overflow != null) overflow.setTint(Color.WHITE);
-
+        // --------------------------------------------------
+        // Handle intent navigation
+        // --------------------------------------------------
         handleIntent(getIntent());
     }
 
-
-    // ======================================================
-    // Handle all external navigation cases
-    // ======================================================
+    // ==================================================
+    // Handle navigation from external Activities
+    // ==================================================
     private void handleIntent(Intent intent) {
 
-        boolean openSell = intent.getBooleanExtra("openSellFragment", false);
-        boolean goToHome = intent.getBooleanExtra("goToHome", false);
-        boolean fromExternal = intent.getBooleanExtra("fromExternal", false);
-        boolean editMode = intent.getBooleanExtra("editMode", false);
-        boolean openChat = intent.getBooleanExtra("openChatFragment", false);
-        Product productToEdit = intent.getParcelableExtra("product_to_edit");
+        if (intent == null) return;
 
-        // ---------------------------------------------
-        // CASE 1: Open ChatFragment from Checkout FAB
-        // ---------------------------------------------
-        if (openChat) {
-            Bundle b = new Bundle();
-            b.putBoolean("fromExternal", true);
-
-            bottomNav.setSelectedItemId(R.id.nav_chat);
-            navController.navigate(R.id.nav_chat, b);
-            return;
+        // --------------------------------------------------
+        // 1. Select bottom navigation tab
+        // --------------------------------------------------
+        String selectTab = intent.getStringExtra("selectTab");
+        if (selectTab != null) {
+            switch (selectTab) {
+                case "profile":
+                    bottomNav.setSelectedItemId(R.id.nav_profile);
+                    break;
+                case "home":
+                    bottomNav.setSelectedItemId(R.id.nav_home);
+                    break;
+                case "chat":
+                    bottomNav.setSelectedItemId(R.id.nav_chat);
+                    break;
+                case "sell":
+                    bottomNav.setSelectedItemId(R.id.nav_sell);
+                    break;
+            }
+            intent.removeExtra("selectTab");
         }
 
-        // ---------------------------------------------
-        // CASE 2: Go Home (Shop Now from History)
-        // ---------------------------------------------
-        if (goToHome) {
+        // --------------------------------------------------
+        // 2. Go to Home
+        // --------------------------------------------------
+        if (intent.getBooleanExtra("goToHome", false)) {
             bottomNav.setSelectedItemId(R.id.nav_home);
             navController.navigate(R.id.nav_home);
+            intent.removeExtra("goToHome");
             return;
         }
 
-        // ---------------------------------------------
-        // CASE 3: Open Sell Fragment OR Edit Item
-        // ---------------------------------------------
-        if (openSell) {
-            Bundle b = new Bundle();
-            b.putBoolean("fromExternal", fromExternal);
+        // --------------------------------------------------
+        // 3. Open Chat
+        // --------------------------------------------------
+        if (intent.getBooleanExtra("openChatFragment", false)) {
+            bottomNav.setSelectedItemId(R.id.nav_chat);
+            navController.navigate(R.id.nav_chat);
+            intent.removeExtra("openChatFragment");
+            return;
+        }
 
-            if (editMode && productToEdit != null) {
-                b.putBoolean("editMode", true);
-                b.putParcelable("product_to_edit", productToEdit);
+        // --------------------------------------------------
+        // 4. Open SellFragment (NEW or EDIT)
+        // --------------------------------------------------
+        if (intent.getBooleanExtra("openSellFragment", false)) {
+
+            Bundle args = new Bundle();
+
+            // Origin (product_detail / my_listings / my_history / new_listing)
+            String origin = intent.getStringExtra("origin");
+            if (origin != null) {
+                args.putString("origin", origin);
+            }
+
+            boolean editMode = intent.getBooleanExtra("editMode", false);
+            String productId = intent.getStringExtra("product_id");
+
+            if (editMode && productId != null) {
+                args.putBoolean("editMode", true);
+                args.putString("product_id", productId);
             }
 
             bottomNav.setSelectedItemId(R.id.nav_sell);
-            navController.navigate(R.id.nav_sell, b);
+            navController.navigate(R.id.nav_sell, args);
+
+            // Prevent re-trigger
+            intent.removeExtra("openSellFragment");
+            intent.removeExtra("editMode");
+            intent.removeExtra("product_id");
+            intent.removeExtra("origin");
+
             return;
         }
     }
 
-
-    // ======================================================
-    // Handle NEW intents (e.g., coming back from Checkout)
-    // ======================================================
+    // ==================================================
+    // Receive new intents (e.g. returning from checkout)
+    // ==================================================
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
@@ -125,36 +168,18 @@ public class MainActivity extends AppCompatActivity {
         handleIntent(intent);
     }
 
-
-    // ======================================================
-    // Navigation Up / Back
-    // ======================================================
+    // ==================================================
+    // Navigation Up
+    // ==================================================
     @Override
     public boolean onSupportNavigateUp() {
         return NavigationUI.navigateUp(navController, appBarConfiguration)
                 || super.onSupportNavigateUp();
     }
 
-
-    // ======================================================
-    // Ensure toolbar always visible when returning
-    // ======================================================
-    @Override
-    protected void onResume() {
-        super.onResume();
-        MaterialToolbar toolbar = findViewById(R.id.appBarMain);
-        setSupportActionBar(toolbar);
-
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().show();
-            getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-        }
-    }
-
-
-    // ======================================================
+    // ==================================================
     // Toolbar menu
-    // ======================================================
+    // ==================================================
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.toolbar_menu, menu);

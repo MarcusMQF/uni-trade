@@ -1,24 +1,15 @@
 package com.example.unitrade;
 
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.DisplayMetrics;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.PopupMenu;
-import android.widget.ScrollView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -30,7 +21,6 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class SearchFragment extends Fragment {
@@ -42,50 +32,37 @@ public class SearchFragment extends Fragment {
     private View topView;
     private MovableFabHelper mover = new MovableFabHelper();
     private View rootView;
-    private ImageView btnFilter;
-
-    private Button btnLatest, btnNearest, btnPrice;
-    private Button btnUsed, btnUnused;
-    private Button btnOnCampus, btnOffCampus;
-    private ScrollView filterPanel;
 
     private RecyclerView rvProducts;
     private ItemAdapter adapter;
-    private List<Product> allProducts;
-    private List<Product> filteredProducts;
+    private List<Product> allProducts = new ArrayList<>();
+    private List<Product> filteredProducts = new ArrayList<>();
 
-    private Button currentSelected = null;
-    private String selectedPriceMode = null;
-
-    // Variables for movable FAB
-    private float dX, dY;
-    private long startClickTime;
-    private static final int CLICK_DURATION_THRESHOLD = 200; // milliseconds
+    private String currentUserId = "";
 
     public SearchFragment() {}
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
-    }
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
 
+        // ----------------------------
+        // ✔ Safe current user handling
+        // ----------------------------
+        if (UserSession.get() != null) {
+            currentUserId = UserSession.get().getId();
+        } else {
+            currentUserId = "";   // fallback
+        }
 
-    @Nullable
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_search, container, false);
 
-        super.onViewCreated(view, savedInstanceState);
-
         rootView = view;
-
         btnCart = view.findViewById(R.id.btnCart);
         bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
-        topView = view.findViewById(R.id.searchBarContainer);   // top limit
+        topView = view.findViewById(R.id.searchBarContainer);
 
         mover.enable(btnCart, rootView, topView, bottomNav);
-
 
         btnCart.setOnClickListener(v -> {
             Intent intent = new Intent(getContext(), ShoppingCartActivity.class);
@@ -93,7 +70,16 @@ public class SearchFragment extends Fragment {
             startActivity(intent);
         });
 
-        String query = getArguments() != null ? getArguments().getString("query", "") : "";
+        // ----------------------------
+        // Get passed search query
+        // ----------------------------
+        Bundle args = getArguments();
+        String query = "";
+
+        if (args != null) {
+            query = args.getString("query", "");
+        }
+
         edtSearch = view.findViewById(R.id.edtSearch);
         edtSearch.setText(query);
 
@@ -105,64 +91,41 @@ public class SearchFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         edtSearch = view.findViewById(R.id.edtSearch);
-        btnFilter = view.findViewById(R.id.btnFilter);
-
-        btnLatest = view.findViewById(R.id.btnLatest);
-        btnNearest = view.findViewById(R.id.btnNearest);
-        btnPrice = view.findViewById(R.id.btnPrice);
-
-        btnUsed = view.findViewById(R.id.btnUsed);
-        btnUnused = view.findViewById(R.id.btnUnused);
-
-        btnOnCampus = view.findViewById(R.id.btnCampusOn);
-        btnOffCampus = view.findViewById(R.id.btnCampusOff);
-
-        filterPanel = view.findViewById(R.id.filterPanel);
         rvProducts = view.findViewById(R.id.rvSearchProducts);
 
-        btnFilter.setOnClickListener(v -> {
-            filterPanel.setVisibility(filterPanel.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
-        });
-
-        btnLatest.setOnClickListener(v -> highlightButton(btnLatest));
-        btnNearest.setOnClickListener(v -> highlightButton(btnNearest));
-        btnPrice.setOnClickListener(v -> {
-            if (selectedPriceMode != null) {
-                selectedPriceMode = null;
-                btnPrice.setText("price ▼");
-                resetButtonStyle(btnPrice);
-                return;
-            }
-            showPriceDropdown();
-        });
-
-        setupTogglePair(btnUsed, btnUnused);
-        setupTogglePair(btnOnCampus, btnOffCampus);
-
         loadProducts();
-        
-        // Initial search if query passed
+
+        // ------------------------------------------------
+        // Initial filtering if there was a query passed in
+        // ------------------------------------------------
         String initialQuery = edtSearch.getText().toString().trim();
         if (!initialQuery.isEmpty()) {
             filterProducts(initialQuery);
         }
 
-        // Add text change listener for real-time search or enter key
+        // ------------------------------
+        // Search on enter / search button
+        // ------------------------------
         edtSearch.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_SEARCH ||
-                    (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+            boolean isEnter = actionId == EditorInfo.IME_ACTION_SEARCH ||
+                    (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER);
+
+            if (isEnter) {
                 filterProducts(edtSearch.getText().toString());
                 return true;
             }
             return false;
         });
 
+        // ----------
+        // Live search
+        // ----------
         edtSearch.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
 
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            public void onTextChanged(CharSequence s, int st, int b, int c) {
                 filterProducts(s.toString());
             }
 
@@ -170,87 +133,13 @@ public class SearchFragment extends Fragment {
             public void afterTextChanged(Editable s) {}
         });
     }
-    private void setupTogglePair(Button b1, Button b2) {
-        b1.setOnClickListener(v -> {
-            applySelectedStyle(b1);
-            resetButtonStyle(b2);
-        });
 
-        b2.setOnClickListener(v -> {
-            applySelectedStyle(b2);
-            resetButtonStyle(b1);
-        });
-    }
-
-
-    private void highlightButton(Button selected) {
-        if (selected == btnLatest || selected == btnNearest) {
-
-            if (currentSelected == selected) {
-                resetButtonStyle(selected);
-                currentSelected = null;
-                return;
-            }
-
-            resetButtonStyle(btnLatest);
-            resetButtonStyle(btnNearest);
-
-            selectedPriceMode = null;
-            btnPrice.setText("price ▼");
-            resetButtonStyle(btnPrice);
-
-            applySelectedStyle(selected);
-            currentSelected = selected;
-            return;
-        }
-
-        if (selected == btnPrice) {
-            if (selectedPriceMode != null) {
-                selectedPriceMode = null;
-                btnPrice.setText("price ▼");
-                resetButtonStyle(btnPrice);
-                return;
-            }
-            showPriceDropdown();
-        }
-    }
-
-    private void showPriceDropdown() {
-        PopupMenu menu = new PopupMenu(getContext(), btnPrice);
-        menu.getMenu().add("Lowest");
-        menu.getMenu().add("Highest");
-
-        menu.setOnMenuItemClickListener(item -> {
-
-            selectedPriceMode = item.getTitle().toString();
-            btnPrice.setText(selectedPriceMode);
-
-            resetButtonStyle(btnLatest);
-            resetButtonStyle(btnNearest);
-            currentSelected = null;
-
-            applySelectedStyle(btnPrice);
-
-            return true;
-        });
-
-        menu.show();
-    }
-
-    private void resetButtonStyle(Button b) {
-        b.setBackgroundResource(R.drawable.bg_filter_chip);
-        b.setBackgroundTintList(null);
-        b.setTextColor(Color.BLACK);
-    }
-
-    private void applySelectedStyle(Button b) {
-        b.setBackgroundResource(R.drawable.bg_filter_chip_selected);
-        b.setBackgroundTintList(null);
-        b.setTextColor(Color.WHITE);
-    }
-
+    // ============================================
+    // LOAD AVAILABLE PRODUCTS (NOT SOLD, NOT USER)
+    // ============================================
     private void loadProducts() {
-        allProducts = SampleData.generateSampleProducts(requireContext());
+
+        allProducts = SampleData.getAvailableItems(requireContext(), currentUserId);
         filteredProducts = new ArrayList<>(allProducts);
 
         adapter = new ItemAdapter(filteredProducts, product -> {
@@ -263,29 +152,40 @@ public class SearchFragment extends Fragment {
         rvProducts.setAdapter(adapter);
     }
 
+    // =======================
+    // SEARCH FILTERING LOGIC
+    // =======================
     private void filterProducts(String query) {
+
         filteredProducts.clear();
-        if (query.isEmpty()) {
+
+        if (query == null || query.isEmpty()) {
             filteredProducts.addAll(allProducts);
         } else {
-            String lowerCaseQuery = query.toLowerCase().trim();
-            for (Product product : allProducts) {
-                if (product.getName().toLowerCase().contains(lowerCaseQuery) ||
-                    product.getDescription().toLowerCase().contains(lowerCaseQuery)) {
-                    filteredProducts.add(product);
+            String lower = query.toLowerCase().trim();
+
+            for (Product p : allProducts) {
+                if (p.getName().toLowerCase().contains(lower) ||
+                        p.getDescription().toLowerCase().contains(lower)) {
+                    filteredProducts.add(p);
                 }
             }
         }
-        if (adapter != null) {
-            adapter.notifyDataSetChanged();
-        }
+
+        adapter.notifyDataSetChanged();
     }
 
+    // ==============================================================================
+    // REFRESH WHEN COMING BACK FROM PRODUCT DETAIL OR CHECKOUT (status may change)
+    // ==============================================================================
     @Override
     public void onResume() {
         super.onResume();
-        btnCart.post(() ->
-                mover.enable(btnCart, rootView, topView, bottomNav)
-        );
+
+        // Reload list to reflect new Sold / Donated / Reserved status
+        loadProducts();
+        adapter.notifyDataSetChanged();
+
+        btnCart.post(() -> mover.enable(btnCart, rootView, topView, bottomNav));
     }
 }

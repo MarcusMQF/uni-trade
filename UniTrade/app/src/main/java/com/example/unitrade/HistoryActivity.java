@@ -6,7 +6,7 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -19,33 +19,37 @@ import java.util.List;
 
 public class HistoryActivity extends BaseActivity {
 
+    // ---------------- UI ----------------
     private RecyclerView rvHistory;
     private LinearLayout emptyState;
     private MaterialButton btnEdit;
-
-    private HistoryAdapter adapter;
-
     private TabLayout tabHistory;
 
-    private List<Product> purchasedList = new ArrayList<>();
-    private List<Product> soldList = new ArrayList<>();
+    // ---------------- Adapter ----------------
+    private HistoryAdapter adapter;
 
+    // ---------------- Data ----------------
+    private final List<Product> purchasedList = new ArrayList<>();
+    private final List<Product> soldList = new ArrayList<>();
+
+    // ---------------- State ----------------
     private boolean isEditMode = false;
-    private boolean isPurchasedTab = true;  // default tab = Purchased
+    private boolean isPurchasedTab = true;
 
+    // ============================================================
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_history);
 
-        // ----- APP BAR -----
+        // Toolbar
         MaterialToolbar toolbar = findViewById(R.id.appBarHistory);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         toolbar.setNavigationOnClickListener(v -> finish());
         tintToolbarOverflow(toolbar);
 
-        // ----- VIEWS -----
+        // Views
         rvHistory = findViewById(R.id.rvHistory);
         emptyState = findViewById(R.id.emptyStateView);
         btnEdit = findViewById(R.id.btnEditHistory);
@@ -53,51 +57,55 @@ public class HistoryActivity extends BaseActivity {
 
         rvHistory.setLayoutManager(new LinearLayoutManager(this));
 
-        // Load sample data
-        loadSampleData();
-
-        // Setup tabs
+        setupRecycler();
         setupTabs();
-
-        // Setup Edit Button
         setupEditButton();
 
-        // Default screen = Purchased tab
-        showPurchased();
+        reloadData();
+        showPurchased(); // default
     }
 
+    // ============================================================
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh the lists to reflect currency changes
-        if (adapter != null) {
-            adapter.notifyDataSetChanged();
+        reloadData();
+
+        if (isPurchasedTab) {
+            showPurchased();
+        } else {
+            showSold();
         }
     }
 
-    // -------------------------------------------------------------
-    // LOAD SAMPLE DATA
-    // -------------------------------------------------------------
-    private void loadSampleData() {
-        List<Product> all = SampleData.generateSampleProducts(this);
+    // ============================================================
+    // DATA RELOAD (NO SAMPLE DATA)
+    // ============================================================
+    private void reloadData() {
 
         purchasedList.clear();
         soldList.clear();
 
-        for (Product p : all) {
-            if (p.getStatus().equalsIgnoreCase("Sold")) {
+        String currentUserId = UserSession.get().getId();
+
+        // Purchased
+        purchasedList.addAll(PurchaseHistoryManager.purchasedItems);
+
+        // Sold / Donated
+        for (Product p : SampleData.getAllProducts(this)) {
+            if (p.getSellerId().equals(currentUserId)
+                    && (p.getStatus().equalsIgnoreCase("Sold")
+                    || p.getStatus().equalsIgnoreCase("Donated"))) {
+
                 soldList.add(p);
-            } else {
-                purchasedList.add(p);
             }
         }
     }
 
-    // -------------------------------------------------------------
-    // SETUP TABS
-    // -------------------------------------------------------------
+    // ============================================================
+    // TABS
+    // ============================================================
     private void setupTabs() {
-        // Add tabs
         tabHistory.addTab(tabHistory.newTab().setText("Purchased"));
         tabHistory.addTab(tabHistory.newTab().setText("Sold"));
 
@@ -118,60 +126,49 @@ public class HistoryActivity extends BaseActivity {
         });
     }
 
-    // -------------------------------------------------------------
-    // DISPLAY PURCHASED
-    // -------------------------------------------------------------
+    // ============================================================
+    // DISPLAY
+    // ============================================================
     private void showPurchased() {
         updateAdapter(purchasedList, true);
     }
 
-    // -------------------------------------------------------------
-    // DISPLAY SOLD
-    // -------------------------------------------------------------
     private void showSold() {
         updateAdapter(soldList, false);
     }
 
-    // -------------------------------------------------------------
-    // UPDATE ADAPTER BASED ON TAB
-    // -------------------------------------------------------------
     private void updateAdapter(List<Product> list, boolean isPurchasedMode) {
 
         TextView txtEmptyTitle = emptyState.findViewById(R.id.txtEmptyTitle);
         TextView txtEmptySubtitle = emptyState.findViewById(R.id.txtEmptySubtitle);
-        MaterialButton btnShopNow = emptyState.findViewById(R.id.btnShopNow);
+        MaterialButton btnAction = emptyState.findViewById(R.id.btnShopNow);
 
-        // --- UPDATE EMPTY VIEW TEXT & BUTTON ---
         if (isPurchasedMode) {
-            // PURCHASED TAB
             txtEmptyTitle.setText("Nothing purchased yet");
             txtEmptySubtitle.setText("Start browsing items to buy.");
-            btnShopNow.setText("Shop Now");
+            btnAction.setText("Shop Now");
 
-            btnShopNow.setOnClickListener(v -> {
+            btnAction.setOnClickListener(v -> {
                 Intent i = new Intent(this, MainActivity.class);
                 i.putExtra("goToHome", true);
-                i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 startActivity(i);
                 finish();
             });
 
         } else {
-            // SOLD TAB
             txtEmptyTitle.setText("No sold items yet");
             txtEmptySubtitle.setText("List an item to start selling.");
-            btnShopNow.setText("List an Item");
+            btnAction.setText("List an Item");
 
-            btnShopNow.setOnClickListener(v -> {
-                Intent i = new Intent(HistoryActivity.this, MainActivity.class);
+            btnAction.setOnClickListener(v -> {
+                Intent i = new Intent(this, MainActivity.class);
                 i.putExtra("openSellFragment", true);
-                i.putExtra("fromExternal", true);
-                startActivityForResult(i, 201);
+                i.putExtra("origin", "from_history_new");
+                startActivity(i);
             });
-
         }
 
-        // --- SHOW/HIDE EMPTY STATE ---
         if (list.isEmpty()) {
             rvHistory.setVisibility(View.GONE);
             emptyState.setVisibility(View.VISIBLE);
@@ -180,92 +177,71 @@ public class HistoryActivity extends BaseActivity {
             emptyState.setVisibility(View.GONE);
         }
 
-        adapter = new HistoryAdapter(this, list, isPurchasedMode);
-        rvHistory.setAdapter(adapter);
-
-        adapter.setOnHistoryActionListener(new HistoryAdapter.OnHistoryActionListener() {
-            @Override
-            public void onDelete(Product p) {
-                ConfirmDialog.show(
-                        HistoryActivity.this,
-                        "Remove entry?",
-                        "Do you want to delete this entry?",
-                        "Delete",
-                        () -> {
-                            list.remove(p);
-                            updateAdapter(list, isPurchasedMode);
-                        }
-                );
-            }
-
-            @Override
-            public void onEdit(Product p) {
-                openSellFragmentForEdit(p);
-            }
-        });
-
+        adapter.setPurchasedTab(isPurchasedMode);
+        adapter.updateList(list);
         adapter.setEditMode(isEditMode);
     }
 
-
-    // -------------------------------------------------------------
-    // EDIT MODE BUTTON
-    // -------------------------------------------------------------
+    // ============================================================
+    // EDIT MODE
+    // ============================================================
     private void setupEditButton() {
         btnEdit.setOnClickListener(v -> {
             isEditMode = !isEditMode;
             btnEdit.setText(isEditMode ? "Done" : "Edit History");
-
-            if (adapter != null) {
-                adapter.setEditMode(isEditMode);
-            }
+            adapter.setEditMode(isEditMode);
         });
     }
 
+    // ============================================================
+    // RECYCLER + CALLBACKS
+    // ============================================================
+    private void setupRecycler() {
+        adapter = new HistoryAdapter(this, new ArrayList<>(), true);
+
+        adapter.setOnHistoryActionListener(new HistoryAdapter.OnHistoryActionListener() {
+            @Override
+            public void onEdit(Product product) {
+                openSellFragmentForEdit(product);
+            }
+
+            @Override
+            public void onDelete(Product product) {
+                confirmDelete(product);
+            }
+        });
+
+        rvHistory.setAdapter(adapter);
+    }
+
+    // ============================================================
+    // ACTIONS
+    // ============================================================
     private void openSellFragmentForEdit(Product product) {
-        Intent intent = new Intent(this, MainActivity.class);
-
-        intent.putExtra("editMode", true);
-        intent.putExtra("product_to_edit", product); // Parcelable
-        intent.putExtra("fromExternal", true);
-        // ⚠️ Important: tell MainActivity to open SellFragment immediately
-        intent.putExtra("openSellFragment", true);
-
-
-        startActivityForResult(intent, 200);
+        Intent i = new Intent(this, MainActivity.class);
+        i.putExtra("openSellFragment", true);
+        i.putExtra("editMode", true);
+        i.putExtra("product_id", product.getId());
+        i.putExtra("origin", "my_history");
+        startActivity(i);
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+    private void confirmDelete(Product product) {
 
-        if (resultCode != RESULT_OK || data == null) return;
+        ConfirmDialog.show(
+                this,
+                "Delete Listing",
+                "This action cannot be undone.",
+                "Delete",
+                () -> {
+                    // Remove from data source
+                    SampleData.getAllProducts(this).remove(product);
 
-        // EDIT ITEM result
-        if (requestCode == 200) {
-            Product updated = data.getParcelableExtra("updated_product");
-            if (updated != null) replaceProductInList(updated);
-        }
-
-        // LIST NEW ITEM result (you may handle this later if needed)
-        if (requestCode == 201) {
-            // OPTIONAL: refresh your lists after posting new item
-            loadSampleData();
-            if (isPurchasedTab) {
-                showPurchased();
-            } else {
-                showSold();
-            }
-        }
+                    // Refresh lists + UI
+                    reloadData();
+                    showSold();
+                }
+        );
     }
 
-    private void replaceProductInList(Product updatedProduct) {
-        for (int i = 0; i < soldList.size(); i++) {
-            if (soldList.get(i).getId().equals(updatedProduct.getId())) {
-                soldList.set(i, updatedProduct);
-                adapter.notifyItemChanged(i);
-                return;
-            }
-        }
-    }
 }

@@ -184,6 +184,7 @@
     </ScrollView>
 
 
+    <!-- ==================== BOTTOM BAR ==================== -->
     <LinearLayout
         android:id="@+id/bottomBar"
         android:layout_width="match_parent"
@@ -191,64 +192,87 @@
         android:layout_alignParentBottom="true"
         android:background="@color/white"
         android:elevation="4dp"
-        android:orientation="horizontal">
+        android:orientation="vertical">
 
-        <!-- ADD TO CART -->
+        <!-- BUYER BUTTONS ROW -->
+        <LinearLayout
+            android:id="@+id/layoutBuyerButtons"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <!-- ADD TO CART -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAddToCart"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="0.8"
+                android:backgroundTint="#F5F5F5"
+                android:text="Add to Cart"
+                android:textAllCaps="false"
+                android:textColor="#008C6F"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                app:cornerRadius="0dp"
+                app:icon="@drawable/ic_cart_large"
+                app:iconGravity="top"
+                app:iconTint="#008C6F"
+                app:rippleColor="@android:color/transparent" />
+
+            <!-- CHAT WITH SELLER -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnChatSeller"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:backgroundTint="#F5F5F5"
+                android:text="Chat with seller"
+                android:textAllCaps="false"
+                android:textColor="#008C6F"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                app:cornerRadius="0dp"
+                app:icon="@drawable/ic_chat"
+                app:iconGravity="top"
+                app:iconTint="#008C6F"
+                app:rippleColor="@android:color/transparent" />
+
+
+            <!-- BUY NOW -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnBuyNow"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="0.9"
+                android:backgroundTint="#00996E"
+                android:text="Buy Now"
+                android:textAllCaps="false"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                app:cornerRadius="0dp"
+                app:rippleColor="@android:color/white" />
+        </LinearLayout>
+
+        <!-- SELLER-ONLY BUTTON -->
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAddToCart"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="0.8"
-            android:backgroundTint="#F5F5F5"
-            android:text="Add to Cart"
-            android:textAllCaps="false"
-            android:textColor="#008C6F"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            app:cornerRadius="0dp"
-            app:icon="@drawable/ic_cart_large"
-            app:iconGravity="top"
-            app:iconTint="#008C6F"
-            app:rippleColor="@android:color/transparent" />
-
-        <!-- CHAT WITH SELLER -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnChatSeller"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:backgroundTint="#F5F5F5"
-            android:text="Chat with seller"
-            android:textAllCaps="false"
-            android:textColor="#008C6F"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            app:cornerRadius="0dp"
-            app:icon="@drawable/ic_chat"
-            app:iconGravity="top"
-            app:iconTint="#008C6F"
-            app:rippleColor="@android:color/transparent" />
-
-
-        <!-- BUY NOW -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnBuyNow"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="0.9"
-            android:backgroundTint="#00996E"
-            android:text="Buy Now"
+            android:id="@+id/btnManageListing"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Manage Listing"
             android:textAllCaps="false"
             android:textColor="@android:color/white"
-            android:textSize="20sp"
+            android:textSize="18sp"
             android:textStyle="bold"
+            android:backgroundTint="#00996E"
+            android:padding="10dp"
             app:cornerRadius="0dp"
-            app:rippleColor="@android:color/white" />
+            app:rippleColor="@android:color/white"
+            android:visibility="gone" />
 
     </LinearLayout>
 
     <!-- FLOATING CART BUTTON -->
-    <!-- Removed layout_alignParentBottom and layout_alignParentEnd to allow free movement -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/btnCart"
         android:layout_width="wrap_content"

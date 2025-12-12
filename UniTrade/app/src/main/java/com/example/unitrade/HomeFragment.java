@@ -29,32 +29,38 @@ public class HomeFragment extends Fragment {
     private RecyclerView rvCategory, rvRecommended;
     private CategoryAdapter categoryAdapter;
     private ItemAdapter itemAdapter;
-    private List<Product> productList;
-    private List<Product> allProducts;
+
+    private final List<Product> productList = new ArrayList<>();
+    private List<Product> allProducts = new ArrayList<>();
 
     private FloatingActionButton btnCart;
     private BottomNavigationView bottomNav;
-    private View topView;
-    private MovableFabHelper mover = new MovableFabHelper();
-    private View rootView;
+    private View topView, rootView;
 
-    public HomeFragment() {
-        // Required empty constructor
-    }
+    private final MovableFabHelper mover = new MovableFabHelper();
 
+    public HomeFragment() {}
+
+    @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(
+            @NonNull LayoutInflater inflater,
+            ViewGroup container,
+            Bundle savedInstanceState) {
+
         return inflater.inflate(R.layout.fragment_home, container, false);
     }
 
     @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(
+            @NonNull View view,
+            @Nullable Bundle savedInstanceState) {
+
         super.onViewCreated(view, savedInstanceState);
 
         rootView = view;
@@ -67,86 +73,168 @@ public class HomeFragment extends Fragment {
 
         btnCart.setOnClickListener(v -> {
             Intent intent = new Intent(getContext(), ShoppingCartActivity.class);
-            intent.putParcelableArrayListExtra("cart", new ArrayList<>(CartManager.cartList));
+            intent.putParcelableArrayListExtra(
+                    "cart",
+                    new ArrayList<>(CartManager.cartList)
+            );
             startActivity(intent);
         });
 
         rvCategory = view.findViewById(R.id.rvCategory);
         rvRecommended = view.findViewById(R.id.rvRecommended);
 
-        List<Category> categoryList = new ArrayList<>();
-        categoryList.add(new Category("All", R.drawable.ic_all_category));
-        categoryList.add(new Category("Textbooks", R.drawable.sample_textbooks));
-        categoryList.add(new Category("Electronics", R.drawable.sample_electronics));
-        categoryList.add(new Category("Fashion", R.drawable.sample_fashion));
-        categoryList.add(new Category("Room Essentials", R.drawable.sample_room_essentials));
-        categoryList.add(new Category("Sports", R.drawable.sample_sports));
-        categoryList.add(new Category("Stationery", R.drawable.sample_stationery));
-        categoryList.add(new Category("Hobbies", R.drawable.sample_hobbies));
-        categoryList.add(new Category("Food", R.drawable.sample_food));
-        categoryList.add(new Category("Personal Care", R.drawable.sample_personal_care));
-        categoryList.add(new Category("Others", R.drawable.ic_others));
+        setupCategories();
+        loadAvailableProducts();
+        setupItemAdapter();
 
-        categoryAdapter = new CategoryAdapter(categoryList, category -> filterProductsByCategory(category.getName()));
-        rvCategory.setLayoutManager(
-                new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false)
-        );
-        rvCategory.setAdapter(categoryAdapter);
+        setupSearch(view);
+    }
 
-        allProducts = SampleData.generateSampleProducts(requireContext());
-        productList = new ArrayList<>(allProducts);
-
-        itemAdapter = new ItemAdapter(productList, product -> {
-            Intent intent = new Intent(getContext(), ProductDetailActivity.class);
-            intent.putExtra("product", product);
-            startActivity(intent);
-        });
-
-        rvRecommended.setLayoutManager(new GridLayoutManager(getContext(), 2));
-        rvRecommended.setAdapter(itemAdapter);
-
+    // ======================================================
+    // SEARCH
+    // ======================================================
+    private void setupSearch(View view) {
         EditText edtSearch = view.findViewById(R.id.edtSearch);
 
         edtSearch.setOnEditorActionListener((v, actionId, event) -> {
-            boolean isEnter = actionId == EditorInfo.IME_ACTION_SEARCH
-                    || actionId == EditorInfo.IME_ACTION_DONE
-                    || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
-                    && event.getAction() == KeyEvent.ACTION_DOWN);
 
-            if (isEnter) {
-                String query = edtSearch.getText().toString().trim();
-                Bundle b = new Bundle();
-                b.putString("query", query);
+            boolean isEnter =
+                    actionId == EditorInfo.IME_ACTION_SEARCH ||
+                            (event != null
+                                    && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
+                                    && event.getAction() == KeyEvent.ACTION_DOWN);
 
-                NavController navController = Navigation.findNavController(requireView());
-                navController.navigate(R.id.nav_search, b);
+            if (!isEnter) return false;
 
-                return true;
+            String query = edtSearch.getText().toString().trim();
+
+            Bundle b = new Bundle();
+            b.putString("query", query);
+
+            if (UserSession.get() != null) {
+                b.putString("currentUserId", UserSession.get().getId());
             }
 
-            return false;
+            NavController navController =
+                    Navigation.findNavController(requireView());
+
+            navController.navigate(R.id.nav_search, b);
+            return true;
         });
     }
 
-    private void filterProductsByCategory(String categoryName) {
+    // ======================================================
+    // CATEGORY SETUP
+    // ======================================================
+    private void setupCategories() {
+
+        List<Category> categories = new ArrayList<>();
+        categories.add(new Category("All", R.drawable.ic_all_category));
+        categories.add(new Category("Textbook", R.drawable.sample_textbooks));
+        categories.add(new Category("Electronics", R.drawable.sample_electronics));
+        categories.add(new Category("Fashion", R.drawable.sample_fashion));
+        categories.add(new Category("Room Essentials", R.drawable.sample_room_essentials));
+        categories.add(new Category("Sports", R.drawable.sample_sports));
+        categories.add(new Category("Stationery", R.drawable.sample_stationery));
+        categories.add(new Category("Hobbies", R.drawable.sample_hobbies));
+        categories.add(new Category("Food", R.drawable.sample_food));
+        categories.add(new Category("Personal Care", R.drawable.sample_personal_care));
+        categories.add(new Category("Others", R.drawable.ic_others));
+
+        categoryAdapter = new CategoryAdapter(
+                categories,
+                category -> filterProductsByCategory(category.getName())
+        );
+
+        rvCategory.setLayoutManager(
+                new LinearLayoutManager(
+                        getContext(),
+                        LinearLayoutManager.HORIZONTAL,
+                        false
+                )
+        );
+
+        rvCategory.setAdapter(categoryAdapter);
+    }
+
+    // ======================================================
+    // LOAD PRODUCTS (EXCLUDING CURRENT USER)
+    // ======================================================
+    private void loadAvailableProducts() {
+
+        String currentUserId =
+                UserSession.get() != null
+                        ? UserSession.get().getId()
+                        : "";
+
+        allProducts =
+                SampleData.getAvailableItems(
+                        requireContext(),
+                        currentUserId
+                );
+
         productList.clear();
-        if (categoryName.equals("All")) {
+        productList.addAll(allProducts);
+    }
+
+    // ======================================================
+    // ITEM ADAPTER (FIXED: uses product_id)
+    // ======================================================
+    private void setupItemAdapter() {
+
+        itemAdapter = new ItemAdapter(productList, product -> {
+
+            Intent intent =
+                    new Intent(
+                            requireContext(),
+                            ProductDetailActivity.class
+                    );
+
+            // ✅ CORRECT CONTRACT
+            intent.putExtra("product_id", product.getId());
+
+            startActivity(intent);
+        });
+
+        rvRecommended.setLayoutManager(
+                new GridLayoutManager(getContext(), 2)
+        );
+
+        rvRecommended.setAdapter(itemAdapter);
+    }
+
+    // ======================================================
+    // FILTER BY CATEGORY
+    // ======================================================
+    private void filterProductsByCategory(String categoryName) {
+
+        productList.clear();
+
+        if ("All".equalsIgnoreCase(categoryName)) {
             productList.addAll(allProducts);
         } else {
-            List<Product> filtered = new ArrayList<>();
             for (Product p : allProducts) {
                 if (p.getCategory().equalsIgnoreCase(categoryName)) {
-                    filtered.add(p);
+                    productList.add(p);
                 }
             }
-            productList.addAll(filtered);
         }
+
         itemAdapter.notifyDataSetChanged();
     }
 
+    // ======================================================
+    // REFRESH WHEN RETURNING
+    // ======================================================
     @Override
     public void onResume() {
         super.onResume();
+
+        loadAvailableProducts();
+
+        productList.clear();
+        productList.addAll(allProducts);
+
         if (itemAdapter != null) {
             itemAdapter.notifyDataSetChanged();
         }

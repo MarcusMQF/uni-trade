@@ -217,7 +217,7 @@ public class EditProfileActivity extends BaseActivity {
         user.setBio(bio);
         user.setLastEdited(System.currentTimeMillis());
 
-        SampleData.updateUser(this, user);
+
 
         Intent resultIntent = new Intent();
         resultIntent.putExtra("updated_user", user);

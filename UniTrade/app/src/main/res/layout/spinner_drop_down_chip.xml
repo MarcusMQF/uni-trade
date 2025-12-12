@@ -1,7 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
 <TextView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:textColor="#FFFFFFFF"
-    android:padding="2dp"
-    android:textSize="14sp"/>
+    android:layout_height="52dp"
+    android:gravity="center"
+    android:padding="12dp"
+    android:textSize="17sp"
+    android:textColor="#004D40"
+    android:fontFamily="sans-serif-medium"
+    android:background="?android:attr/selectableItemBackground"
+    />

@@ -50,21 +50,14 @@ public class CheckoutActivity extends BaseActivity {
 
         Toolbar toolbar = findViewById(R.id.appBarCheckout);
         setSupportActionBar(toolbar);
-
-        getSupportActionBar().setTitle("Checkout");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("CheckOut");
-        }
-
+        getSupportActionBar().setTitle("Checkout");
         tintToolbarOverflow(toolbar);
 
         initViews();
         setupSpinner();
 
-        // Receive list from ShoppingCartAdapter
+        // Receive list from ShoppingCartActivity
         checkoutList = getIntent().getParcelableArrayListExtra("checkoutItems");
         if (checkoutList == null) checkoutList = new ArrayList<>();
 
@@ -77,7 +70,6 @@ public class CheckoutActivity extends BaseActivity {
 
         MaterialCardView layoutQrPayment = findViewById(R.id.layoutQrPayment);
         ImageView imgQrCode = findViewById(R.id.imgQrCode);
-
         Button btnScanQr = findViewById(R.id.btnScanQR);
 
         spinnerReceivingMethod = findViewById(R.id.spinnerReceivingMethod);
@@ -94,58 +86,34 @@ public class CheckoutActivity extends BaseActivity {
 
         mover = new MovableFabHelper();
 
+        // Enable FAB movement
         View appBar = findViewById(R.id.appBarCheckout);
         View bottomBar = findViewById(R.id.bottomBar);
-
-// Use full-screen root container
         View rootLayout = findViewById(android.R.id.content);
 
-// Initialize only after layout is measured
-        appBar.post(() -> {
-            bottomBar.post(() -> {
-                mover.enable(
-                        btnChatWithSeller,
-                        rootLayout,   // IMPORTANT FIX
-                        appBar,
-                        bottomBar
-                );
-            });
-        });
+        appBar.post(() -> bottomBar.post(() ->
+                mover.enable(btnChatWithSeller, rootLayout, appBar, bottomBar)
+        ));
 
-// Open chat tab
         btnChatWithSeller.setOnClickListener(v -> {
             Intent i = new Intent(CheckoutActivity.this, MainActivity.class);
             i.putExtra("openChatFragment", true);
             startActivity(i);
-
         });
 
-
-
-        btnPlaceOrder.setOnClickListener(v -> {
-            for (Product p : checkoutList) {
-                CartManager.removeItem(this, p);
-            }
-            Toast.makeText(this, "Order placed!", Toast.LENGTH_SHORT).show();
-            finish();
-        });
+        btnPlaceOrder.setOnClickListener(v -> finalizePurchase());
 
         btnScanQr.setOnClickListener(v -> {
-
             if (layoutQrPayment.getVisibility() == View.GONE) {
-                // Show QR
                 layoutQrPayment.setVisibility(View.VISIBLE);
                 btnScanQr.setText("Hide QR");
             } else {
-                // Hide QR
                 layoutQrPayment.setVisibility(View.GONE);
                 btnScanQr.setText("Scan QR For Payment");
             }
-
         });
     }
 
-    // Display multiple items dynamically
     private void displayItems() {
         itemsContainer.removeAllViews();
 
@@ -155,6 +123,7 @@ public class CheckoutActivity extends BaseActivity {
             ImageView img = row.findViewById(R.id.imgItem);
             TextView txtItemName = row.findViewById(R.id.txtItemName);
             TextView txtItemPrice = row.findViewById(R.id.txtItemPrice);
+
             txtItemName.setText(p.getName());
             txtItemPrice.setText("RM " + p.getPrice());
 
@@ -185,8 +154,7 @@ public class CheckoutActivity extends BaseActivity {
         ) {
             @Override
             public boolean isEnabled(int position) {
-                // Disable the first item (hint)
-                return position != 0;
+                return position != 0; // disable hint
             }
 
             @Override
@@ -194,32 +162,19 @@ public class CheckoutActivity extends BaseActivity {
                 View view = super.getDropDownView(position, convertView, parent);
                 TextView tv = (TextView) view;
 
-                if (position == 0) {
-                    // Hint gray for first row
-                    tv.setTextColor(Color.parseColor("#A0A0A0"));
-                } else {
-                    // Normal black for selectable options
-                    tv.setTextColor(Color.parseColor("#000000"));
-                }
-
+                tv.setTextColor(position == 0 ? Color.parseColor("#A0A0A0") : Color.BLACK);
                 return view;
             }
 
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
-                View view = super.getView(position, convertView, parent);
-                TextView tv = (TextView) view;
+                View v = super.getView(position, convertView, parent);
+                TextView tv = (TextView) v;
 
-                if (position == 0) {
-                    tv.setTextColor(Color.parseColor("#A0A0A0")); // hint gray
-                } else {
-                    tv.setTextColor(Color.parseColor("#000000")); // normal text
-                }
-
-                return view;
+                tv.setTextColor(position == 0 ? Color.parseColor("#A0A0A0") : Color.BLACK);
+                return v;
             }
         };
-
 
         spinnerReceivingMethod.setAdapter(adapter);
 
@@ -231,7 +186,6 @@ public class CheckoutActivity extends BaseActivity {
 
                 if (selectedMethod.equals("Delivery")) {
                     layoutDeliveryAddress.setVisibility(View.VISIBLE);
-                    edtDeliveryAddress.setVisibility(View.VISIBLE);
                     txtDelivery.setVisibility(View.VISIBLE);
                     txtDeliveryFee.setVisibility(View.VISIBLE);
                     txtDeliveryFee.setText("RM " + deliveryFee);
@@ -258,10 +212,54 @@ public class CheckoutActivity extends BaseActivity {
         txtTotal.setText("RM " + String.format("%.2f", total));
     }
 
-    @Override
-    public boolean onSupportNavigateUp() {
-        finish();     // ⬅️ closes the activity
-        return true;
+    // -------------------------------
+    //      FINALIZE PURCHASE
+    // -------------------------------
+    private void finalizePurchase() {
+
+        String currentUserId = UserSession.get().getId();
+
+        for (Product p : checkoutList) {
+
+            // -----------------------------------------
+            // UPDATE PRODUCT DIRECTLY (GLOBAL INSTANCE)
+            // -----------------------------------------
+            p.setBuyerId(currentUserId);
+
+            if (p.getPrice() > 0) {
+                p.setStatus("Sold");
+            } else {
+                p.setStatus("Donated");
+            }
+
+            // -----------------------------------------
+            // SAVE TO PURCHASE HISTORY
+            // -----------------------------------------
+            PurchaseHistoryManager.purchasedItems.add(p);
+        }
+
+        // -----------------------------------------
+        // REMOVE FROM CART
+        // -----------------------------------------
+        CartManager.removePurchased(checkoutList);
+
+        Toast.makeText(this, "Order placed successfully!", Toast.LENGTH_SHORT).show();
+
+        // -----------------------------------------
+        // GO BACK TO HOME
+        // -----------------------------------------
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.putExtra("goToHome", true);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
+
+        finish();
     }
 
+
+    @Override
+    public boolean onSupportNavigateUp() {
+        finish();
+        return true;
+    }
 }

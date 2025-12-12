@@ -11,6 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.signature.ObjectKey;
 
 import java.util.List;
 
@@ -47,6 +48,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
         if (product.getImageUrls() != null && !product.getImageUrls().isEmpty()) {
             Glide.with(context)
                     .load(product.getImageUrls().get(0))
+                    .signature(new ObjectKey(product.getImageVersion())) // 🔥
                     .into(holder.imgProduct);
         }
 

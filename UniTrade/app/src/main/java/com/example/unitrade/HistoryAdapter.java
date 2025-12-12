@@ -13,6 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.signature.ObjectKey;
 
 import java.util.List;
 
@@ -92,7 +93,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (!isEditMode) {
             holder.itemView.setOnClickListener(v -> {
                 Intent intent = new Intent(context, ProductDetailActivity.class);
-                intent.putExtra("product", p);
+                intent.putExtra("product_id", p.getId());
                 context.startActivity(intent);
             });
         } else {
@@ -111,6 +112,11 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (p.getImageUrls() != null && !p.getImageUrls().isEmpty()) {
             Glide.with(context)
                     .load(p.getImageUrls().get(0))
+                    .signature(new com.bumptech.glide.signature.ObjectKey(
+                            p.getId() + "_" + p.getImageUrls().hashCode()
+                    ))
+                    .placeholder(R.drawable.bg_rounded_border)
+                    .error(R.drawable.bg_rounded_border)
                     .into(h.imgItem);
         }
 
@@ -120,10 +126,12 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (seller != null) {
             Glide.with(context)
                     .load(seller.getProfileImageUrl())
+                    .signature(new com.bumptech.glide.signature.ObjectKey(
+                            seller.getId() + "_" + seller.getProfileImageUrl().hashCode()
+                    ))
                     .circleCrop()
                     .into(h.imgSeller);
 
-            h.txtSeller.setText(seller.getUsername());
         } else {
             h.txtSeller.setText("Unknown");
         }
@@ -165,7 +173,9 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (p.getImageUrls() != null && !p.getImageUrls().isEmpty()) {
             Glide.with(context)
                     .load(p.getImageUrls().get(0))
+                    .signature(new ObjectKey(p.getImageVersion())) // 🔥
                     .into(h.imgItem);
+
         }
 
         h.txtName.setText(p.getName());
@@ -217,5 +227,16 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             btnDelete = v.findViewById(R.id.btnConfirm);
             btnEdit = v.findViewById(R.id.btnEdit);
         }
+    }
+
+    public void updateList(List<Product> newList) {
+        this.list.clear();
+        this.list.addAll(newList);
+        notifyDataSetChanged();
+    }
+
+    public void setPurchasedTab(boolean isPurchasedTab) {
+        this.isPurchasedTab = isPurchasedTab;
+        notifyDataSetChanged();
     }
 }

@@ -334,19 +334,75 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <TextView
-                        android:id="@+id/txtProductListingTitle"
-                        android:layout_width="wrap_content"
+                    <!-- TITLE + MANAGE BUTTON (proper alignment) -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Products Listed"
-                        android:textColor="#009688"
-                        android:textSize="22sp"
-                        android:textStyle="bold" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:id="@+id/txtProductListingTitle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Products Listed"
+                            android:textColor="#009688"
+                            android:textSize="22sp"
+                            android:textStyle="bold" />
+
+                        <Button
+                            android:id="@+id/btnManageListings"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Manage"
+                            android:textColor="#FFFFFF"
+                            android:backgroundTint="#009688"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="6dp"/>
+                    </LinearLayout>
 
                     <include
                         android:id="@+id/emptyListingState"
                         layout="@layout/layout_empty_list"
                         android:visibility="gone"/>
+
+                    <LinearLayout
+                        android:id="@+id/filterTabs"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingTop="8dp"
+                        android:paddingBottom="12dp">
+
+                        <TextView
+                            android:id="@+id/tabActive"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:text="Active"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="#009688"
+                            android:background="@drawable/bg_tab_selected"
+                            android:padding="8dp" />
+
+                        <TextView
+                            android:id="@+id/tabCompleted"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:text="Completed"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:textColor="#666666"
+                            android:background="@drawable/bg_tab_unselected"
+                            android:padding="8dp" />
+                    </LinearLayout>
+
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/recyclerMyProducts"
@@ -357,7 +413,6 @@
                 </LinearLayout>
 
             </com.google.android.material.card.MaterialCardView>
-
             <!-- Action Buttons -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"

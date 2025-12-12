@@ -1,9 +1,10 @@
+
+
 package com.example.unitrade;
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -17,158 +18,190 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
+import java.util.ArrayList;
 import java.util.List;
 
+    public class RatingReviewsActivity extends BaseActivity {
 
+        private TabLayout tabReviews;
+        private ViewPager2 viewPagerReviews;
 
-public class RatingReviewsActivity extends BaseActivity{
+        private TextView txtOverall;
+        private TextView txtUserRating;
+        private TextView txtSellerRating;
 
-    private TabLayout tabReviews;
-    private ViewPager2 viewPagerReviews;
+        private User user;
+        private List<Review> allReviews = new ArrayList<>();
 
-    private User user;
-    private List<Review> allReviews;
-    private ActivityResultLauncher<Intent> reviewLauncher;
+        private ActivityResultLauncher<Intent> reviewLauncher;
 
+        // =====================================================
+        @Override
+        protected void onCreate(Bundle savedInstanceState) {
 
+            // -------------------------------------------------
+            // HANDLE REVIEW RESULT
+            // -------------------------------------------------
+            reviewLauncher = registerForActivityResult(
+                    new ActivityResultContracts.StartActivityForResult(),
+                    result -> {
+                        if (result.getResultCode() == RESULT_OK && result.getData() != null) {
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        reviewLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == RESULT_OK) {
+                            Review newReview =
+                                    result.getData().getParcelableExtra("new_review");
 
-                        Review newReview = result.getData().getParcelableExtra("new_review");
-
-                        if (newReview != null) {
-                            allReviews.add(0, newReview);   // add to top of list
-                            refreshReviewUI();
+                            if (newReview != null) {
+                                allReviews.add(0, newReview);
+                                refreshRatingsAndUser();
+                            }
                         }
                     }
-                }
-        );
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_rating_reviews);
+            );
 
-        FloatingActionButton btnWriteReview = findViewById(R.id.btnWriteReview);
-        boolean hideFab = getIntent().getBooleanExtra("hide_fab", false);
+            super.onCreate(savedInstanceState);
+            setContentView(R.layout.activity_rating_reviews);
 
-        if (hideFab) {
-            btnWriteReview.setVisibility(View.GONE);   // 👈 hide the floating button
-        } else {
-            btnWriteReview.show();   // visible normally when viewing others
+            // -------------------------------------------------
+            // TOOLBAR
+            // -------------------------------------------------
+            MaterialToolbar toolbar = findViewById(R.id.appBarRatingReviews);
+            setSupportActionBar(toolbar);
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            toolbar.setNavigationOnClickListener(v -> finish());
+            tintToolbarOverflow(toolbar);
+
+            // -------------------------------------------------
+            // LOAD USER
+            // -------------------------------------------------
+            user = getIntent().getParcelableExtra("user_to_view");
+            boolean hideFab = getIntent().getBooleanExtra("hide_fab", false);
+
+            if (user == null) {
+                finish();
+                return;
+            }
+
+            // -------------------------------------------------
+            // PROFILE HEADER
+            // -------------------------------------------------
+            ImageView imgUserProfile = findViewById(R.id.imgUserProfile);
+            TextView txtUsername = findViewById(R.id.txtUsername);
+            TextView txtLastSeen = findViewById(R.id.txtLastSeen);
+            TextView txtUserDescription = findViewById(R.id.txtUserDescription);
+
+            txtUsername.setText(user.getUsername());
+            txtLastSeen.setText(user.getLastSeenString());
+            txtUserDescription.setText(user.getBio());
+
+            Glide.with(this)
+                    .load(user.getProfileImageUrl())
+                    .circleCrop()
+                    .into(imgUserProfile);
+
+            // -------------------------------------------------
+            // RATING SUMMARY
+            // -------------------------------------------------
+            txtOverall = findViewById(R.id.txtOverallRating);
+            txtUserRating = findViewById(R.id.txtUserRating);
+            txtSellerRating = findViewById(R.id.txtSellerRating);
+
+            // -------------------------------------------------
+            // LOAD MOCK REVIEWS
+            // -------------------------------------------------
+            allReviews.clear();
+            allReviews.addAll(
+                    SampleData.generateMockReviewsForUser(this, user)
+            );
+
+            // -------------------------------------------------
+            // VIEWPAGER
+            // -------------------------------------------------
+            tabReviews = findViewById(R.id.tabReviews);
+            viewPagerReviews = findViewById(R.id.viewPagerReviews);
+
+            setupViewPager();
+
+            // -------------------------------------------------
+            // WRITE REVIEW FAB
+            // -------------------------------------------------
+            FloatingActionButton btnWriteReview = findViewById(R.id.btnWriteReview);
+
+            if (hideFab) {
+                btnWriteReview.setVisibility(View.GONE);
+            } else {
+                btnWriteReview.setOnClickListener(v -> {
+                    Intent intent = new Intent(this, RateUserActivity.class);
+                    intent.putExtra("user_to_view", user);
+                    reviewLauncher.launch(intent);
+                });
+            }
+
+            // -------------------------------------------------
+            // INITIAL CALCULATION
+            // -------------------------------------------------
+            refreshRatingsAndUser();
         }
 
+        // =====================================================
+        // VIEWPAGER SETUP
+        // =====================================================
+        private void setupViewPager() {
 
-        MaterialToolbar toolbar = findViewById(R.id.appBarRatingReviews);
-        setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        toolbar.setNavigationOnClickListener(v -> finish());
+            ReviewsPagerAdapter adapter =
+                    new ReviewsPagerAdapter(this, user, allReviews);
 
-        tintToolbarOverflow(toolbar);
+            viewPagerReviews.setAdapter(adapter);
 
-
-        user = getIntent().getParcelableExtra("user_to_view");
-
-
-        if (user == null) {
-            finish(); // prevent crash
-            return;
+            new TabLayoutMediator(tabReviews, viewPagerReviews,
+                    (tab, pos) -> {
+                        if (pos == 0) tab.setText("All");
+                        else if (pos == 1) tab.setText("User");
+                        else tab.setText("Seller");
+                    }
+            ).attach();
         }
 
-        // -------------------------------------------------------
-        // LOAD USER PROFILE SECTION (name, image, last seen, desc)
-        // -------------------------------------------------------
+        // =====================================================
+        // RATING + USER UPDATE
+        // =====================================================
+        private void refreshRatingsAndUser() {
 
-        ImageView imgUserProfile = findViewById(R.id.imgUserProfile);
-        TextView txtUsername = findViewById(R.id.txtUsername);
-        TextView txtLastSeen = findViewById(R.id.txtLastSeen);
-        TextView txtUserDescription = findViewById(R.id.txtUserDescription);
+            int userCount = 0;
+            int sellerCount = 0;
+            double userSum = 0;
+            double sellerSum = 0;
 
+            for (Review r : allReviews) {
 
-        // User name
-        txtUsername.setText(user.getUsername());
-
-        // Profile image
-        Glide.with(this)
-                .load(user.getProfileImageUrl())  // works with android.resource:// URIs
-                .circleCrop()
-                .into(imgUserProfile);
-
-        // Last seen text
-        txtLastSeen.setText(user.getLastSeenString());  // you already have lastSeenMillis in User model
-
-        // Description (bio)
-        txtUserDescription.setText(user.getBio());
-
-
-        // Load reviews
-        allReviews = SampleData.generateReviewsForUser(this, user);
-
-        tabReviews = findViewById(R.id.tabReviews);
-        viewPagerReviews = findViewById(R.id.viewPagerReviews);
-
-        ReviewsPagerAdapter adapter =
-                new ReviewsPagerAdapter(this, user, allReviews);
-
-        viewPagerReviews.setAdapter(adapter);
-
-        new TabLayoutMediator(tabReviews, viewPagerReviews,
-                (tab, pos) -> {
-                    if (pos == 0) tab.setText("All");
-                    else if (pos == 1) tab.setText("User");
-                    else tab.setText("Seller");
+                if ("user".equals(r.getType())) {
+                    userCount++;
+                    userSum += r.getRating();
                 }
-        ).attach();
 
+                if ("seller".equals(r.getType())) {
+                    sellerCount++;
+                    sellerSum += r.getRating();
+                }
+            }
 
+            double userAvg = userCount == 0 ? 0 : userSum / userCount;
+            double sellerAvg = sellerCount == 0 ? 0 : sellerSum / sellerCount;
 
-        btnWriteReview.setOnClickListener(v -> {
-            Intent intent = new Intent(this, RateUserActivity.class);
-            intent.putExtra("user_to_view", user);
-            reviewLauncher.launch(intent);
-        });
+            // ✅ Update user (overall auto-updates)
+            user.setUserRating(userAvg);
+            user.setSellerRating(sellerAvg);
 
-        // Update summary text
-        TextView txtOverall = findViewById(R.id.txtOverallRating);
-        TextView txtUserRating = findViewById(R.id.txtUserRating);
-        TextView txtSellerRating = findViewById(R.id.txtSellerRating);
+            // ✅ Persist
+            SampleData.updateUser(this, user);
 
-        txtOverall.setText(String.format("%.1f", user.getOverallRating()));
-        txtUserRating.setText(String.format("%.1f", user.getUserRating()));
-        txtSellerRating.setText(String.format("%.1f", user.getSellerRating()));
+            // ✅ Update UI from USER model
+            txtUserRating.setText(String.format("%.1f", user.getUserRating()));
+            txtSellerRating.setText(String.format("%.1f", user.getSellerRating()));
+            txtOverall.setText(String.format("%.1f", user.getOverallRating()));
+
+            // Refresh tabs
+            setupViewPager();
+        }
     }
 
-    private void refreshReviewUI() {
 
-        // Recalculate rating averages
-        double totalRating = 0;
-        int userCount = 0;
-        int sellerCount = 0;
-
-        for (Review r : allReviews) {
-            totalRating += r.getRating();
-
-            if (r.getType().equals("user")) userCount++;
-            if (r.getType().equals("seller")) sellerCount++;
-        }
-
-        double overall = totalRating / allReviews.size();
-        double userAvg = userCount == 0 ? 0 : userCount / (double) userCount;
-        double sellerAvg = sellerCount == 0 ? 0 : sellerCount / (double) sellerCount;
-
-        ((TextView) findViewById(R.id.txtOverallRating))
-                .setText(String.format("%.1f", overall));
-
-        ((TextView) findViewById(R.id.txtUserRating))
-                .setText(String.format("%.1f", userAvg));
-
-        ((TextView) findViewById(R.id.txtSellerRating))
-                .setText(String.format("%.1f", sellerAvg));
-
-        // Refresh ViewPager contents
-        viewPagerReviews.setAdapter(new ReviewsPagerAdapter(this, user, allReviews));
-    }
-
-}

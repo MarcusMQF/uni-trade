@@ -5,106 +5,113 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.view.LayoutInflater;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.Spinner;
-import android.widget.Toast;
+import android.view.*;
+import android.widget.*;
+
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class SellFragment extends Fragment {
 
     // Inputs
     private EditText edtItemName, edtUsedDuration, edtPrice, edtLocation, edtDescription;
-    private Spinner spinnerDurationUnit;
+    private AutoCompleteTextView dropdownDurationUnit;
+    private TextInputLayout layoutDurationUnit;
 
-    private boolean fromExternal = false;
+    private boolean imagesModified = false;
+
+    // Mode
+    private boolean isEditMode = false;
+    private Product productToEdit;
+    private String origin = null;
 
     // Category buttons
-    private MaterialButton btnCatStationery, btnCatBook, btnCatPersonalCare,
+    private MaterialButton btnCatStationery, btnCatElectronics, btnCatPersonalCare,
             btnRoomEssentials, btnCatFashion, btnCatTextbook,
             btnCatSports, btnCatHobbies, btnCatFood, btnCatOthers;
 
     // Condition buttons
     private MaterialButton btnCondGood, btnCondFair, btnCondLikeNew,
-            btnCondBrandNew, btnCondNotWorking,
-            btnCondExcellent, btnCondOldButWorking, btnCondRefurbished;
+            btnCondBrandNew, btnCondNotWorking, btnCondExcellent,
+            btnCondOldButWorking, btnCondRefurbished;
 
-    // Category more section
+    // Show More / Less
     private LinearLayout layoutCategoryMoreRow1, layoutCategoryMoreRow2;
-    private Button btnShowMoreCategory, btnShowLessCategory;
-
-    // Condition more section
     private LinearLayout layoutConditionMore;
+    private Button btnShowMoreCategory, btnShowLessCategory;
     private Button btnShowMoreCondition, btnShowLessCondition;
 
-    // Image upload
+    // Images
     private ViewPager2 viewPagerSellImages;
     private LinearLayout layoutImagePlaceholder;
     private TabLayout tabDotsSell;
     private Button btnUploadImages;
-
-    private List<Uri> selectedImages = new ArrayList<>();
+    private final List<String> selectedImages = new ArrayList<>();
     private static final int PICK_IMAGES = 101;
 
-    // Selected Values
+    // QR
+    private LinearLayout layoutQRPlaceholder;
+    private ImageView imgQRPreview;
+    private Button btnUploadQR;
+    private ImageButton btnRemoveQR;
+    private Uri qrPaymentUri = null;
+    private static final int PICK_QR = 102;
+
+    // Selected fields
     private String selectedCategory = null;
     private String selectedCondition = null;
 
-    // Edit mode
-    private boolean isEditMode = false;
-    private Product productToEdit;
-
 
     public SellFragment() {}
-
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Receive arguments
         if (getArguments() != null) {
-            fromExternal = getArguments().getBoolean("fromExternal", false);
             isEditMode = getArguments().getBoolean("editMode", false);
-            productToEdit = getArguments().getParcelable("product_to_edit");
+            origin = getArguments().getString("origin");
+
+            if (isEditMode) {
+                String productId = getArguments().getString("product_id");
+
+                if (productId != null) {
+                    productToEdit = SampleData.getProductById(requireContext(), productId);
+                }
+            }
         }
 
-        // Required to receive the toolbar back button click events
         setHasOptionsMenu(true);
     }
 
 
+
+
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+    public View onCreateView(
+            @NonNull LayoutInflater inflater,
+            @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState) {
+
         return inflater.inflate(R.layout.fragment_sell, container, false);
     }
 
-
     @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+    public void onViewCreated(
+            @NonNull View view,
+            @Nullable Bundle savedInstanceState) {
 
         bindViews(view);
         setupShowMoreLess();
@@ -112,107 +119,49 @@ public class SellFragment extends Fragment {
         setupConditionSelection();
         setupUnitSpinner();
         setupImageUpload();
+        setupQRUpload();
 
-        if (isEditMode && productToEdit != null) {
+        if (isEditMode && productToEdit != null)
             fillEditForm();
-        }
 
         setupPostButton();
     }
 
-
-    // ======================================================
-    // FIXED TOOLBAR LOGIC (BACK BUTTON WORKS NOW)
-    // ======================================================
-
-    @Override
-    public void onResume() {
-        super.onResume();
-
-        super.onResume();
-
-        AppCompatActivity act = (AppCompatActivity) requireActivity();
-
-        if (act.getSupportActionBar() != null) {
-            if (fromExternal) {
-                act.getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            } else {
-                act.getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-            }
-        }
-
-
-    }
-
-
-    @Override
-    public void onStop() {
-        super.onStop();
-
-        // Reset toolbar to avoid stuck back arrow when leaving
-        AppCompatActivity activity = (AppCompatActivity) requireActivity();
-        if (activity.getSupportActionBar() != null) {
-            activity.getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-            activity.getSupportActionBar().show();
-        }
-    }
-
-
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-
-        if (item.getItemId() == android.R.id.home) {
-
-            if (fromExternal) {
-                requireActivity().finish();
-            } else {
-                NavHostFragment.findNavController(this).navigateUp();
-            }
-
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
-
-    // ======================================================
-    // Bind Views
-    // ======================================================
-
+    // BIND VIEWS ------------------------------------------------------------
     private void bindViews(View v) {
-
         edtItemName = v.findViewById(R.id.edtItemName);
         edtUsedDuration = v.findViewById(R.id.edtUsedDuration);
         edtPrice = v.findViewById(R.id.edtPrice);
         edtLocation = v.findViewById(R.id.edtLocation);
         edtDescription = v.findViewById(R.id.edtDescription);
-        spinnerDurationUnit = v.findViewById(R.id.spinnerDurationUnit);
 
-        btnCatStationery   = v.findViewById(R.id.btnCatStationery);
-        btnCatBook         = v.findViewById(R.id.btnCatBook);
+        dropdownDurationUnit = v.findViewById(R.id.dropdownDurationUnit);
+        layoutDurationUnit = v.findViewById(R.id.layoutDurationUnit);
+
+        btnCatStationery = v.findViewById(R.id.btnCatStationery);
+        btnCatElectronics = v.findViewById(R.id.btnCatElectronics);
         btnCatPersonalCare = v.findViewById(R.id.btnCatPersonalCare);
-        btnRoomEssentials  = v.findViewById(R.id.btnRoomEssentials);
-        btnCatFashion      = v.findViewById(R.id.btnCatFashion);
-        btnCatTextbook     = v.findViewById(R.id.btnCatTextbook);
-        btnCatSports       = v.findViewById(R.id.btnCatSports);
-        btnCatHobbies      = v.findViewById(R.id.btnCatHobbies);
-        btnCatFood         = v.findViewById(R.id.btnCatFood);
-        btnCatOthers       = v.findViewById(R.id.btnCatOthers);
+        btnRoomEssentials = v.findViewById(R.id.btnRoomEssentials);
+        btnCatFashion = v.findViewById(R.id.btnCatFashion);
+        btnCatTextbook = v.findViewById(R.id.btnCatTextbook);
+        btnCatSports = v.findViewById(R.id.btnCatSports);
+        btnCatHobbies = v.findViewById(R.id.btnCatHobbies);
+        btnCatFood = v.findViewById(R.id.btnCatFood);
+        btnCatOthers = v.findViewById(R.id.btnCatOthers);
 
         layoutCategoryMoreRow1 = v.findViewById(R.id.layoutCategoryMoreRow1);
         layoutCategoryMoreRow2 = v.findViewById(R.id.layoutCategoryMoreRow2);
         btnShowMoreCategory = v.findViewById(R.id.btnShowMoreCategory);
         btnShowLessCategory = v.findViewById(R.id.btnShowLessCategory);
 
-        btnCondGood         = v.findViewById(R.id.btnCondGood);
-        btnCondFair         = v.findViewById(R.id.btnCondFair);
-        btnCondLikeNew      = v.findViewById(R.id.btnCondLikeNew);
-        btnCondBrandNew     = v.findViewById(R.id.btnCondBrandNew);
-        btnCondNotWorking   = v.findViewById(R.id.btnCondNotWorking);
-        btnCondExcellent    = v.findViewById(R.id.btnCondExcellent);
-        btnCondOldButWorking= v.findViewById(R.id.btnCondOldButWorking);
-        btnCondRefurbished  = v.findViewById(R.id.btnCondRefurbished);
+        btnCondGood = v.findViewById(R.id.btnCondGood);
+        btnCondFair = v.findViewById(R.id.btnCondFair);
+        btnCondLikeNew = v.findViewById(R.id.btnCondLikeNew);
+        btnCondBrandNew = v.findViewById(R.id.btnCondBrandNew);
+        btnCondNotWorking = v.findViewById(R.id.btnCondNotWorking);
+        btnCondExcellent = v.findViewById(R.id.btnCondExcellent);
+        btnCondOldButWorking = v.findViewById(R.id.btnCondOldButWorking);
+        btnCondRefurbished = v.findViewById(R.id.btnCondRefurbished);
 
         layoutConditionMore = v.findViewById(R.id.layoutConditionMore);
         btnShowMoreCondition = v.findViewById(R.id.btnShowMoreCondition);
@@ -222,15 +171,15 @@ public class SellFragment extends Fragment {
         layoutImagePlaceholder = v.findViewById(R.id.layoutImagePlaceholder);
         tabDotsSell = v.findViewById(R.id.tabDotsSell);
         btnUploadImages = v.findViewById(R.id.btnUploadImages);
+
+        layoutQRPlaceholder = v.findViewById(R.id.layoutQRPlaceholder);
+        imgQRPreview = v.findViewById(R.id.imgQRPreview);
+        btnUploadQR = v.findViewById(R.id.btnUploadQR);
+        btnRemoveQR = v.findViewById(R.id.btnRemoveQR);
     }
 
-
-    // ======================================================
-    // Category & Condition Section
-    // ======================================================
-
+    // SHOW MORE / LESS ------------------------------------------------------
     private void setupShowMoreLess() {
-
         btnShowMoreCategory.setOnClickListener(v -> {
             layoutCategoryMoreRow1.setVisibility(View.VISIBLE);
             layoutCategoryMoreRow2.setVisibility(View.VISIBLE);
@@ -258,167 +207,222 @@ public class SellFragment extends Fragment {
         });
     }
 
-
-    private void setupCategorySelection() {
-
-        List<MaterialButton> categoryButtons = List.of(
-                btnCatStationery, btnCatBook, btnCatPersonalCare,
-                btnRoomEssentials, btnCatFashion, btnCatTextbook,
-                btnCatSports, btnCatHobbies, btnCatFood, btnCatOthers
+    // SPINNER ---------------------------------------------------------------
+    private void setupUnitSpinner() {
+        String[] units = {"Days", "Months", "Years"};
+        dropdownDurationUnit.setAdapter(
+                new ArrayAdapter<>(requireContext(), R.layout.item_dropdown, units)
         );
-
-        for (MaterialButton b : categoryButtons) {
-            b.setOnClickListener(v -> {
-                for (MaterialButton x : categoryButtons)
-                    x.setChecked(false);
-
-                b.setChecked(true);
-                selectedCategory = b.getText().toString();
-            });
-        }
     }
 
-
-    private void setupConditionSelection() {
-
-        List<MaterialButton> condButtons = List.of(
-                btnCondGood, btnCondFair, btnCondLikeNew,
-                btnCondBrandNew, btnCondNotWorking,
-                btnCondExcellent, btnCondOldButWorking, btnCondRefurbished
-        );
-
-        for (MaterialButton b : condButtons) {
-            b.setOnClickListener(v -> {
-                for (MaterialButton x : condButtons)
-                    x.setChecked(false);
-
-                b.setChecked(true);
-                selectedCondition = b.getText().toString();
-            });
-        }
-    }
-
-
-    // ======================================================
-    // Image Upload
-    // ======================================================
-
+    // IMAGES ---------------------------------------------------------------
     private void setupImageUpload() {
         btnUploadImages.setOnClickListener(v -> {
-            Intent intent = new Intent(Intent.ACTION_PICK,
-                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
 
+            if (selectedImages.size() >= 5) {
+                toast("Maximum 5 Images Allowed");
+                updateImageUploadButtonUI();
+                return;
+            }
+
+            Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("image/*");
             intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+            intent.addFlags(
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION |
+                            Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+            );
             startActivityForResult(intent, PICK_IMAGES);
+
+        });
+
+        updateImageUploadButtonUI();
+    }
+
+    private void updateImageUploadButtonUI() {
+        int count = selectedImages.size();
+
+        if (count == 0) {
+            btnUploadImages.setText("Upload Images");
+            btnUploadImages.setEnabled(true);
+        } else if (count < 5) {
+            btnUploadImages.setText("Add Image");
+            btnUploadImages.setEnabled(true);
+        } else {
+            btnUploadImages.setText("Maximum 5 Images");
+            btnUploadImages.setEnabled(false);
+        }
+    }
+
+    // QR UPLOAD -------------------------------------------------------------
+    private void setupQRUpload() {
+        btnUploadQR.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            startActivityForResult(intent, PICK_QR);
+        });
+
+        btnRemoveQR.setOnClickListener(v -> {
+            qrPaymentUri = null;
+            imgQRPreview.setImageDrawable(null);
+            layoutQRPlaceholder.setVisibility(View.VISIBLE);
+            imgQRPreview.setVisibility(View.GONE);
+            btnRemoveQR.setVisibility(View.GONE);
         });
     }
 
-
+    // ACTIVITY RESULT -------------------------------------------------------
     @Override
-    public void onActivityResult(int requestCode, int resultCode,
-                                 @Nullable Intent data) {
-
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == PICK_IMAGES &&
-                resultCode == Activity.RESULT_OK &&
-                data != null) {
+        if (resultCode != Activity.RESULT_OK || data == null) return;
 
-            selectedImages.clear();
+        if (requestCode == PICK_IMAGES && resultCode == Activity.RESULT_OK && data != null) {
 
-            // MULTIPLE
+
+            final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION;
+
             if (data.getClipData() != null) {
-                int count = Math.min(data.getClipData().getItemCount(), 5);
-                for (int i = 0; i < count; i++) {
+
+                for (int i = 0; i < data.getClipData().getItemCount(); i++) {
                     Uri uri = data.getClipData().getItemAt(i).getUri();
-                    selectedImages.add(uri);
+
+                    requireContext()
+                            .getContentResolver()
+                            .takePersistableUriPermission(uri, takeFlags);
+
+                    selectedImages.add(uri.toString());
                 }
+
             } else if (data.getData() != null) {
-                selectedImages.add(data.getData());
+
+                Uri uri = data.getData();
+
+                requireContext()
+                        .getContentResolver()
+                        .takePersistableUriPermission(uri, takeFlags);
+
+                selectedImages.add(uri.toString());
             }
 
+
+            imagesModified = true;
             showSelectedImages();
+            updateImageUploadButtonUI();
+        }
+
+        else if (requestCode == PICK_QR) {
+            qrPaymentUri = data.getData();
+            if (qrPaymentUri != null) {
+                imgQRPreview.setVisibility(View.VISIBLE);
+                layoutQRPlaceholder.setVisibility(View.GONE);
+                imgQRPreview.setImageURI(qrPaymentUri);
+                btnRemoveQR.setVisibility(View.VISIBLE);
+            }
         }
     }
 
+    // IMAGE VIEWPAGER -------------------------------------------------------
+    private SellImageSliderAdapter sellImageAdapter;
 
     private void showSelectedImages() {
+
+        List<String> imagesToDisplay = new ArrayList<>();
+
+        if (selectedImages.isEmpty()) {
+            // 🔥 Force ONE placeholder image
+            imagesToDisplay.add(""); // empty string triggers placeholder
+        } else {
+            imagesToDisplay.addAll(selectedImages);
+        }
 
         layoutImagePlaceholder.setVisibility(View.GONE);
         viewPagerSellImages.setVisibility(View.VISIBLE);
 
-        SellImageSliderAdapter adapter =
-                new SellImageSliderAdapter(getContext(), selectedImages);
+        sellImageAdapter =
+                new SellImageSliderAdapter(
+                        requireContext(),
+                        imagesToDisplay,
+                        () -> {
+                            imagesModified = true;
 
-        viewPagerSellImages.setAdapter(adapter);
+                            // 🔥 sync adapter → fragment
+                            selectedImages.clear();
+                            selectedImages.addAll(sellImageAdapter.getImages());
 
-        new TabLayoutMediator(tabDotsSell, viewPagerSellImages,
-                (tab, pos) -> {}).attach();
+                            updateImageUploadButtonUI();
+                        }
+                );
+
+        viewPagerSellImages.setAdapter(sellImageAdapter);
+
+        new TabLayoutMediator(tabDotsSell, viewPagerSellImages, (t, p) -> {})
+                .attach();
     }
 
 
-    // ======================================================
-    // Spinner
-    // ======================================================
-
-    private void setupUnitSpinner() {
-
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                requireContext(),
-                R.layout.spinner_text_white,
-                new String[]{"Months", "Years", "Days"}
-        );
-
-        adapter.setDropDownViewResource(R.layout.spinner_drop_down_chip);
-        spinnerDurationUnit.setAdapter(adapter);
-    }
-
-
-    // ======================================================
-    // Edit Mode
-    // ======================================================
-
+    // FILL EDIT FORM --------------------------------------------------------
     private void fillEditForm() {
+        if (productToEdit == null) return;
 
         edtItemName.setText(productToEdit.getName());
         edtPrice.setText(String.valueOf(productToEdit.getPrice()));
         edtLocation.setText(productToEdit.getLocation());
         edtDescription.setText(productToEdit.getDescription());
 
-        int usedDays = productToEdit.getUsedDaysTotal();
-        if (usedDays > 0) {
-            edtUsedDuration.setText(String.valueOf(usedDays));
-
-            int pos = ((ArrayAdapter<String>) spinnerDurationUnit.getAdapter())
-                    .getPosition("Days");
-            if (pos >= 0) spinnerDurationUnit.setSelection(pos);
-        }
+        edtUsedDuration.setText(String.valueOf(productToEdit.getUsedDaysTotal()));
+        dropdownDurationUnit.setText("Days", false);
 
         selectCategoryButton(productToEdit.getCategory());
         selectConditionButton(productToEdit.getCondition());
 
-        if (productToEdit.getImageUrls() != null && !productToEdit.getImageUrls().isEmpty()) {
-            selectedImages.clear();
-            for (String img : productToEdit.getImageUrls()) {
-                selectedImages.add(Uri.parse(img));
-            }
-            showSelectedImages();
+        selectedImages.clear();
+        if (productToEdit.getImageUrls() != null) {
+            selectedImages.addAll(productToEdit.getImageUrls()); // ✅ keep String
+        }
+
+        showSelectedImages();
+        updateImageUploadButtonUI();
+
+        if (productToEdit.getQrPaymentUrl() != null) {
+            qrPaymentUri = Uri.parse(productToEdit.getQrPaymentUrl());
+            imgQRPreview.setImageURI(qrPaymentUri);
+            imgQRPreview.setVisibility(View.VISIBLE);
+            layoutQRPlaceholder.setVisibility(View.GONE);
+            btnRemoveQR.setVisibility(View.VISIBLE);
         }
 
         Button btn = requireView().findViewById(R.id.btnPostItem);
-        btn.setText("Edit Item");
+        btn.setText("Save Changes");
     }
 
 
-    private void selectCategoryButton(String category) {
-
-        List<MaterialButton> catBtns = List.of(
-                btnCatStationery, btnCatBook, btnCatPersonalCare, btnRoomEssentials,
-                btnCatFashion, btnCatTextbook, btnCatSports, btnCatHobbies,
-                btnCatFood, btnCatOthers
+    // CATEGORY SELECTION ----------------------------------------------------
+    private void setupCategorySelection() {
+        List<MaterialButton> list = Arrays.asList(
+                btnCatStationery, btnCatElectronics, btnCatPersonalCare,
+                btnRoomEssentials, btnCatFashion, btnCatTextbook,
+                btnCatSports, btnCatHobbies, btnCatFood, btnCatOthers
         );
 
-        for (MaterialButton b : catBtns) {
+        for (MaterialButton b : list) {
+            b.setOnClickListener(v -> {
+                for (MaterialButton x : list) x.setChecked(false);
+                b.setChecked(true);
+                selectedCategory = b.getText().toString();
+            });
+        }
+    }
+
+    private void selectCategoryButton(String category) {
+        List<MaterialButton> list = Arrays.asList(
+                btnCatStationery, btnCatElectronics, btnCatPersonalCare,
+                btnRoomEssentials, btnCatFashion, btnCatTextbook,
+                btnCatSports, btnCatHobbies, btnCatFood, btnCatOthers
+        );
+
+        for (MaterialButton b : list) {
             if (b.getText().toString().equals(category)) {
                 b.setChecked(true);
                 selectedCategory = category;
@@ -428,167 +432,207 @@ public class SellFragment extends Fragment {
         }
     }
 
-
-    private void selectConditionButton(String cond) {
-
-        List<MaterialButton> condBtns = List.of(
-                btnCondGood, btnCondFair, btnCondLikeNew, btnCondBrandNew,
-                btnCondNotWorking, btnCondExcellent, btnCondOldButWorking, btnCondRefurbished
+    // CONDITION SELECTION ---------------------------------------------------
+    private void setupConditionSelection() {
+        List<MaterialButton> list = Arrays.asList(
+                btnCondGood, btnCondFair, btnCondLikeNew,
+                btnCondBrandNew, btnCondNotWorking,
+                btnCondExcellent, btnCondOldButWorking,
+                btnCondRefurbished
         );
 
-        for (MaterialButton b : condBtns) {
-            if (b.getText().toString().equals(cond)) {
+        for (MaterialButton b : list) {
+            b.setOnClickListener(v -> {
+                for (MaterialButton x : list) x.setChecked(false);
                 b.setChecked(true);
-                selectedCondition = cond;
+                selectedCondition = b.getText().toString();
+            });
+        }
+    }
+
+    private void selectConditionButton(String condition) {
+        List<MaterialButton> list = Arrays.asList(
+                btnCondGood, btnCondFair, btnCondLikeNew,
+                btnCondBrandNew, btnCondNotWorking,
+                btnCondExcellent, btnCondOldButWorking,
+                btnCondRefurbished
+        );
+
+        for (MaterialButton b : list) {
+            if (b.getText().toString().equals(condition)) {
+                b.setChecked(true);
+                selectedCondition = condition;
             } else {
                 b.setChecked(false);
             }
         }
     }
 
-
-    // ======================================================
-    // Posting Logic
-    // ======================================================
-
+    // POST BUTTON -----------------------------------------------------------
     private void setupPostButton() {
         Button btnPost = requireView().findViewById(R.id.btnPostItem);
+
         btnPost.setOnClickListener(v -> {
-            if (isEditMode) {
-                showEditConfirmDialog();
-            } else {
-                submitForm();
-            }
+            if (isEditMode) updateItem();
+            else submitForm();
         });
     }
 
-
+    // CREATE PRODUCT --------------------------------------------------------
     private void submitForm() {
 
-        if (edtItemName.getText().toString().trim().isEmpty()) {
-            toast("Please enter item name");
-            return;
-        }
-
-        if (selectedCategory == null) {
-            toast("Please select a category");
-            return;
-        }
-
-        if (selectedCondition == null) {
-            toast("Please select item condition");
-            return;
-        }
-
-        if (edtPrice.getText().toString().trim().isEmpty()) {
-            toast("Please enter a price");
-            return;
-        }
-
-        if (edtLocation.getText().toString().trim().isEmpty()) {
-            toast("Please enter item location");
-            return;
-        }
-
-        toast("Item posted successfully!");
-    }
-
-
-    private void updateItem() {
+        String id = "p" + UUID.randomUUID().toString().substring(0, 8);
 
         String name = edtItemName.getText().toString().trim();
         String desc = edtDescription.getText().toString().trim();
         String priceStr = edtPrice.getText().toString().trim();
         String location = edtLocation.getText().toString().trim();
-        String usedDurationStr = edtUsedDuration.getText().toString().trim();
+        String usedStr = edtUsedDuration.getText().toString();
 
-        if (name.isEmpty()) {
-            toast("Please enter item name");
-            return;
-        }
-
-        if (selectedCategory == null) {
-            toast("Please select a category");
-            return;
-        }
-
-        if (selectedCondition == null) {
-            toast("Please select item condition");
-            return;
-        }
-
-        if (priceStr.isEmpty()) {
-            toast("Please enter a price");
-            return;
-        }
+        if (name.isEmpty()) { toast("Enter item name"); return; }
+        if (selectedCategory == null) { toast("Select category"); return; }
+        if (selectedCondition == null) { toast("Select condition"); return; }
+        if (priceStr.isEmpty()) { toast("Enter price"); return; }
 
         double price;
         try {
             price = Double.parseDouble(priceStr);
-        } catch (NumberFormatException e) {
+        } catch (Exception e) {
             toast("Invalid price");
             return;
         }
 
-        if (location.isEmpty()) {
-            toast("Please enter item location");
+        if (price > 0 && qrPaymentUri == null) {
+            toast("QR required for paid items");
             return;
         }
 
+        int usedDays = usedStr.isEmpty() ? 0 : Integer.parseInt(usedStr);
+
+        // 🔥 CRITICAL FIX — CONVERT TO STRING PROPERLY
+        List<String> images = new ArrayList<>();
+        for (Object obj : selectedImages) {
+            images.add(obj.toString());
+        }
+
+        String qrUrl = qrPaymentUri != null ? qrPaymentUri.toString() : null;
+
+        User user = UserSession.get();
+        String sellerId = user != null ? user.getId() : "u1";
+
+        Product p = new Product(
+                id, name, price, images, desc,
+                selectedCondition, usedDays,
+                "Available", selectedCategory, location,
+                sellerId, qrUrl
+        );
+
+        // 🔥 REQUIRED FOR CACHE INVALIDATION
+        p.setImageVersion(System.currentTimeMillis());
+
+        SampleData.addProduct(requireContext(), p);
+
+        toast("Item posted!");
+        NavHostFragment.findNavController(this).popBackStack();
+    }
+
+
+    // UPDATE ITEM ----------------------------------------------------------
+    private void updateItem() {
+
+        if (productToEdit == null) {
+            toast("Product not found");
+            return;
+        }
+
+        String name = edtItemName.getText().toString().trim();
+        String desc = edtDescription.getText().toString().trim();
+        String priceStr = edtPrice.getText().toString().trim();
+        String location = edtLocation.getText().toString().trim();
+        String usedStr = edtUsedDuration.getText().toString().trim();
+
+        if (name.isEmpty()) { toast("Enter item name"); return; }
+        if (selectedCategory == null) { toast("Select category"); return; }
+        if (selectedCondition == null) { toast("Select condition"); return; }
+        if (priceStr.isEmpty()) { toast("Enter price"); return; }
+
+        double price;
+        try {
+            price = Double.parseDouble(priceStr);
+        } catch (Exception e) {
+            toast("Invalid price");
+            return;
+        }
+
+        if (price > 0 && qrPaymentUri == null && productToEdit.getQrPaymentUrl() == null) {
+            toast("QR required for paid items");
+            return;
+        }
+
+        int usedDays = usedStr.isEmpty() ? 0 : Integer.parseInt(usedStr);
+
+        // ----------------------------
+        // UPDATE FIELDS
+        // ----------------------------
         productToEdit.setName(name);
         productToEdit.setDescription(desc);
         productToEdit.setPrice(price);
         productToEdit.setLocation(location);
         productToEdit.setCategory(selectedCategory);
         productToEdit.setCondition(selectedCondition);
-
-        // Convert duration to days
-        int usedDays = 0;
-        if (!usedDurationStr.isEmpty()) {
-            try {
-                int value = Integer.parseInt(usedDurationStr);
-                String unit = spinnerDurationUnit.getSelectedItem().toString();
-                switch (unit) {
-                    case "Years":  usedDays = value * 365; break;
-                    case "Months": usedDays = value * 30; break;
-                    case "Days":   usedDays = value;       break;
-                }
-            } catch (Exception e) {
-                toast("Invalid duration");
-                return;
-            }
-        }
         productToEdit.setUsedDaysTotal(usedDays);
 
-        if (!selectedImages.isEmpty()) {
-            List<String> newUrls = new ArrayList<>();
-            for (Uri uri : selectedImages) newUrls.add(uri.toString());
-            productToEdit.setImageUrls(newUrls);
+        // ----------------------------
+        // 🔥 IMAGES — PROPER CONVERSION
+        // ----------------------------
+        if (imagesModified) {
+            List<String> newImages = new ArrayList<>();
+            for (Object obj : selectedImages) {
+                newImages.add(obj.toString()); // ✅ FIX
+            }
+
+            productToEdit.setImageUrls(newImages);
+
+            // 🔥 force refresh everywhere
+            productToEdit.setImageVersion(System.currentTimeMillis());
         }
 
+        // ----------------------------
+        // QR PAYMENT
+        // ----------------------------
+        if (qrPaymentUri != null) {
+            productToEdit.setQrPaymentUrl(qrPaymentUri.toString());
+        }
+
+        // ----------------------------
+        // SAVE
+        // ----------------------------
+        SampleData.updateProduct(productToEdit);
+
         toast("Item updated!");
-
-        Intent result = new Intent();
-        result.putExtra("updated_product", productToEdit);
-
-        requireActivity().setResult(Activity.RESULT_OK, result);
-        requireActivity().finish();
+        navigateBackAfterSave();
     }
+
+    private void navigateBackAfterSave() {
+
+        if (origin != null) {
+            requireActivity().finish();   // came from Activity
+        } else {
+            NavHostFragment.findNavController(this).popBackStack();
+        }
+    }
+
+
+
+
+
+
+
+
+
 
 
     private void toast(String msg) {
         Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
     }
-
-
-    private void showEditConfirmDialog() {
-        ConfirmDialog.show(
-                requireContext(),
-                "Confirm Edit",
-                "Are you sure you want to save changes to this item?",
-                "Edit",
-                () -> updateItem()
-        );
-    }
-
 }

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@color/white"
+    android:fitsSystemWindows="true">
+
+    <!-- ====================== TOP APP BAR ====================== -->
+
+    <!-- ====================== TAB LAYOUT ====================== -->
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/appBarHistory"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:elevation="4dp"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        app:title="History"
+        android:layout_marginTop="16dp" />
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabHistory"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_below="@id/appBarHistory"
+        android:background="#FFF5FA"
+        app:tabIndicatorColor="@color/black"
+        app:tabIndicatorHeight="3dp"
+        app:tabSelectedTextColor="@color/black"
+        app:tabTextColor="#777777" />
+
+    <!-- ====================== RECYCLER VIEW ====================== -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvHistory"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/tabHistory"
+        android:layout_above="@id/bottomEditBar"
+        android:padding="10dp" />
+
+    <!-- ====================== EMPTY STATE ====================== -->
+    <include
+        android:id="@+id/emptyStateView"
+        layout="@layout/layout_empty_list"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/tabHistory"
+        android:layout_above="@id/bottomEditBar" />
+
+    <!-- ====================== EDIT HISTORY BUTTON (FIXED) ====================== -->
+    <LinearLayout
+        android:id="@+id/bottomEditBar"
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:layout_alignParentBottom="true"
+        android:padding="14dp"
+        android:background="@color/white"
+        android:elevation="10dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnEditHistory"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="Edit History"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:backgroundTint="#00996E"
+            app:cornerRadius="15dp" />
+
+    </LinearLayout>
+
+</RelativeLayout>

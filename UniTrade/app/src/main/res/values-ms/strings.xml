@@ -1,0 +1,45 @@
+<resources>
+    <string name="app_name">UniTrade</string>
+
+    <!-- Profile Page -->
+    <string name="back">Kembali</string>
+    <string name="more_options">Lagi pilihan</string>
+    <string name="profile_picture">Gambar profil</string>
+    <string name="edit_profile_picture">Sunting gambar profil</string>
+    <string name="star">Bintang</string>
+    <string name="rate">Kadar</string>
+    <string name="favorites">Kegemaran</string>
+    <string name="history">Sejarah</string>
+    <string name="recently_viewed">Baru Dilihat</string>
+    <string name="view_all">Lihat Semua</string>
+    <string name="profile_title">Profil</string>
+    <string name="profile_username">John Doe</string>
+    <string name="profile_bio">Bio</string>
+    <string name="profile_bio_text">Tawaran Terpilih. Untuk Pelajar, Oleh Pelajar</string>
+    <string name="profile_overall_rating">Penilaian Keseluruhan</string>
+    <string name="profile_rating_value">1.0</string>
+    <string name="profile_rate">Kadar</string>
+    <string name="profile_favourites">Kegemaran</string>
+    <string name="profile_history">Sejarah</string>
+
+    <!-- Bottom Navigation -->
+    <string name="home">Rumah</string>
+    <string name="chat">Sembang</string>
+    <string name="sell">Jual</string>
+    <string name="stats">Statistik</string>
+    <string name="profile">Profil</string>
+    <string name="support_about"><![CDATA[Sokongan & Perihal]]></string>
+    <string name="help_support"><![CDATA[Bantuan & Sokongan]]></string>
+    <string name="buy_sell"><![CDATA[Beli & Jual]]></string>
+    <string name="help__support"><![CDATA[Bantuan & Sokongan]]></string>
+    <string name="cards">Kad</string>
+    <string name="bank_accounts">Akaun bank</string>
+    <string name="digital_wallets">Dompet digital</string>
+    <string name="payment_method_icon">Kaedah pembayaran</string>
+    <string name="set_as_default">Tetapkan sebagai lalai</string>
+    <string name="edit">Sunting</string>
+    <string name="remove">Alih keluar</string>
+    <string name="edit_profile_button">Sunting Profil</string>
+    <string name="sell_item_title">Jual Barang</string>
+    <string name="settings_language">Bahasa</string>
+</resources>

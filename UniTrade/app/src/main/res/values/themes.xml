@@ -1,0 +1,39 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- REAL app theme -->
+    <style name="Theme.UniTrade" parent="Base.Theme.UniTrade">
+        <!-- Global toolbar style -->
+        <item name="toolbarStyle">@style/UniTradeToolbarStyle</item>
+    </style>
+
+    <!-- No Action Bar Variant -->
+    <style name="Theme.UniTrade.NoActionBar" parent="Theme.UniTrade">
+        <item name="android:windowActionBar">false</item>
+        <item name="windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <!-- Toolbar Styling -->
+    <style name="UniTradeToolbarStyle" parent="Widget.Material3.Toolbar">
+        <item name="android:background">#3CB39B</item>
+        <item name="titleTextColor">@android:color/white</item>
+        <item name="navigationIconTint">@android:color/white</item>
+
+        <item name="android:theme">@style/ThemeOverlay.UniTrade.ToolbarMenu</item>
+    </style>
+
+    <!-- Popup menu in toolbar -->
+    <style name="ThemeOverlay.UniTrade.ToolbarMenu" parent="ThemeOverlay.Material3.Light">
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+
+    <!-- Your existing Settings styles (unchanged) -->
+    <style name="SettingHeader" parent="Widget.MaterialComponents.TextView">
+        <item name="android:textColor">#24A887</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- etc... (your other styles remain unchanged) -->
+
+</resources>

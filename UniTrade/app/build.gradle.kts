@@ -45,8 +45,8 @@ dependencies {
     implementation(libs.navigation.ui.ktx)
     implementation("com.google.android.material:material:1.13.0")
     implementation("de.hdodenhof:circleimageview:3.1.0")
-    implementation("androidx.cardview:cardview:1.0.0")
     implementation("com.google.code.gson:gson:2.13.2")
+    implementation("com.google.mlkit:translate:17.0.2")
 
     // Add these lines for Glide
     implementation("com.github.bumptech.glide:glide:4.16.0")

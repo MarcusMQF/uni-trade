@@ -484,9 +484,12 @@
                         android:orientation="vertical">
 
                         <ImageView
+                            android:id = "@+id/imgReviews"
                             android:layout_width="40dp"
                             android:layout_height="40dp"
                             android:src="@drawable/ic_review"
+                            android:clickable="true"
+                            android:focusable="true"
                             app:tint="#009688" />
 
                         <TextView
@@ -512,16 +515,19 @@
                         android:orientation="vertical">
 
                         <ImageView
+                            android:id = "@+id/imgShoppingCart"
                             android:layout_width="40dp"
                             android:layout_height="40dp"
                             android:src="@drawable/ic_cart"
+                            android:clickable="true"
+                            android:focusable="true"
                             app:tint="#009688" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
-                            android:text="Favourites"
+                            android:text="Shopping Cart"
                             android:textColor="#064B44"
                             android:textSize="14sp" />
                     </LinearLayout>
@@ -540,9 +546,12 @@
                         android:orientation="vertical">
 
                         <ImageView
+                            android:id = "@+id/imgHistory"
                             android:layout_width="40dp"
                             android:layout_height="40dp"
                             android:src="@drawable/ic_history"
+                            android:clickable="true"
+                            android:focusable="true"
                             app:tint="#009688" />
 
                         <TextView

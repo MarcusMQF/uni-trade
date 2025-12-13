@@ -48,6 +48,8 @@ public final class MyProfileFragment extends Fragment {
 
     private ImageButton btnEditProfile;
 
+    private ImageView imgReviews, imgShoppingCart, imgHistory;
+
 
     // -------------------------------------------------
     // STATE
@@ -115,6 +117,11 @@ public final class MyProfileFragment extends Fragment {
         tabActive = v.findViewById(R.id.tabActive);
         tabCompleted = v.findViewById(R.id.tabCompleted);
 
+        imgReviews = v.findViewById(R.id.imgReviews);
+        imgShoppingCart = v.findViewById(R.id.imgShoppingCart);
+        imgHistory = v.findViewById(R.id.imgHistory);
+
+
         btnSellItem.setText("List an Item");
         btnSellItem.setOnClickListener(v1 -> openSellFragmentForNew());
 
@@ -123,9 +130,31 @@ public final class MyProfileFragment extends Fragment {
 
 
 
+
+
         btnEditProfile.setOnClickListener(v1 -> openEditProfile());
         btnSellItem.setOnClickListener(v1 -> openSellFragmentForNew());
         btnManageListings.setOnClickListener(v1 -> toggleManageMode());
+
+        imgReviews.setOnClickListener(view -> {
+            String userId = viewedUser.getId();   // current logged-in user
+
+            Intent intent = new Intent(requireContext(), RatingReviewsActivity.class);
+            intent.putExtra("user_id", userId);
+            startActivity(intent);
+        });
+
+        imgShoppingCart.setOnClickListener(view -> {
+            // Open Cart screen
+            Intent intent = new Intent(requireContext(), ShoppingCartActivity.class);
+            startActivity(intent);
+        });
+
+        imgHistory.setOnClickListener(view -> {
+            // Open History screen
+            Intent intent = new Intent(requireContext(), HistoryActivity.class);
+            startActivity(intent);
+        });
 
         tabActive.setOnClickListener(v1 -> showActiveItems());
         tabCompleted.setOnClickListener(v1 -> showCompletedItems());

@@ -74,49 +74,43 @@ public class SettingsActivity extends BaseActivity {
     }
 
     private void setupSettingItems() {
-        findViewById(R.id.setting_edit_profile).setOnClickListener(v -> {
-            User currentUser = SampleData.getUserById(this, "u1");
-            Intent intent = new Intent(this, EditProfileActivity.class);
-            if (currentUser != null) {
-                intent.putExtra("user_to_edit", currentUser);
-            } else {
-                // FIX: Add the two missing arguments at the end of the constructor call
-                User dummyUser = new User("u1", "User", "User Name", "email@example.com", "0123456789", "", 0.0, 0.0, System.currentTimeMillis(), "Bio", 0L, new ArrayList<Address>());
 
-                intent.putExtra("user_to_edit", dummyUser);
-            }
+        findViewById(R.id.setting_edit_profile).setOnClickListener(v -> {
+
+            String userId = UserSession.get().getId();   // ✅ ONLY ID
+
+            Intent intent = new Intent(this, EditProfileActivity.class);
+            intent.putExtra("user_id", userId);
+
             editProfileLauncher.launch(intent);
         });
-        // Account Section
-        findViewById(R.id.setting_login_security).setOnClickListener(v -> {
-            Intent intent = new Intent(this, LoginSecurityActivity.class);
-            startActivity(intent);
-        });
 
-        // Preferences Section
+        // Account
+        findViewById(R.id.setting_login_security)
+                .setOnClickListener(v ->
+                        startActivity(new Intent(this, LoginSecurityActivity.class)));
+
+        // Preferences
         setupSettingItem(R.id.setting_notifications, NotificationSettingsActivity.class);
         setupSettingItem(R.id.setting_privacy, PrivacyPolicyActivity.class);
-        findViewById(R.id.setting_language).setOnClickListener(v -> {
-            Intent intent = new Intent(this, LanguageActivity.class);
-            languageActivityLauncher.launch(intent);
-        });
-        findViewById(R.id.setting_currency).setOnClickListener(v -> {
-            Intent intent = new Intent(this, CurrencyActivity.class);
-            currencyActivityLauncher.launch(intent);
-        });
 
-        // Support & About Section
+        findViewById(R.id.setting_language).setOnClickListener(v ->
+                languageActivityLauncher.launch(new Intent(this, LanguageActivity.class)));
+
+        findViewById(R.id.setting_currency).setOnClickListener(v ->
+                currencyActivityLauncher.launch(new Intent(this, CurrencyActivity.class)));
+
+        // Support
         setupSettingItem(R.id.setting_help_support, HelpSupportActivity.class);
 
-        findViewById(R.id.setting_report_problem).setOnClickListener(v -> {
-            Intent intent = new Intent(this, ReportProblemActivity.class);
-            startActivity(intent);
-        });
+        findViewById(R.id.setting_report_problem)
+                .setOnClickListener(v ->
+                        startActivity(new Intent(this, ReportProblemActivity.class)));
 
-        // Legal Section
+        // Legal
         setupSettingItem(R.id.setting_terms_of_service, TermsOfServiceActivity.class);
 
-        // Logout Button
+        // Logout
         findViewById(R.id.btnLogout).setOnClickListener(v -> showLogoutConfirmation());
     }
 

@@ -28,13 +28,16 @@ public class ChatFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);   // ⭐ REQUIRED for back button to work
+        setHasOptionsMenu(true); // required for back button
     }
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+    public View onCreateView(
+            @NonNull LayoutInflater inflater,
+            @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState
+    ) {
 
         View view = inflater.inflate(R.layout.fragment_chat, container, false);
 
@@ -43,16 +46,29 @@ public class ChatFragment extends Fragment {
         }
 
         recyclerView = view.findViewById(R.id.recyclerView);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
 
+        // ---------------------------------------------------------
+        // Chat data (NEW MODEL)
+        // ---------------------------------------------------------
         chatList = new ArrayList<>();
-        chatList.add(new Chat("Shop Message", "[Rating Card] Please rate...", "20/08",
-                "@drawable/profile_pic_2", false, "u2"));
-        chatList.add(new Chat("Delivery Driver", "Chat has ended. If you need further...",
-                "15/11", "@drawable/profile_pic_2", true, "u3"));
+
+        chatList.add(new Chat(
+                "u2",                                   // userId
+                "[Rating Card] Please rate...",          // last message
+                System.currentTimeMillis() - 5 * 60_000, // 5 min ago
+                false
+        ));
+
+        chatList.add(new Chat(
+                "u3",
+                "Chat has ended. If you need further...",
+                System.currentTimeMillis() - 2 * 60 * 60_000, // 2 hours ago
+                true
+        ));
 
         adapter = new ChatAdapter(chatList, chat -> {
-            Intent intent = new Intent(getActivity(), ConversationActivity.class);
+            Intent intent = new Intent(requireActivity(), ConversationActivity.class);
             intent.putExtra("chat", chat);
             startActivity(intent);
         });
@@ -75,11 +91,8 @@ public class ChatFragment extends Fragment {
             act.getSupportActionBar().show();
             act.getSupportActionBar().setTitle("Chat");
 
-            if (fromExternal) {
-                act.getSupportActionBar().setDisplayHomeAsUpEnabled(true);   // Show back button
-            } else {
-                act.getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-            }
+            act.getSupportActionBar()
+                    .setDisplayHomeAsUpEnabled(fromExternal);
         }
     }
 
@@ -87,26 +100,20 @@ public class ChatFragment extends Fragment {
     public void onStop() {
         super.onStop();
 
-        // Reset toolbar for next fragment
         AppCompatActivity act = (AppCompatActivity) requireActivity();
         if (act.getSupportActionBar() != null) {
             act.getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-            act.getSupportActionBar().show();
         }
     }
 
     // ---------------------------------------------------------
-    // Handle Back Press (Action Bar Button)
+    // Handle Back Press (Action Bar)
     // ---------------------------------------------------------
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
-        if (item.getItemId() == android.R.id.home) {
-
-            if (fromExternal) {
-                requireActivity().finish();   // ⭐ Go back to CheckoutActivity
-            }
-
+        if (item.getItemId() == android.R.id.home && fromExternal) {
+            requireActivity().finish();
             return true;
         }
 

@@ -11,6 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.signature.ObjectKey;
 
 import java.util.List;
 
@@ -41,6 +42,7 @@ public class CheckoutItemAdapter extends RecyclerView.Adapter<CheckoutItemAdapte
 
         Glide.with(ctx)
                 .load(p.getImageUrls().get(0))
+                .signature(new ObjectKey(p.getImageVersion()))
                 .into(h.imgItem);
 
         h.txtItemName.setText(p.getName());

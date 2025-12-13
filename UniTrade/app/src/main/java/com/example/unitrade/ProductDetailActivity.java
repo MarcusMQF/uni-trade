@@ -264,13 +264,12 @@ public class ProductDetailActivity extends BaseActivity {
             if (seller == null) return;
 
             Chat chat = new Chat(
-                    seller.getUsername(),
-                    "Start conversation",
-                    "Now",
-                    seller.getProfileImageUrl(),
-                    false,
-                    seller.getId()
+                    seller.getId(),                 // userId
+                    "Start conversation",           // last message
+                    System.currentTimeMillis(),     // timestamp (long)
+                    false                            // bookmarked
             );
+
 
             Intent i = new Intent(this, ConversationActivity.class);
             i.putExtra("chat", chat);

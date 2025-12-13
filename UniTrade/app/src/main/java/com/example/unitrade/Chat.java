@@ -4,29 +4,26 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 public class Chat implements Parcelable {
-    private String name;
-    private String lastMessage;
-    private String timestamp;
-    private String avatarUrl;
-    private boolean isBookmarked;
-    private String userId;
 
-    public Chat(String name, String lastMessage, String timestamp, String avatarUrl, boolean isBookmarked, String userId) {
-        this.name = name;
-        this.lastMessage = lastMessage;
-        this.timestamp = timestamp;
-        this.avatarUrl = avatarUrl;
-        this.isBookmarked = isBookmarked;
+    private String userId;          // Seller / receiver ID
+    private String lastMessage;
+    private long lastMessageTime;   // Timestamp in millis
+    private boolean isBookmarked;
+
+    // ---------- Constructor ----------
+    public Chat(String userId, String lastMessage, long lastMessageTime, boolean isBookmarked) {
         this.userId = userId;
+        this.lastMessage = lastMessage;
+        this.lastMessageTime = lastMessageTime;
+        this.isBookmarked = isBookmarked;
     }
 
+    // ---------- Parcelable ----------
     protected Chat(Parcel in) {
-        name = in.readString();
-        lastMessage = in.readString();
-        timestamp = in.readString();
-        avatarUrl = in.readString();
-        isBookmarked = in.readByte() != 0;
         userId = in.readString();
+        lastMessage = in.readString();
+        lastMessageTime = in.readLong();
+        isBookmarked = in.readByte() != 0;
     }
 
     public static final Creator<Chat> CREATOR = new Creator<Chat>() {
@@ -41,46 +38,44 @@ public class Chat implements Parcelable {
         }
     };
 
-    public String getName() {
-        return name;
+    // ---------- Getters ----------
+    public String getUserId() {
+        return userId;
     }
 
     public String getLastMessage() {
         return lastMessage;
     }
 
-    public String getTimestamp() {
-        return timestamp;
-    }
-
-    public String getAvatarUrl() {
-        return avatarUrl;
+    public long getLastMessageTime() {
+        return lastMessageTime;
     }
 
     public boolean isBookmarked() {
         return isBookmarked;
     }
 
+    // ---------- Setters ----------
+    public void setLastMessage(String lastMessage) {
+        this.lastMessage = lastMessage;
+        this.lastMessageTime = System.currentTimeMillis();
+    }
+
     public void setBookmarked(boolean bookmarked) {
         isBookmarked = bookmarked;
     }
-    
-    public String getUserId() {
-        return userId;
+
+    // ---------- Parcelable ----------
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(userId);
+        dest.writeString(lastMessage);
+        dest.writeLong(lastMessageTime);
+        dest.writeByte((byte) (isBookmarked ? 1 : 0));
     }
 
     @Override
     public int describeContents() {
         return 0;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(name);
-        dest.writeString(lastMessage);
-        dest.writeString(timestamp);
-        dest.writeString(avatarUrl);
-        dest.writeByte((byte) (isBookmarked ? 1 : 0));
-        dest.writeString(userId);
     }
 }

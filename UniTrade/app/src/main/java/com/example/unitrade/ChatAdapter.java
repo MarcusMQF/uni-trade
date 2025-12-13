@@ -1,5 +1,6 @@
 package com.example.unitrade;
 
+import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,6 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.signature.ObjectKey;
 
 import java.util.List;
 
@@ -32,14 +34,14 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     @NonNull
     @Override
     public ChatViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_chat, parent, false);
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_chat, parent, false);
         return new ChatViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ChatViewHolder holder, int position) {
-        Chat chat = chatList.get(position);
-        holder.bind(chat, listener);
+        holder.bind(chatList.get(position), listener);
     }
 
     @Override
@@ -48,6 +50,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     }
 
     static class ChatViewHolder extends RecyclerView.ViewHolder {
+
         private ImageView avatarImageView;
         private TextView nameTextView;
         private TextView lastMessageTextView;
@@ -64,32 +67,57 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         }
 
         public void bind(final Chat chat, final OnItemClickListener listener) {
-            nameTextView.setText(chat.getName());
+
+            // 🔹 Resolve user dynamically (auto-update avatar & name)
+            User user = SampleData.getUserById(itemView.getContext(), chat.getUserId());
+
+            if (user != null) {
+                nameTextView.setText(user.getUsername());
+
+                Glide.with(itemView.getContext())
+                        .load(user.getProfileImageUrl())
+                        . signature(new ObjectKey(user.getProfileImageVersion()))
+                        .placeholder(R.drawable.profile_pic_2)
+                        .into(avatarImageView);
+            } else {
+                nameTextView.setText("Unknown User");
+                avatarImageView.setImageResource(R.drawable.profile_pic_2);
+            }
+
+            // 🔹 Last message
             lastMessageTextView.setText(chat.getLastMessage());
-            timestampTextView.setText(chat.getTimestamp());
-            Glide.with(itemView.getContext())
-                .load(chat.getAvatarUrl())
-                .placeholder(R.drawable.profile_pic_2)
-                .into(avatarImageView);
+
+            // 🔹 Timestamp (from long → readable text)
+            timestampTextView.setText(
+                    DateUtils.getRelativeTimeSpanString(
+                            chat.getLastMessageTime(),
+                            System.currentTimeMillis(),
+                            DateUtils.MINUTE_IN_MILLIS
+                    )
+            );
+
+            // 🔹 Click to open chat
             itemView.setOnClickListener(v -> listener.onItemClick(chat));
 
-            // Set the initial bookmark state
+            // 🔹 Bookmark
             updateBookmarkIcon(chat.isBookmarked());
 
             saveButton.setOnClickListener(v -> {
                 chat.setBookmarked(!chat.isBookmarked());
                 updateBookmarkIcon(chat.isBookmarked());
-                String message = chat.isBookmarked() ? "Chat bookmarked!" : "Chat un-bookmarked!";
-                Toast.makeText(itemView.getContext(), message, Toast.LENGTH_SHORT).show();
+
+                Toast.makeText(
+                        itemView.getContext(),
+                        chat.isBookmarked() ? "Chat bookmarked!" : "Chat un-bookmarked!",
+                        Toast.LENGTH_SHORT
+                ).show();
             });
         }
 
         private void updateBookmarkIcon(boolean isBookmarked) {
-            if (isBookmarked) {
-                saveButton.setImageResource(R.drawable.ic_bookmark);
-            } else {
-                saveButton.setImageResource(R.drawable.ic_bookmark_border);
-            }
+            saveButton.setImageResource(
+                    isBookmarked ? R.drawable.ic_bookmark : R.drawable.ic_bookmark_border
+            );
         }
     }
 }

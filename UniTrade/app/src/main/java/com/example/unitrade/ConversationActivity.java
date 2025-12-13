@@ -36,6 +36,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.signature.ObjectKey;
 
 import java.io.File;
 import java.io.IOException;
@@ -137,38 +138,52 @@ public class ConversationActivity extends AppCompatActivity {
     }
 
     private void setupToolbar(Chat chat, User user) {
+
         ImageView backButton = findViewById(R.id.backButton);
         backButton.setOnClickListener(v -> onBackPressed());
 
         ImageView callButton = findViewById(R.id.call_button);
         callButton.setOnClickListener(v -> {
             if (userPhoneNumber != null && !userPhoneNumber.isEmpty()) {
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
+                        == PackageManager.PERMISSION_GRANTED) {
                     makePhoneCall(userPhoneNumber);
                 } else {
-                    ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CALL_PHONE}, REQUEST_CALL_PERMISSION);
+                    ActivityCompat.requestPermissions(
+                            this,
+                            new String[]{Manifest.permission.CALL_PHONE},
+                            REQUEST_CALL_PERMISSION
+                    );
                 }
             } else {
                 showToast("Phone number not available.");
             }
         });
 
+        // ✅ Use USER for title
         TextView toolbarTitle = findViewById(R.id.toolbar_title);
-        toolbarTitle.setText(chat.getName());
+        toolbarTitle.setText(user != null ? user.getUsername() : "Chat");
 
+        // ✅ Use USER for avatar
         CircleImageView profileImage = findViewById(R.id.profile_image);
-        Glide.with(this).load(chat.getAvatarUrl()).placeholder(R.drawable.profile_pic_2).into(profileImage);
 
+        if (user != null) {
+            Glide.with(this)
+                    .load(user.getProfileImageUrl())
+                    .signature(new ObjectKey(user.getProfileImageVersion()))
+                    .placeholder(R.drawable.profile_pic_2)
+                    .into(profileImage);
+        } else {
+            profileImage.setImageResource(R.drawable.profile_pic_2);
+        }
+
+        // ✅ Profile click
         profileImage.setOnClickListener(v -> {
-            User userToView = (user != null) ? user : new User(
-                    chat.getUserId() != null ? chat.getUserId() : "unknown",
-                    chat.getName(),
-                    chat.getAvatarUrl(),
-                    0.0, 0.0, System.currentTimeMillis(), "User profile");
-
-            Intent intent = new Intent(this, UserProfileActivity.class);
-            intent.putExtra("user_to_view", userToView);
-            startActivity(intent);
+            if (user != null) {
+                Intent intent = new Intent(this, UserProfileActivity.class);
+                intent.putExtra("user_to_view", user);
+                startActivity(intent);
+            }
         });
     }
 

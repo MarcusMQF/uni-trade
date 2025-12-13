@@ -26,6 +26,39 @@
             android:orientation="vertical"
             android:padding="16dp">
 
+            <!-- Time Range Selector -->
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/toggleTimeRange"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="8dp"
+                app:singleSelection="true"
+                app:checkedButton="@id/btnDay">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDay"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:text="Day"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnMonth"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:text="Month"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnYear"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:text="Year"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
             <!-- Date Selector -->
             <LinearLayout
                 android:id="@+id/dateSelector"
@@ -34,6 +67,7 @@
                 android:layout_gravity="center_horizontal"
                 android:background="@drawable/date_selector_background"
                 android:orientation="horizontal"
+                android:layout_marginTop="10dp"
                 android:padding="12dp">
 
                 <TextView

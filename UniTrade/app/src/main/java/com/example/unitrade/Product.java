@@ -37,6 +37,10 @@ public class Product implements Parcelable {
 
     private long transactionDate;
 
+    public static final String STATUS_BOUGHT = "BOUGHT";
+    public static final String STATUS_SOLD = "SOLD";
+    public static final String STATUS_DONATED = "DONATED";
+
     // ---------------- CONSTRUCTORS ----------------
     public Product() {
         // empty constructor (required)
@@ -216,6 +220,18 @@ public class Product implements Parcelable {
     @Override
     public int hashCode() {
         return id == null ? 0 : id.hashCode();
+    }
+
+    public boolean isBuyTransaction() {
+        return STATUS_BOUGHT.equals(status);
+    }
+
+    public boolean isSellTransaction() {
+        return STATUS_SOLD.equals(status);
+    }
+
+    public boolean isDonation() {
+        return STATUS_DONATED.equals(status);
     }
 
     // ---------------- UTIL ----------------

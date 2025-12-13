@@ -187,23 +187,27 @@ public class SampleData {
                 desc, "Good", 500, "Available", "Hobbies",
                 "KK12 Block D", sellerA.getId(), qrUrl));
 
-        cachedProducts.add(new Product("p2", "Mechanical Keyboard", 89.00,
+        Product p2 = new Product("p2", "Mechanical Keyboard", 89.00,
                 List.of(
                         "android.resource://" + PKG + "/" + R.drawable.mechanical_keyboard_pic_1,
                         "android.resource://" + PKG + "/" + R.drawable.mechanical_keyboard_pic_2,
                         "android.resource://" + PKG + "/" + R.drawable.mechanical_keyboard_pic_3
                 ),
                 desc, "Like New", 0, "Sold", "Electronics",
-                "KK3 Block B", sellerA.getId(), qrUrl));
+                "KK3 Block B", sellerA.getId(), qrUrl);
+        p2.setTransactionDate(daysAgo(4));
+        cachedProducts.add(p2);
 
-        cachedProducts.add(new Product("p3", "iPhone XR", 599.00,
+        Product p3 =new Product("p3", "iPhone XR", 599.00,
                 List.of(
                         "android.resource://" + PKG + "/" + R.drawable.iphonexr_pic_1,
                         "android.resource://" + PKG + "/" + R.drawable.iphonexr_pic_2,
                         "android.resource://" + PKG + "/" + R.drawable.iphonexr_pic_3
                 ),
                 desc, "Fair", 27, "Sold", "Electronics",
-                "UM Central Library", sellerA.getId(), qrUrl));
+                "UM Central Library", sellerA.getId(), qrUrl);
+        p3.setTransactionDate(daysAgo(5));
+        cachedProducts.add(p3);
 
         cachedProducts.add(new Product("p4", "UM Stationery Set", 15.00,
                 List.of(
@@ -238,7 +242,7 @@ public class SampleData {
                         "android.resource://" + PKG + "/" + R.drawable.basketball_pic_2,
                         "android.resource://" + PKG + "/" + R.drawable.basketball_pic_3
                 ),
-                desc, "Good", 1, "Sold", "Sports",
+                desc, "Good", 1, "Available", "Sports",
                 "KK10 Sports Court", sellerB.getId(), qrUrl));
 
         cachedProducts.add(new Product("p8", "WIA2001 Textbook", 30.00,
@@ -489,6 +493,11 @@ public class SampleData {
             }
         }
         return list;
+    }
+
+    private static long daysAgo(int days) {
+        return System.currentTimeMillis()
+                - (long) days * 24 * 60 * 60 * 1000;
     }
 
 

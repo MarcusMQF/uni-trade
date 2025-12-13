@@ -1,25 +1,43 @@
 package com.example.unitrade;
 
 public class Transaction {
-    private String name;
-    private String date;
-    private double amount;
-    private boolean isBuy;
-    private String imageUrl; // NEW
 
-    public Transaction(String name, String date, double amount, boolean isBuy, String imageUrl) {
+    private final String name;
+    private final String date;          // display text (e.g. "Dec 13, 2025")
+    private final double amount;
+    private final boolean isBuy;
+    private final String imageUrl;
+
+    // 🔑 time of transaction (sorting, grouping)
+    private final long timestamp;
+
+    // 🔑 image cache signature (from Product)
+    private final long imageVersion;
+
+    // =====================
+    // SINGLE SOURCE OF TRUTH
+    // =====================
+    public Transaction(
+            String name,
+            String date,
+            double amount,
+            boolean isBuy,
+            String imageUrl,
+            long timestamp,
+            long imageVersion
+    ) {
         this.name = name;
         this.date = date;
         this.amount = amount;
         this.isBuy = isBuy;
         this.imageUrl = imageUrl;
+        this.timestamp = timestamp;
+        this.imageVersion = imageVersion;
     }
 
-    // Constructor for backward compatibility if needed, but I will update usage
-    public Transaction(String name, String date, double amount, boolean isBuy) {
-        this(name, date, amount, isBuy, null);
-    }
-
+    // =====================
+    // GETTERS
+    // =====================
     public String getName() {
         return name;
     }
@@ -38,5 +56,13 @@ public class Transaction {
 
     public String getImageUrl() {
         return imageUrl;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public long getImageVersion() {
+        return imageVersion;
     }
 }

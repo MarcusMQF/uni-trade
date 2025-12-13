@@ -28,8 +28,11 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     private final Context context;
     private final List<Product> list;
+
+    private boolean isPurchasedMode;   // 🔥 KEY FIX
     private boolean isEditMode = false;
 
+    // ------------------------------------------------------------
     public interface OnHistoryActionListener {
         void onDelete(Product p);
         void onEdit(Product p);
@@ -41,9 +44,21 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         listener = l;
     }
 
-    public HistoryAdapter(Context ctx, List<Product> list, boolean isPurchasedMode) {
-        this.context = ctx;
+    // ------------------------------------------------------------
+    public HistoryAdapter(
+            Context context,
+            List<Product> list,
+            boolean isPurchasedMode
+    ) {
+        this.context = context;
         this.list = list;
+        this.isPurchasedMode = isPurchasedMode;
+    }
+
+    // ------------------------------------------------------------
+    public void setPurchasedMode(boolean mode) {
+        this.isPurchasedMode = mode;
+        notifyDataSetChanged();
     }
 
     public void setEditMode(boolean mode) {
@@ -51,14 +66,11 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         notifyDataSetChanged();
     }
 
+    // ------------------------------------------------------------
     @Override
     public int getItemViewType(int position) {
-        Product p = list.get(position);
-        if ("Sold".equalsIgnoreCase(p.getStatus())) {
-            return VIEW_SOLD;
-        } else {
-            return VIEW_PURCHASED;
-        }
+        // 🔥 VIEW TYPE IS DECIDED BY TAB, NOT STATUS
+        return isPurchasedMode ? VIEW_PURCHASED : VIEW_SOLD;
     }
 
     @Override
@@ -66,171 +78,115 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return list.size();
     }
 
+    // ------------------------------------------------------------
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(
-            @NonNull ViewGroup parent, int viewType) {
+            @NonNull ViewGroup parent,
+            int viewType
+    ) {
 
         LayoutInflater inflater = LayoutInflater.from(context);
 
         if (viewType == VIEW_PURCHASED) {
-            View view = inflater.inflate(R.layout.item_purchased_row, parent, false);
-            return new PurchasedHolder(view);
-
+            return new PurchasedHolder(
+                    inflater.inflate(R.layout.item_purchased_row, parent, false)
+            );
         } else {
-            View view = inflater.inflate(R.layout.item_sold_row, parent, false);
-            return new SoldHolder(view);
+            return new SoldHolder(
+                    inflater.inflate(R.layout.item_sold_row, parent, false)
+            );
         }
     }
 
+    // ------------------------------------------------------------
     @Override
     public void onBindViewHolder(
-            @NonNull RecyclerView.ViewHolder holder, int position) {
+            @NonNull RecyclerView.ViewHolder holder,
+            int position
+    ) {
 
         Product p = list.get(position);
 
-        // Bind UI
         if (holder instanceof PurchasedHolder) {
             bindPurchased((PurchasedHolder) holder, p);
         } else {
             bindSold((SoldHolder) holder, p);
         }
 
-        // Handle click only when NOT in edit mode
+        // Disable click in edit mode
         if (!isEditMode) {
             holder.itemView.setOnClickListener(v -> {
-                Intent intent = new Intent(context, ProductDetailActivity.class);
-                intent.putExtra("product_id", p.getId());
-                context.startActivity(intent);
+                Intent i = new Intent(context, ProductDetailActivity.class);
+                i.putExtra("product_id", p.getId());
+                context.startActivity(i);
             });
         } else {
-            // In edit mode → disable normal click
             holder.itemView.setOnClickListener(null);
         }
     }
 
     // ============================================================
-    //                      PURCHASED BINDING
+    // PURCHASED (EXPENSE)
     // ============================================================
-
     private void bindPurchased(PurchasedHolder h, Product p) {
 
-        // Load item image
-        if (p.getImageUrls() != null && !p.getImageUrls().isEmpty()) {
+        // Item image
+        if (!p.getImageUrls().isEmpty()) {
             Glide.with(context)
                     .load(p.getImageUrls().get(0))
-                    .signature(new com.bumptech.glide.signature.ObjectKey(
-                            p.getId() + "_" + p.getImageUrls().hashCode()
-                    ))
-                    .placeholder(R.drawable.bg_rounded_border)
-                    .error(R.drawable.bg_rounded_border)
+                    .signature(new ObjectKey(p.getImageVersion()))
                     .into(h.imgItem);
         }
 
-        // FIX: Retrieve seller by sellerId
+        // Seller
         User seller = SampleData.getUserById(context, p.getSellerId());
-
         if (seller != null) {
             Glide.with(context)
                     .load(seller.getProfileImageUrl())
-                    .signature(new com.bumptech.glide.signature.ObjectKey(
-                            seller.getId() + "_" + seller.getProfileImageUrl().hashCode()
-                    ))
+                    .signature(new ObjectKey(seller.getProfileImageVersion()))
                     .circleCrop()
                     .into(h.imgSeller);
 
-        } else {
-            h.txtSeller.setText("Unknown");
+            h.txtSeller.setText(seller.getUsername());
         }
 
         h.txtName.setText(p.getName());
-        h.txtPrice.setText(String.format("-RM%.2f", p.getPrice()));
-        h.txtPrice.setTextColor(ContextCompat.getColor(context, android.R.color.holo_red_dark));
+        h.txtPrice.setText("-" + AppSettings.formatPrice(context, p.getPrice()));
+        h.txtPrice.setTextColor(
+                ContextCompat.getColor(context, R.color.red)
+        );
 
-        long transactionDate = p.getTransactionDate();
-        if (transactionDate > 0) {
-            SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy", Locale.getDefault());
-            h.txtDate.setText(sdf.format(new Date(transactionDate)));
-        } else {
-            h.txtDate.setText(""); // Set empty if date is invalid
-        }
+        setDate(h.txtDate, p.getTransactionDate());
 
-        // Delete button (only purchased tab)
         h.btnDelete.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
-
         h.btnDelete.setOnClickListener(v -> {
             if (listener != null) listener.onDelete(p);
         });
     }
 
-    static class PurchasedHolder extends RecyclerView.ViewHolder {
-        ImageView imgItem, imgSeller;
-        Button btnDelete;
-        TextView txtName, txtPrice, txtSeller, txtDate;
-
-        public PurchasedHolder(@NonNull View v) {
-            super(v);
-            imgItem = v.findViewById(R.id.imgItem);
-            imgSeller = v.findViewById(R.id.imgSeller);
-            txtName = v.findViewById(R.id.txtName);
-            txtSeller = v.findViewById(R.id.txtSeller);
-            txtPrice = v.findViewById(R.id.txtPrice);
-            txtDate = v.findViewById(R.id.txtDate);
-            btnDelete = v.findViewById(R.id.btnConfirm);
-        }
-    }
-
     // ============================================================
-    //                      SOLD BINDING
+    // SOLD (INCOME)
     // ============================================================
-
     private void bindSold(SoldHolder h, Product p) {
 
-        // Item image
-        if (p.getImageUrls() != null && !p.getImageUrls().isEmpty()) {
+        if (!p.getImageUrls().isEmpty()) {
             Glide.with(context)
                     .load(p.getImageUrls().get(0))
-                    .signature(new ObjectKey(p.getImageVersion())) // 🔥
+                    .signature(new ObjectKey(p.getImageVersion()))
                     .into(h.imgItem);
-
         }
 
         h.txtName.setText(p.getName());
-        h.txtPrice.setText(String.format("+RM%.2f", p.getPrice()));
-        h.txtPrice.setTextColor(ContextCompat.getColor(context, android.R.color.holo_green_dark));
+        h.txtPrice.setText("+" + AppSettings.formatPrice(context, p.getPrice()));
+        h.txtPrice.setTextColor(
+                ContextCompat.getColor(context, R.color.green)
+        );
 
-        long transactionDate = p.getTransactionDate();
-        if (transactionDate > 0) {
-            SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy", Locale.getDefault());
-            h.txtDate.setText(sdf.format(new Date(transactionDate)));
-        } else {
-            h.txtDate.setText(""); // Set empty if date is invalid
-        }
+        setDate(h.txtDate, p.getTransactionDate());
 
-        // Status badge
-        if (p.getStatus() != null) {
-            h.txtStatus.setText(p.getStatus());
-            switch (p.getStatus()) {
-                case "Available":
-                    h.txtStatus.setBackgroundResource(R.drawable.bg_status_available);
-                    break;
-                case "Sold":
-                    h.txtStatus.setBackgroundResource(R.drawable.bg_status_sold);
-                    break;
-                case "Donated":
-                    h.txtStatus.setBackgroundResource(R.drawable.bg_status_donated);
-                    break;
-                default:
-                    h.txtStatus.setBackgroundResource(R.drawable.bg_status_available);
-                    break;
-            }
-        } else {
-            h.txtStatus.setText("");
-            h.txtStatus.setBackgroundResource(R.drawable.bg_status_available);
-        }
+        h.txtStatus.setText(p.getStatus());
 
-
-        // Edit + Delete buttons
         h.btnDelete.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
         h.btnEdit.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
 
@@ -243,13 +199,41 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         });
     }
 
+    // ============================================================
+    private void setDate(TextView tv, long time) {
+        if (time <= 0) {
+            tv.setText("");
+            return;
+        }
+        SimpleDateFormat sdf =
+                new SimpleDateFormat("EEE, dd MMM yyyy", Locale.getDefault());
+        tv.setText(sdf.format(new Date(time)));
+    }
+
+    // ============================================================
+    static class PurchasedHolder extends RecyclerView.ViewHolder {
+        ImageView imgItem, imgSeller;
+        TextView txtName, txtSeller, txtPrice, txtDate;
+        Button btnDelete;
+
+        PurchasedHolder(View v) {
+            super(v);
+            imgItem = v.findViewById(R.id.imgItem);
+            imgSeller = v.findViewById(R.id.imgSeller);
+            txtName = v.findViewById(R.id.txtName);
+            txtSeller = v.findViewById(R.id.txtSeller);
+            txtPrice = v.findViewById(R.id.txtPrice);
+            txtDate = v.findViewById(R.id.txtDate);
+            btnDelete = v.findViewById(R.id.btnConfirm);
+        }
+    }
+
     static class SoldHolder extends RecyclerView.ViewHolder {
         ImageView imgItem;
-
-        Button btnDelete, btnEdit;
         TextView txtName, txtPrice, txtStatus, txtDate;
+        Button btnDelete, btnEdit;
 
-        public SoldHolder(@NonNull View v) {
+        SoldHolder(View v) {
             super(v);
             imgItem = v.findViewById(R.id.imgItem);
             txtName = v.findViewById(R.id.txtName);
@@ -261,10 +245,10 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
+    // ------------------------------------------------------------
     public void updateList(List<Product> newList) {
-        this.list.clear();
-        this.list.addAll(newList);
+        list.clear();
+        list.addAll(newList);
         notifyDataSetChanged();
     }
-
 }

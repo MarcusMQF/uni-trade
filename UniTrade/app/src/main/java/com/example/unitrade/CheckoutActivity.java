@@ -248,15 +248,15 @@ public class CheckoutActivity extends BaseActivity {
             if (p == null) continue;
 
             p.setBuyerId(currentUserId);
-            p.setStatus(p.getPrice() > 0 ? "Sold" : "Donated");
+            if (p.getPrice() > 0) {
+                p.setStatus(Product.STATUS_SOLD);
+            } else {
+                p.setStatus(Product.STATUS_DONATED);
+            }
 
             // ✅ THIS FIXES YOUR ERROR
             p.setTransactionDate(System.currentTimeMillis());
 
-
-            if (p != null) {
-                PurchaseHistoryManager.add(productId);
-            }
             purchasedIds.add(productId);
         }
 

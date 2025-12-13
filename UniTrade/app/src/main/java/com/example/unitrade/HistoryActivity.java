@@ -89,29 +89,35 @@ public class HistoryActivity extends BaseActivity {
 
         String currentUserId = UserSession.get().getId();
 
-        // Purchased
-        // Purchased (resolve from IDs)
-        purchasedList.addAll(
-                PurchaseHistoryManager.getPurchasedItems(
-                        this,
-                        currentUserId
-                )
-        );
-
-
-        // Sold / Donated
         for (Product p : SampleData.getAllProducts(this)) {
-            if (p.getSellerId().equals(currentUserId)
+
+            // PURCHASED BY ME
+            if (currentUserId.equals(p.getBuyerId())
+                    && p.getTransactionDate() > 0
+                    && p.getPrice() > 0) {
+
+                purchasedList.add(p);
+            }
+
+            // SOLD BY ME
+            if (currentUserId.equals(p.getSellerId())
                     && (p.getStatus().equalsIgnoreCase("Sold")
-                    || p.getStatus().equalsIgnoreCase("Donated"))) {
+                    || p.getStatus().equalsIgnoreCase("Donated"))
+                    && p.getTransactionDate() > 0) {
 
                 soldList.add(p);
             }
         }
 
-        // Sort both lists by date
-        Collections.sort(purchasedList, (p1, p2) -> Long.compare(p2.getListingDate().getTime(), p1.getListingDate().getTime()));
-        Collections.sort(soldList, (p1, p2) -> Long.compare(p2.getListingDate().getTime(), p1.getListingDate().getTime()));
+        Collections.sort(
+                purchasedList,
+                (p1, p2) -> Long.compare(p2.getTransactionDate(), p1.getTransactionDate())
+        );
+
+        Collections.sort(
+                soldList,
+                (p1, p2) -> Long.compare(p2.getTransactionDate(), p1.getTransactionDate())
+        );
     }
 
     // ============================================================
@@ -155,44 +161,48 @@ public class HistoryActivity extends BaseActivity {
         TextView txtEmptySubtitle = emptyState.findViewById(R.id.txtEmptySubtitle);
         MaterialButton btnAction = emptyState.findViewById(R.id.btnShopNow);
 
-        if (isPurchasedMode) {
-            txtEmptyTitle.setText("Nothing purchased yet");
-            txtEmptySubtitle.setText("Start browsing items to buy.");
-            btnAction.setText("Shop Now");
-
-            btnAction.setOnClickListener(v -> {
-                Intent i = new Intent(this, MainActivity.class);
-                i.putExtra("goToHome", true);
-                i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                startActivity(i);
-                finish();
-            });
-
-        } else {
-            txtEmptyTitle.setText("No sold items yet");
-            txtEmptySubtitle.setText("List an item to start selling.");
-            btnAction.setText("List an Item");
-
-            btnAction.setOnClickListener(v -> {
-                Intent i = new Intent(this, MainActivity.class);
-                i.putExtra("openSellFragment", true);
-                i.putExtra("origin", "from_history_new");
-                startActivity(i);
-            });
-        }
-
         if (list.isEmpty()) {
+
             rvHistory.setVisibility(View.GONE);
             emptyState.setVisibility(View.VISIBLE);
+
+            if (isPurchasedMode) {
+                // 🛒 Purchased tab
+                txtEmptyTitle.setText("Nothing purchased yet");
+                txtEmptySubtitle.setText("Start browsing items to buy.");
+                btnAction.setText("Shop Now");
+
+                btnAction.setOnClickListener(v -> {
+                    Intent i = new Intent(this, MainActivity.class);
+                    i.putExtra("goToHome", true);
+                    startActivity(i);
+                    finish();
+                });
+
+            } else {
+                // 💰 Sold tab
+                txtEmptyTitle.setText("No sold items yet");
+                txtEmptySubtitle.setText("List an item to start selling.");
+                btnAction.setText("List an Item");
+
+                btnAction.setOnClickListener(v -> {
+                    Intent i = new Intent(this, MainActivity.class);
+                    i.putExtra("openSellFragment", true);
+                    i.putExtra("origin", "from_history_new");
+                    startActivity(i);
+                });
+            }
+
         } else {
             rvHistory.setVisibility(View.VISIBLE);
             emptyState.setVisibility(View.GONE);
         }
 
-
         adapter.updateList(list);
         adapter.setEditMode(isEditMode);
     }
+
+
 
     // ============================================================
     // EDIT MODE

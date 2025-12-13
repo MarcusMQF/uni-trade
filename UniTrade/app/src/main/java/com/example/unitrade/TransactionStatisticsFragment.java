@@ -20,6 +20,7 @@ import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.data.PieEntry;
+import com.google.android.material.button.MaterialButtonToggleGroup;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -31,6 +32,12 @@ import java.util.Locale;
 
 public class TransactionStatisticsFragment extends Fragment {
 
+    enum TimeMode {
+        DAY,
+        MONTH,
+        YEAR
+    }
+
     private TextView selectedDate;
     private PieChart pieChart;
     private TextView buyItemsText, buyAmountText, sellItemsText, sellAmountText, profitText;
@@ -38,6 +45,8 @@ public class TransactionStatisticsFragment extends Fragment {
     private TransactionAdapter transactionAdapter;
     private List<Transaction> transactionList = new ArrayList<>();
     private Calendar currentSelectedDate = Calendar.getInstance();
+
+    private TimeMode currentMode = TimeMode.DAY;
 
     @Nullable
     @Override
@@ -74,6 +83,33 @@ public class TransactionStatisticsFragment extends Fragment {
         transactionAdapter = new TransactionAdapter(getContext(), transactionList);
         rvHistory.setAdapter(transactionAdapter);
 
+
+        MaterialButtonToggleGroup toggle = view.findViewById(R.id.toggleTimeRange);
+
+        toggle.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+            if (!isChecked) return;
+
+            if (checkedId == R.id.btnDay) {
+                currentMode = TimeMode.DAY;
+                // keep exact day
+            }
+            else if (checkedId == R.id.btnMonth) {
+                currentMode = TimeMode.MONTH;
+
+
+                currentSelectedDate.set(Calendar.DAY_OF_MONTH, 1);
+            }
+            else if (checkedId == R.id.btnYear) {
+                currentMode = TimeMode.YEAR;
+
+
+                currentSelectedDate.set(Calendar.MONTH, Calendar.JANUARY);
+                currentSelectedDate.set(Calendar.DAY_OF_MONTH, 1);
+            }
+
+            updateDataForDate(currentSelectedDate);
+        });
+
         updateDataForDate(currentSelectedDate);
     }
 
@@ -88,17 +124,39 @@ public class TransactionStatisticsFragment extends Fragment {
         int month = currentSelectedDate.get(Calendar.MONTH);
         int day = currentSelectedDate.get(Calendar.DAY_OF_MONTH);
 
-        DatePickerDialog datePickerDialog = new DatePickerDialog(requireContext(),
-                (datePicker, year1, monthOfYear, dayOfMonth) -> {
-                    currentSelectedDate.set(year1, monthOfYear, dayOfMonth);
+        DatePickerDialog dialog = new DatePickerDialog(
+                requireContext(),
+                (datePicker, y, m, d) -> {
+
+                    if (currentMode == TimeMode.DAY) {
+                        currentSelectedDate.set(y, m, d);
+                    } else if (currentMode == TimeMode.MONTH) {
+                        currentSelectedDate.set(y, m, 1); // ignore day
+                    } else {
+                        currentSelectedDate.set(y, Calendar.JANUARY, 1); // year only
+                    }
+
                     updateDataForDate(currentSelectedDate);
-                }, year, month, day);
-        datePickerDialog.getDatePicker().setMaxDate(System.currentTimeMillis());
-        datePickerDialog.show();
+                },
+                year, month, day
+        );
+
+        dialog.getDatePicker().setMaxDate(System.currentTimeMillis());
+        dialog.show();
     }
 
+
     private void updateDataForDate(Calendar selectedCalendar) {
-        SimpleDateFormat sdf = new SimpleDateFormat("EEEE, MMM d, yyyy", Locale.getDefault());
+        SimpleDateFormat sdf;
+
+        if (currentMode == TimeMode.DAY) {
+            sdf = new SimpleDateFormat("EEEE, MMM d, yyyy", Locale.getDefault());
+        } else if (currentMode == TimeMode.MONTH) {
+            sdf = new SimpleDateFormat("MMMM yyyy", Locale.getDefault());
+        } else {
+            sdf = new SimpleDateFormat("yyyy", Locale.getDefault());
+        }
+
         selectedDate.setText(sdf.format(selectedCalendar.getTime()));
 
         List<Transaction> dailyTransactions = fetchTransactionsForDate(selectedCalendar);
@@ -118,38 +176,61 @@ public class TransactionStatisticsFragment extends Fragment {
     }
 
     private List<Transaction> fetchTransactionsForDate(Calendar selectedCalendar) {
+
         List<Transaction> transactions = new ArrayList<>();
-        List<Product> allProducts = SampleData.generateSampleProducts(requireContext());
+        List<Product> allProducts = SampleData.getAllProducts(requireContext());
         SimpleDateFormat sdf = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
 
+        String me = UserSession.get().getId();
+        if (me == null) return transactions;
+
         for (Product product : allProducts) {
-            Calendar productCalendar = Calendar.getInstance();
-            productCalendar.setTime(new Date(product.getTransactionDate()));
 
-            boolean sameDay = selectedCalendar.get(Calendar.YEAR) == productCalendar.get(Calendar.YEAR) &&
-                    selectedCalendar.get(Calendar.DAY_OF_YEAR) == productCalendar.get(Calendar.DAY_OF_YEAR);
+            if (product.getTransactionDate() <= 0) continue;
 
-            if (sameDay) {
-                // If status is "Sold", it's a Sell transaction. Otherwise, it's a Buy transaction (as per HistoryActivity logic).
-                boolean isBuy = !"Sold".equalsIgnoreCase(product.getStatus());
-                
-                String imageUrl = null;
-                if (product.getImageUrls() != null && !product.getImageUrls().isEmpty()) {
-                    imageUrl = product.getImageUrls().get(0);
-                }
+            Calendar productCal = Calendar.getInstance();
+            productCal.setTimeInMillis(product.getTransactionDate());
 
-                transactions.add(new Transaction(
-                        product.getName(),
-                        sdf.format(productCalendar.getTime()),
-                        product.getPrice(),
-                        isBuy,
-                        imageUrl
-                ));
+            boolean match;
+            if (currentMode == TimeMode.DAY) {
+                match = selectedCalendar.get(Calendar.YEAR) == productCal.get(Calendar.YEAR)
+                        && selectedCalendar.get(Calendar.DAY_OF_YEAR) == productCal.get(Calendar.DAY_OF_YEAR);
+            } else if (currentMode == TimeMode.MONTH) {
+                match = selectedCalendar.get(Calendar.YEAR) == productCal.get(Calendar.YEAR)
+                        && selectedCalendar.get(Calendar.MONTH) == productCal.get(Calendar.MONTH);
+            } else {
+                match = selectedCalendar.get(Calendar.YEAR) == productCal.get(Calendar.YEAR);
             }
+
+            if (!match) continue;
+
+            boolean iBought = me.equals(product.getBuyerId());
+            boolean iSold   = me.equals(product.getSellerId());
+
+            if (!iBought && !iSold) continue;
+
+            // Ignore donations
+            if ("Donated".equalsIgnoreCase(product.getStatus()) || product.getPrice() <= 0) {
+                continue;
+            }
+
+            boolean isBuy = iBought;
+
+            String imageUrl = product.getImageUrls().isEmpty()
+                    ? null
+                    : product.getImageUrls().get(0);
+
+            transactions.add(new Transaction(
+                    product.getName(),
+                    sdf.format(productCal.getTime()),
+                    product.getPrice(),
+                    isBuy,
+                    imageUrl,
+                    product.getTransactionDate(),
+                    product.getImageVersion()
+            ));
         }
-        // No sort needed if following random order? Or sort by time? SampleData doesn't have time other than date granularity often.
-        // But user said "arrange follow the date sequence".
-        // Since we filtered for a specific date, they are all on the same date.
+
         return transactions;
     }
 

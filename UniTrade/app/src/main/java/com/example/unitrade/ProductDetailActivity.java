@@ -17,6 +17,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.signature.ObjectKey;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
@@ -30,7 +31,7 @@ public class ProductDetailActivity extends BaseActivity {
     private TabLayout tabDots;
     private ImageSliderAdapter imageSliderAdapter;
 
-    private TextView txtItemTitle, txtPrice, txtConditionUsedDays, txtConditionTag;
+    private TextView txtItemTitle, txtPrice, txtLocation, txtConditionUsedDays, txtConditionTag;
     private TextView txtSellerName, txtRating, txtDescription;
     private ImageView imgSeller;
 
@@ -103,6 +104,7 @@ public class ProductDetailActivity extends BaseActivity {
 
         txtItemTitle = findViewById(R.id.txtItemTitle);
         txtPrice = findViewById(R.id.txtPrice);
+        txtLocation = findViewById(R.id.txtLocation);
         txtConditionUsedDays = findViewById(R.id.txtConditionUsedDays);
         txtConditionTag = findViewById(R.id.txtConditionTag);
         txtSellerName = findViewById(R.id.txtSellerName);
@@ -139,6 +141,7 @@ public class ProductDetailActivity extends BaseActivity {
     private void showProductInfo() {
         txtItemTitle.setText(product.getName());
         txtPrice.setText(AppSettings.formatPrice(this, product.getPrice()));
+        txtLocation.setText(product.getLocation());
         txtDescription.setText(product.getDescription());
 
         txtConditionUsedDays.setText(formatUsage(product.getUsedDaysTotal()));
@@ -159,13 +162,14 @@ public class ProductDetailActivity extends BaseActivity {
         txtRating.setText(String.format("%.1f rating", seller.getOverallRating()));
 
         Glide.with(this)
-                .load(Uri.parse(seller.getProfileImageUrl()))
+                .load(seller.getProfileImageUrl())
+                .signature(new ObjectKey(seller.getProfileImageVersion()))
                 .circleCrop()
                 .into(imgSeller);
 
         btnVisitProfile.setOnClickListener(v -> {
             Intent i = new Intent(this, UserProfileActivity.class);
-            i.putExtra("user_id", currentUserId);
+            i.putExtra("user_id", seller.getId());
             startActivity(i);
         });
     }
@@ -279,20 +283,20 @@ public class ProductDetailActivity extends BaseActivity {
     protected void onResume() {
         super.onResume();
 
+        // Always reload product
         product = SampleData.getProductById(this, product.getId());
         if (product == null) return;
 
+
+
+        // Refresh images
         imageSliderAdapter = new ImageSliderAdapter(
                 this,
                 product.getImageUrls(),
                 product.getImageVersion()
         );
         viewPagerImages.setAdapter(imageSliderAdapter);
-
-        showProductInfo();
-        applyStatusUI();
     }
-
 
 
     private String formatUsage(int totalDays) {

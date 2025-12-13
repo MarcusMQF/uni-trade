@@ -127,25 +127,37 @@ public class SampleData {
         return cachedUsers;
     }
 
-    public static void updateUser(Context context, User updatedUser) {
-
-        if (updatedUser == null) return;
+    public static void updateUser(Context context, User updated) {
+        if (updated == null) return;
 
         List<User> users = getAllUsers(context);
 
-        for (int i = 0; i < users.size(); i++) {
+        for (User u : users) {
+            if (u.getId().equals(updated.getId())) {
 
-            User u = users.get(i);
+                // MUTATE THE EXISTING OBJECT
+                u.setUsername(updated.getUsername());
+                u.setFullName(updated.getFullName());
+                u.setEmail(updated.getEmail());
+                u.setPhoneNumber(updated.getPhoneNumber());
+                u.setBio(updated.getBio());
 
-            if (u.getId().equals(updatedUser.getId())) {
+                u.setAddresses(updated.getAddresses());
 
-                updatedUser.setLastEdited(System.currentTimeMillis());
+                // 🔥 IMPORTANT: update image & version
+                u.setProfileImageUrl(updated.getProfileImageUrl());
+                u.setProfileImageVersion(updated.getProfileImageVersion());
 
-                users.set(i, updatedUser);
-                return;
+                u.setSellerRating(updated.getSellerRating());
+                u.setUserRating(updated.getUserRating());
+                u.setLastEdited(System.currentTimeMillis());
+
+                return;  // STOP HERE
             }
         }
     }
+
+
 
     // ============================================================
     // PRODUCTS (SAMPLE DATA)

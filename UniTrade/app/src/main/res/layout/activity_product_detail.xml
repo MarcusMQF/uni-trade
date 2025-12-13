@@ -79,6 +79,37 @@
                 android:textSize="24sp"
                 android:textStyle="bold" />
 
+            <!-- ITEM LOCATION -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal"
+                android:padding="4dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginEnd="10dp"
+                    android:src="@drawable/ic_location"
+                    app:tint="#008C6F" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/txtLocation"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="University of Malaya, Kuala Lumpur"
+                        android:textSize="14sp"
+                        android:textColor="#555555" />
+                </LinearLayout>
+
+            </LinearLayout>
+
             <!-- CONDITION TAGS -->
             <LinearLayout
                 android:layout_width="match_parent"

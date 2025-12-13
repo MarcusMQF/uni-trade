@@ -14,6 +14,7 @@ import androidx.annotation.NonNull;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.signature.ObjectKey;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
@@ -100,7 +101,8 @@ public class RatingReviewsActivity extends BaseActivity {
         txtUserDescription.setText(user.getBio());
 
         Glide.with(this)
-                .load(user.getProfileImageUrl())
+                . load(user.getProfileImageUrl())
+                .signature(new ObjectKey(user.getProfileImageVersion()))
                 .circleCrop()
                 .into(imgUserProfile);
 

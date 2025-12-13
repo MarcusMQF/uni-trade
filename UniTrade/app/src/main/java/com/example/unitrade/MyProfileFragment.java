@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.signature.ObjectKey;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -163,6 +164,7 @@ public final class MyProfileFragment extends Fragment {
 
         Glide.with(requireContext())
                 .load(viewedUser.getProfileImageUrl())
+                .signature(new ObjectKey(viewedUser.getProfileImageVersion()))
                 .circleCrop()
                 .into(imgProfile);
     }
@@ -315,14 +317,12 @@ public final class MyProfileFragment extends Fragment {
     public void onResume() {
         super.onResume();
 
-        // 🔥 RE-READ FROM SESSION
         viewedUser = UserSession.get();
 
         if (viewedUser == null) {
             viewedUser = SampleData.getUserById(requireContext(), "u1");
         }
 
-        // 🔥 REFRESH HEADER UI
         showUserData();
 
         // --------------------

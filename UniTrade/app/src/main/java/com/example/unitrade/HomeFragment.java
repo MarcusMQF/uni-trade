@@ -186,7 +186,6 @@ public class HomeFragment extends Fragment {
                             ProductDetailActivity.class
                     );
 
-            // ✅ CORRECT CONTRACT
             intent.putExtra("product_id", product.getId());
 
             startActivity(intent);

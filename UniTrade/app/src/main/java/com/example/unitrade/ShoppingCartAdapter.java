@@ -13,6 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.signature.ObjectKey;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -137,6 +138,7 @@ public class ShoppingCartAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
             h.txtSellerName.setText(seller.getUsername());
             Glide.with(context)
                     .load(seller.getProfileImageUrl())
+                    .signature(new ObjectKey(seller.getProfileImageVersion()))
                     .circleCrop()
                     .into(h.imgSeller);
         }
@@ -158,6 +160,7 @@ public class ShoppingCartAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
 
         Glide.with(context)
                 .load(p.getImageUrls().get(0))
+                .signature(new ObjectKey(p.getImageVersion()))
                 .into(h.imgItem);
 
         h.txtItemName.setText(p.getName());
@@ -186,7 +189,6 @@ public class ShoppingCartAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
                 )
         );
 
-        // 🔑 OPEN PRODUCT DETAIL USING ID ONLY
         h.itemView.setOnClickListener(v -> {
             Intent i = new Intent(context, ProductDetailActivity.class);
             i.putExtra("product_id", p.getId());

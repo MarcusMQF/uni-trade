@@ -66,6 +66,7 @@ public class ItemAdapter extends RecyclerView.Adapter<ItemAdapter.ViewHolder> {
             holder.txtUsername.setText(seller.getUsername());
             Glide.with(context)
                     .load(seller.getProfileImageUrl())
+                    .signature(new ObjectKey(seller.getProfileImageVersion()))
                     .into(holder.imgSeller);
         }
 

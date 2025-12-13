@@ -13,6 +13,7 @@ import android.widget.TextView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.signature.ObjectKey;
 
 import java.util.List;
 
@@ -48,6 +49,7 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
 
         Glide.with(context)
                 .load(r.getReviewer().getProfileImageUrl())
+                .signature(new ObjectKey(r.getReviewer().getProfileImageVersion()))
                 .circleCrop()
                 .placeholder(R.drawable.circle_profile)
                 .into(holder.imgProfile);

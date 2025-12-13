@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.signature.ObjectKey;
 
 import java.util.List;
 
@@ -42,15 +43,16 @@ public class UserProductsAdapter extends RecyclerView.Adapter<UserProductsAdapte
         if (p.getImageUrls() != null && !p.getImageUrls().isEmpty()) {
             Glide.with(context)
                     .load(p.getImageUrls().get(0))
+                    .signature(new ObjectKey(p.getImageVersion()))
                     .into(holder.imgProduct);
         }
 
-        //Click → go to product detail
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, ProductDetailActivity.class);
-            intent.putExtra("product", p);
+            intent.putExtra("product_id", p.getId());
             context.startActivity(intent);
         });
+
     }
 
     @Override

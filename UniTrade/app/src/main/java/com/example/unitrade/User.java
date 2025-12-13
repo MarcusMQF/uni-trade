@@ -24,7 +24,8 @@ public class User implements Parcelable {
     private long lastSeen;
     private String bio;
     private long lastEdited;
-    private List<Address> addresses; // NEW: Changed from String to List<Address>
+    private List<Address> addresses;
+    private long profileImageVersion = 0;
 
     // Main constructor
     public User(String id, String username, String fullName, String email, String phoneNumber,
@@ -42,6 +43,7 @@ public class User implements Parcelable {
         this.bio = bio;
         this.lastEdited = lastEdited;
         this.addresses = addresses != null ? addresses : new ArrayList<>();
+        this.profileImageVersion = System.currentTimeMillis();
         updateOverallRating();
     }
 
@@ -82,6 +84,7 @@ public class User implements Parcelable {
     public String getId() { return id; }
     public String getUsername() { return username; }
     public String getFullName() { return fullName; }
+
     public String getEmail() { return email; }
     public String getPhoneNumber() { return phoneNumber; }
     public String getProfileImageUrl() { return profileImageUrl; }
@@ -91,7 +94,11 @@ public class User implements Parcelable {
     public long getLastSeen() { return lastSeen; }
     public String getBio() { return bio; }
     public long getLastEdited() { return lastEdited; }
-    public List<Address> getAddresses() { return addresses; } // NEW
+    public List<Address> getAddresses() { return addresses; }
+
+    public long getProfileImageVersion() {
+        return profileImageVersion;
+    }
 
     // Setters
     public void setId(String id) { this.id = id; }
@@ -105,7 +112,11 @@ public class User implements Parcelable {
     public void setLastSeen(long lastSeen) { this.lastSeen = lastSeen; }
     public void setBio(String bio) { this.bio = bio; }
     public void setLastEdited(long lastEdited) { this.lastEdited = lastEdited; }
-    public void setAddresses(List<Address> addresses) { this.addresses = addresses; } // NEW
+    public void setAddresses(List<Address> addresses) { this.addresses = addresses; }
+
+    public void setProfileImageVersion(long version) {
+        this.profileImageVersion = version;
+    }
 
     private void updateOverallRating() {
         this.overallRating = (sellerRating + userRating) / 2.0;
@@ -125,7 +136,8 @@ public class User implements Parcelable {
         lastSeen = in.readLong();
         bio = in.readString();
         lastEdited = in.readLong();
-        addresses = in.createTypedArrayList(Address.CREATOR); // NEW
+        addresses = in.createTypedArrayList(Address.CREATOR);
+        profileImageVersion = in.readLong();
     }
 
     public static final Creator<User> CREATOR = new Creator<User>() {
@@ -149,7 +161,8 @@ public class User implements Parcelable {
         dest.writeLong(lastSeen);
         dest.writeString(bio);
         dest.writeLong(lastEdited);
-        dest.writeTypedList(addresses); // NEW
+        dest.writeTypedList(addresses);
+        dest.writeLong(profileImageVersion);
     }
 
     @Override

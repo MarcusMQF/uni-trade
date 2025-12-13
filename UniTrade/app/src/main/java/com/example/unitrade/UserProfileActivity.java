@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.signature.ObjectKey;
 
 import java.util.List;
 
@@ -162,23 +163,22 @@ public class UserProfileActivity extends BaseActivity {
 
         Glide.with(this)
                 .load(viewedUser.getProfileImageUrl())
+                .signature(new ObjectKey(viewedUser.getProfileImageVersion()))
                 .circleCrop()
                 .into(imgProfile);
     }
 
     private void loadUserListings() {
 
-        List<Product> all = SampleData.generateSampleProducts(this);
-        List<Product> userProducts = Product.filterBySeller(all, viewedUser.getId());
+
+        List<Product> userProducts = SampleData.getActiveItems(this, viewedUser.getId());
 
         rvListings.setLayoutManager(new GridLayoutManager(this, 2));
 
         if (userProducts.size() > MAX_PREVIEW_ITEMS) {
 
-            // Reset text when collapsed
             txtViewMoreListings.setText("show more ▼");
 
-            // Show preview only
             List<Product> previewList = userProducts.subList(0, MAX_PREVIEW_ITEMS);
 
             productAdapter = new UserProductsAdapter(this, previewList);
@@ -187,7 +187,7 @@ public class UserProfileActivity extends BaseActivity {
             txtViewMoreListings.setVisibility(View.VISIBLE);
 
             txtViewMoreListings.setOnClickListener(v -> {
-                // Expand to full
+
                 productAdapter = new UserProductsAdapter(UserProfileActivity.this, userProducts);
                 rvListings.setAdapter(productAdapter);
 
@@ -197,14 +197,11 @@ public class UserProfileActivity extends BaseActivity {
 
         } else {
 
-            // Show all listings
             productAdapter = new UserProductsAdapter(this, userProducts);
             rvListings.setAdapter(productAdapter);
-
             txtViewMoreListings.setVisibility(View.GONE);
         }
     }
-
 
 
     private void setupViewReviewsButton() {
@@ -220,4 +217,20 @@ public class UserProfileActivity extends BaseActivity {
         finish();
         return true;
     }
+
+    protected void onResume() {
+        super.onResume();
+
+        if (viewedUser != null) {
+            // 🔥 Reload user from SampleData (always latest)
+            viewedUser = SampleData.getUserById(this, viewedUser.getId());
+
+            // 🔥 Refresh header (name, bio, address, PFP)
+            showUserData();
+
+            // 🔥 Refresh listings (seller’s items)
+            loadUserListings();
+        }
+    }
+
 }

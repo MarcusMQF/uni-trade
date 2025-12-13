@@ -35,7 +35,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Status: In Progress"
-            android.layout_marginTop="8dp"/>
+            android:layout_marginTop="8dp"/>
 
         <TextView
             android:id="@+id/tvTicketTimestamp"
@@ -46,11 +46,13 @@
             android:textSize="12sp"
             android:textColor="#757575"/>
 
-        <TextView
-            android:id="@+id/tvTicketAttachment"
+        <ImageButton
+            android:id="@+id/imgAttachmentIndicator"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Attachment: screenshot.jpg"
+            android:src="@drawable/ic_menu_attachment"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="View Attachment"
             android:layout_marginTop="8dp"
             android:visibility="gone"
             tools:visibility="visible"/>

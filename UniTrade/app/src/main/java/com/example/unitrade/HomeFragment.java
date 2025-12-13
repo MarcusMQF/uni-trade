@@ -72,11 +72,7 @@ public class HomeFragment extends Fragment {
         mover.enable(btnCart, rootView, topView, bottomNav);
 
         btnCart.setOnClickListener(v -> {
-            Intent intent = new Intent(getContext(), ShoppingCartActivity.class);
-            intent.putParcelableArrayListExtra(
-                    "cart",
-                    new ArrayList<>(CartManager.cartList)
-            );
+            Intent intent = new Intent(requireContext(), ShoppingCartActivity.class);
             startActivity(intent);
         });
 

@@ -1,10 +1,11 @@
 package com.example.unitrade;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.RadioButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -39,14 +40,17 @@ public class CurrencyAdapter extends RecyclerView.Adapter<CurrencyAdapter.Curren
         Currency currency = currencyList.get(position);
         holder.currencyName.setText(currency.getName() + " (" + currency.getCode() + ")");
 
-        holder.radioButton.setChecked(position == selectedPosition);
+        if (position == selectedPosition) {
+            holder.currencyItem.setBackgroundColor(Color.parseColor("#E0E0E0"));
+            holder.currencyName.setTextColor(Color.BLACK);
+        } else {
+            holder.currencyItem.setBackgroundColor(Color.TRANSPARENT);
+            holder.currencyName.setTextColor(Color.parseColor("#333333"));
+        }
 
         holder.itemView.setOnClickListener(v -> {
             if (holder.getAdapterPosition() != RecyclerView.NO_POSITION) {
-                // Only allow selecting a NEW currency, not deselecting the current one.
-                if (selectedPosition != holder.getAdapterPosition()) {
-                    listener.onCurrencyClick(holder.getAdapterPosition());
-                }
+                listener.onCurrencyClick(holder.getAdapterPosition());
             }
         });
     }
@@ -64,7 +68,11 @@ public class CurrencyAdapter extends RecyclerView.Adapter<CurrencyAdapter.Curren
     }
 
     public void setSelectedPosition(int position) {
-        selectedPosition = position;
+        if (position == selectedPosition) {
+            selectedPosition = -1;
+        } else {
+            selectedPosition = position;
+        }
         notifyDataSetChanged();
     }
 
@@ -80,12 +88,12 @@ public class CurrencyAdapter extends RecyclerView.Adapter<CurrencyAdapter.Curren
 
     public static class CurrencyViewHolder extends RecyclerView.ViewHolder {
         TextView currencyName;
-        RadioButton radioButton;
+        LinearLayout currencyItem;
 
         public CurrencyViewHolder(@NonNull View itemView) {
             super(itemView);
             currencyName = itemView.findViewById(R.id.tvCurrencyName);
-            radioButton = itemView.findViewById(R.id.rbCurrency);
+            currencyItem = itemView.findViewById(R.id.currencyItem);
         }
     }
 }

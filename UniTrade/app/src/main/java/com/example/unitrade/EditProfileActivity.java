@@ -3,227 +3,158 @@ package com.example.unitrade;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.net.Uri;
+import android.location.Address;
+import android.location.Geocoder;
+import android.location.Location;
 import android.os.Bundle;
-import android.os.Environment;
-import android.provider.MediaStore;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.TextView;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.core.content.FileProvider;
-import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.textfield.TextInputEditText;
 
-import java.io.File;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
-public class EditProfileActivity extends BaseActivity {
+public class EditProfileActivity extends AppCompatActivity {
 
-    private static final int REQUEST_CAMERA_PERMISSION = 100;
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
+    private FusedLocationProviderClient fusedLocationClient;
 
-    private ImageView imgProfile, btnChangePhoto;
-    private EditText etFullName, etUsername, etEmail, etPhone, etBio;
-    private Button btnSaveProfile;
-    private TextView tvLastEdited;
+    private TextInputEditText etFullName, etUsername, etEmail, etPhone, etNewAddress, eTBio;
+    private Button btnSaveProfile, btnAddAddress;
+    private ImageButton btnFetchLocation;
+    private RecyclerView rvAddresses;
 
-    private User user;
-    private Uri photoURI;
-
-    private final ActivityResultLauncher<Intent> takePictureLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == RESULT_OK) {
-                    Glide.with(this).load(photoURI).circleCrop().into(imgProfile);
-                    user.setProfileImageUrl(photoURI.toString());
-                }
-            });
-
-    private final ActivityResultLauncher<Intent> pickImageLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                    Uri selectedImageUri = result.getData().getData();
-                    Glide.with(this).load(selectedImageUri).circleCrop().into(imgProfile);
-                    user.setProfileImageUrl(selectedImageUri.toString());
-                }
-            });
+    private User currentUser;
+    private AddressAdapter addressAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_profile);
 
-        Toolbar toolbar = findViewById(R.id.appBarEditProfile);
+        // Setup Toolbar
+        MaterialToolbar toolbar = findViewById(R.id.appBarEditProfile);
         setSupportActionBar(toolbar);
-
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("Edit Profile");
+            getSupportActionBar().setDisplayShowHomeEnabled(true);
+        }
+        toolbar.setNavigationOnClickListener(v -> onBackPressed());
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
+        String userId = getIntent().getStringExtra("user_id");
+
+        if (userId != null) {
+            currentUser = SampleData.getUserById(this, userId);  // <-- load user here
+        } else {
+            throw new RuntimeException("No user_id received from intent!");
+        }
+        if (currentUser == null) {
+            // Create a dummy user if none is passed
+            currentUser = new User("dummyId", "dummyUser", "", 0, 0, 0, "");
+            currentUser.setAddresses(new ArrayList<>());
         }
 
-        tintToolbarOverflow(toolbar);
-
-        // Initialize views
-        imgProfile = findViewById(R.id.imgProfile);
         etFullName = findViewById(R.id.etFullName);
         etUsername = findViewById(R.id.etUsername);
         etEmail = findViewById(R.id.etEmail);
         etPhone = findViewById(R.id.etPhone);
-        etBio = findViewById(R.id.eTBio);
-        btnChangePhoto = findViewById(R.id.btnChangePhoto);
+        etNewAddress = findViewById(R.id.etNewAddress);
+        eTBio = findViewById(R.id.eTBio);
         btnSaveProfile = findViewById(R.id.btnSaveProfile);
-        tvLastEdited = findViewById(R.id.tvLastEdited);
+        btnFetchLocation = findViewById(R.id.btnFetchLocation);
+        btnAddAddress = findViewById(R.id.btnAddAddress);
+        rvAddresses = findViewById(R.id.rvAddresses);
 
-        user = getIntent().getParcelableExtra("user_to_edit");
+        etFullName.setText(currentUser.getFullName());
+        etUsername.setText(currentUser.getUsername());
+        etEmail.setText(currentUser.getEmail());
+        etPhone.setText(currentUser.getPhoneNumber());
+        eTBio.setText(currentUser.getBio());
 
-        if (user == null) {
-            Toast.makeText(this, "Error: No user received", Toast.LENGTH_SHORT).show();
+        rvAddresses.setLayoutManager(new LinearLayoutManager(this));
+        addressAdapter = new AddressAdapter(this, currentUser.getAddresses());
+        rvAddresses.setAdapter(addressAdapter);
+
+        btnFetchLocation.setOnClickListener(v -> fetchLocation());
+
+        btnAddAddress.setOnClickListener(v -> {
+            String newAddress = etNewAddress.getText().toString();
+            if (!newAddress.isEmpty()) {
+                addressAdapter.addAddress(new com.example.unitrade.Address(newAddress, false));
+                etNewAddress.setText("");
+            }
+        });
+
+        btnSaveProfile.setOnClickListener(v -> {
+            currentUser.setFullName(etFullName.getText().toString());
+            currentUser.setUsername(etUsername.getText().toString());
+            currentUser.setEmail(etEmail.getText().toString());
+            currentUser.setPhoneNumber(etPhone.getText().toString());
+            currentUser.setBio(eTBio.getText().toString());
+            currentUser.setLastEdited(System.currentTimeMillis());
+
+            SampleData.updateUser(this, currentUser);
+
+            Intent resultIntent = new Intent();
+            resultIntent.putExtra("updated_user", currentUser);
+            setResult(RESULT_OK, resultIntent);
+            Toast.makeText(this, "Profile updated", Toast.LENGTH_SHORT).show();
             finish();
+        });
+    }
+
+    private void fetchLocation() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST_CODE);
             return;
         }
-
-        etFullName.setText(user.getFullName());
-        etUsername.setText(user.getUsername());
-        etEmail.setText(user.getEmail());
-        etPhone.setText(user.getPhoneNumber());
-        etBio.setText(user.getBio());
-
-        if (user.getLastEdited() > 0) {
-            tvLastEdited.setText("Last edited: " + user.getLastEditedString());
-        } else {
-            tvLastEdited.setText("Last edited: Never");
-        }
-
-        Glide.with(this)
-                .load(user.getProfileImageUrl())
-                .circleCrop()
-                .placeholder(R.drawable.profile_pic_1)
-                .into(imgProfile);
-
-        btnChangePhoto.setOnClickListener(v -> showChangePhotoDialog());
-        btnSaveProfile.setOnClickListener(v -> saveProfile());
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == android.R.id.home) {
-            onBackPressed();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
-    private void showChangePhotoDialog() {
-        new AlertDialog.Builder(this)
-                .setTitle("Change Profile Photo")
-                .setItems(new String[]{"Take Photo", "Choose from Gallery", "Cancel"},
-                        (dialog, which) -> {
-                            switch (which) {
-                                case 0:
-                                    checkCameraPermissionAndTakePhoto();
-                                    break;
-                                case 1:
-                                    pickImageFromGallery();
-                                    break;
+        fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(this, new OnSuccessListener<Location>() {
+                    @Override
+                    public void onSuccess(Location location) {
+                        if (location != null) {
+                            Geocoder geocoder = new Geocoder(EditProfileActivity.this, Locale.getDefault());
+                            try {
+                                List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
+                                if (addresses != null && !addresses.isEmpty()) {
+                                    Address address = addresses.get(0);
+                                    etNewAddress.setText(address.getAddressLine(0));
+                                }
+                            } catch (IOException e) {
+                                e.printStackTrace();
                             }
-                        })
-                .show();
-    }
-
-    private void checkCameraPermissionAndTakePhoto() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            dispatchTakePictureIntent();
-        } else {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
-        }
-    }
-
-    private void dispatchTakePictureIntent() {
-        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        File photoFile = null;
-        try {
-            photoFile = createImageFile();
-        } catch (IOException ex) {
-            Toast.makeText(this, "Error creating image file", Toast.LENGTH_SHORT).show();
-        }
-        if (photoFile != null) {
-            photoURI = FileProvider.getUriForFile(this, "com.example.unitrade.provider", photoFile);
-            takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
-            takePictureLauncher.launch(takePictureIntent);
-        }
-    }
-
-    private void pickImageFromGallery() {
-        Intent pickPhoto = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        pickImageLauncher.launch(pickPhoto);
-    }
-
-    private File createImageFile() throws IOException {
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "JPEG_" + timeStamp + "_";
-        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        File image = File.createTempFile(imageFileName, ".jpg", storageDir);
-        return image;
+                        } else {
+                            Toast.makeText(EditProfileActivity.this, "Could not fetch location.", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_CAMERA_PERMISSION) {
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                dispatchTakePictureIntent();
+                fetchLocation();
             } else {
-                Toast.makeText(this, "Camera permission denied", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Location permission denied.", Toast.LENGTH_SHORT).show();
             }
         }
-    }
-
-    private void saveProfile() {
-        String fullName = etFullName.getText().toString().trim();
-        String username = etUsername.getText().toString().trim();
-        String email = etEmail.getText().toString().trim();
-        String phone = etPhone.getText().toString().trim();
-        String bio = etBio.getText().toString().trim();
-
-        if (fullName.isEmpty() || username.isEmpty() || email.isEmpty()) {
-            Toast.makeText(this, "Please fill all required fields", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        user.setFullName(fullName);
-        user.setUsername(username);
-        user.setEmail(email);
-        user.setPhoneNumber(phone);
-        user.setBio(bio);
-        user.setLastEdited(System.currentTimeMillis());
-
-
-
-        Intent resultIntent = new Intent();
-        resultIntent.putExtra("updated_user", user);
-        setResult(RESULT_OK, resultIntent);
-
-        Toast.makeText(this, "Profile updated", Toast.LENGTH_SHORT).show();
-        finish();
     }
 }

@@ -22,6 +22,7 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class CheckoutActivity extends BaseActivity {
 
@@ -33,14 +34,16 @@ public class CheckoutActivity extends BaseActivity {
     private TextView txtDeliveryFee, txtSubtotal, txtTotal, txtDelivery;
     private Button btnPlaceOrder;
 
-    private MovableFabHelper mover;
     private FloatingActionButton btnChatWithSeller;
+    private MovableFabHelper mover;
 
-    // Data
-    private ArrayList<Product> checkoutList = new ArrayList<>();
+    // DATA (ID BASED)
+    private ArrayList<String> checkoutIds = new ArrayList<>();
+    private ArrayList<Product> checkoutProducts = new ArrayList<>();
+
     private double subtotal = 0;
-    private double platformFee = 0.54;
-    private double deliveryFee = 3.00;
+    private final double platformFee = 0.54;
+    private final double deliveryFee = 3.00;
     private String selectedMethod = "";
 
     @Override
@@ -48,24 +51,47 @@ public class CheckoutActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_checkout);
 
+        // -------------------------------
+        // Toolbar
+        // -------------------------------
         Toolbar toolbar = findViewById(R.id.appBarCheckout);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setTitle("Checkout");
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         tintToolbarOverflow(toolbar);
 
         initViews();
         setupSpinner();
 
-        // Receive list from ShoppingCartActivity
-        checkoutList = getIntent().getParcelableArrayListExtra("checkoutItems");
-        if (checkoutList == null) checkoutList = new ArrayList<>();
+        // -------------------------------
+        // RECEIVE PRODUCT IDS
+        checkoutIds = getIntent().getStringArrayListExtra("checkout_ids");
+
+        if (checkoutIds == null || checkoutIds.isEmpty()) {
+
+            // BUY NOW fallback
+            String singleId = getIntent().getStringExtra("product_id");
+
+            if (singleId != null) {
+                checkoutIds = new ArrayList<>();
+                checkoutIds.add(singleId);
+            } else {
+                checkoutIds = new ArrayList<>();
+            }
+        }
+
+
+        for (String id : checkoutIds) {
+            Product p = SampleData.getProductById(this, id);
+            if (p != null) checkoutProducts.add(p);
+        }
 
         displayItems();
         calculateSubtotal();
         updateTotal();
     }
 
+    // =================================================
     private void initViews() {
 
         MaterialCardView layoutQrPayment = findViewById(R.id.layoutQrPayment);
@@ -86,7 +112,6 @@ public class CheckoutActivity extends BaseActivity {
 
         mover = new MovableFabHelper();
 
-        // Enable FAB movement
         View appBar = findViewById(R.id.appBarCheckout);
         View bottomBar = findViewById(R.id.bottomBar);
         View rootLayout = findViewById(android.R.id.content);
@@ -96,7 +121,7 @@ public class CheckoutActivity extends BaseActivity {
         ));
 
         btnChatWithSeller.setOnClickListener(v -> {
-            Intent i = new Intent(CheckoutActivity.this, MainActivity.class);
+            Intent i = new Intent(this, MainActivity.class);
             i.putExtra("openChatFragment", true);
             startActivity(i);
         });
@@ -114,147 +139,138 @@ public class CheckoutActivity extends BaseActivity {
         });
     }
 
+    // =================================================
     private void displayItems() {
         itemsContainer.removeAllViews();
 
-        for (Product p : checkoutList) {
+        for (Product p : checkoutProducts) {
 
-            View row = getLayoutInflater().inflate(R.layout.item_checkout_row, itemsContainer, false);
+            View row = getLayoutInflater()
+                    .inflate(R.layout.item_checkout_row, itemsContainer, false);
+
             ImageView img = row.findViewById(R.id.imgItem);
             TextView txtItemName = row.findViewById(R.id.txtItemName);
             TextView txtItemPrice = row.findViewById(R.id.txtItemPrice);
 
             txtItemName.setText(p.getName());
-            txtItemPrice.setText("RM " + p.getPrice());
+            txtItemPrice.setText(AppSettings.formatPrice(this, p.getPrice()));
 
-            Glide.with(this).load(p.getImageUrls().get(0)).into(img);
+            Glide.with(this)
+                    .load(p.getImageUrls().get(0))
+                    .into(img);
+
             itemsContainer.addView(row);
         }
     }
 
+    // =================================================
     private void calculateSubtotal() {
         subtotal = 0;
-        for (Product p : checkoutList) {
+        for (Product p : checkoutProducts) {
             subtotal += p.getPrice();
         }
         txtSubtotal.setText("RM " + String.format("%.2f", subtotal));
     }
 
+    // =================================================
     private void setupSpinner() {
+
         String[] methods = {
                 "Select Receiving method",
                 "Face-to-face handover",
                 "Delivery"
         };
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(
-                this,
-                android.R.layout.simple_spinner_dropdown_item,
-                methods
-        ) {
-            @Override
-            public boolean isEnabled(int position) {
-                return position != 0; // disable hint
-            }
+        ArrayAdapter<String> adapter =
+                new ArrayAdapter<String>(this,
+                        android.R.layout.simple_spinner_dropdown_item, methods) {
 
-            @Override
-            public View getDropDownView(int position, View convertView, ViewGroup parent) {
-                View view = super.getDropDownView(position, convertView, parent);
-                TextView tv = (TextView) view;
+                    @Override
+                    public boolean isEnabled(int position) {
+                        return position != 0;
+                    }
 
-                tv.setTextColor(position == 0 ? Color.parseColor("#A0A0A0") : Color.BLACK);
-                return view;
-            }
-
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                View v = super.getView(position, convertView, parent);
-                TextView tv = (TextView) v;
-
-                tv.setTextColor(position == 0 ? Color.parseColor("#A0A0A0") : Color.BLACK);
-                return v;
-            }
-        };
+                    @Override
+                    public View getView(int position, View convertView, ViewGroup parent) {
+                        TextView tv = (TextView) super.getView(position, convertView, parent);
+                        tv.setTextColor(position == 0 ? Color.GRAY : Color.BLACK);
+                        return tv;
+                    }
+                };
 
         spinnerReceivingMethod.setAdapter(adapter);
 
-        spinnerReceivingMethod.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+        spinnerReceivingMethod.setOnItemSelectedListener(
+                new AdapterView.OnItemSelectedListener() {
 
-                selectedMethod = parent.getItemAtPosition(position).toString();
+                    @Override
+                    public void onItemSelected(
+                            AdapterView<?> parent, View view, int position, long id) {
 
-                if (selectedMethod.equals("Delivery")) {
-                    layoutDeliveryAddress.setVisibility(View.VISIBLE);
-                    txtDelivery.setVisibility(View.VISIBLE);
-                    txtDeliveryFee.setVisibility(View.VISIBLE);
-                    txtDeliveryFee.setText("RM " + deliveryFee);
-                } else {
-                    layoutDeliveryAddress.setVisibility(View.GONE);
-                    txtDeliveryFee.setVisibility(View.GONE);
+                        selectedMethod = parent.getItemAtPosition(position).toString();
+
+                        if ("Delivery".equals(selectedMethod)) {
+                            layoutDeliveryAddress.setVisibility(View.VISIBLE);
+                            txtDelivery.setVisibility(View.VISIBLE);
+                            txtDeliveryFee.setVisibility(View.VISIBLE);
+                            txtDeliveryFee.setText("RM " + deliveryFee);
+                        } else {
+                            layoutDeliveryAddress.setVisibility(View.GONE);
+                            txtDeliveryFee.setVisibility(View.GONE);
+                        }
+
+                        updateTotal();
+                    }
+
+                    @Override
+                    public void onNothingSelected(AdapterView<?> parent) {}
                 }
-
-                updateTotal();
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
-        });
+        );
     }
 
+    // =================================================
     private void updateTotal() {
         double total = subtotal + platformFee;
-
-        if (selectedMethod.equals("Delivery")) {
-            total += deliveryFee;
-        }
-
+        if ("Delivery".equals(selectedMethod)) total += deliveryFee;
         txtTotal.setText("RM " + String.format("%.2f", total));
     }
-
-    // -------------------------------
-    //      FINALIZE PURCHASE
-    // -------------------------------
+    // =================================================
+// FINALIZE PURCHASE (ID SAFE)
+// =================================================
     private void finalizePurchase() {
 
         String currentUserId = UserSession.get().getId();
+        List<String> purchasedIds = new ArrayList<>();
 
-        for (Product p : checkoutList) {
+        for (String productId : checkoutIds) {
 
-            // -----------------------------------------
-            // UPDATE PRODUCT DIRECTLY (GLOBAL INSTANCE)
-            // -----------------------------------------
+            Product p = SampleData.getProductById(this, productId);
+            if (p == null) continue;
+
             p.setBuyerId(currentUserId);
+            p.setStatus(p.getPrice() > 0 ? "Sold" : "Donated");
 
-            if (p.getPrice() > 0) {
-                p.setStatus("Sold");
-            } else {
-                p.setStatus("Donated");
+            // ✅ THIS FIXES YOUR ERROR
+            p.setTransactionDate(System.currentTimeMillis());
+
+
+            if (p != null) {
+                PurchaseHistoryManager.add(productId);
             }
-
-            // -----------------------------------------
-            // SAVE TO PURCHASE HISTORY
-            // -----------------------------------------
-            PurchaseHistoryManager.purchasedItems.add(p);
+            purchasedIds.add(productId);
         }
 
-        // -----------------------------------------
-        // REMOVE FROM CART
-        // -----------------------------------------
-        CartManager.removePurchased(checkoutList);
+        CartManager.removePurchasedByIds(this, checkoutIds);
 
         Toast.makeText(this, "Order placed successfully!", Toast.LENGTH_SHORT).show();
 
-        // -----------------------------------------
-        // GO BACK TO HOME
-        // -----------------------------------------
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.putExtra("goToHome", true);
-        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        startActivity(intent);
-
+        Intent i = new Intent(this, MainActivity.class);
+        i.putExtra("goToHome", true);
+        i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(i);
         finish();
     }
+
 
 
     @Override

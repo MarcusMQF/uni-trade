@@ -9,6 +9,9 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
+
 import java.util.List;
 
 public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.TransactionViewHolder> {
@@ -40,11 +43,23 @@ public class TransactionAdapter extends RecyclerView.Adapter<TransactionAdapter.
         if (transaction.isBuy()) {
             holder.transactionAmount.setText("-" + formattedPrice);
             holder.transactionAmount.setTextColor(ContextCompat.getColor(context, R.color.red));
+            // Default icon if image fails or not provided
             holder.transactionIcon.setImageResource(android.R.drawable.arrow_down_float);
         } else {
             holder.transactionAmount.setText("+" + formattedPrice);
             holder.transactionAmount.setTextColor(ContextCompat.getColor(context, R.color.green));
+            // Default icon if image fails or not provided
             holder.transactionIcon.setImageResource(android.R.drawable.arrow_up_float);
+        }
+
+        // Load image if available
+        if (transaction.getImageUrl() != null && !transaction.getImageUrl().isEmpty()) {
+            Glide.with(context)
+                    .load(transaction.getImageUrl())
+                    .placeholder(transaction.isBuy() ? android.R.drawable.arrow_down_float : android.R.drawable.arrow_up_float)
+                    .error(transaction.isBuy() ? android.R.drawable.arrow_down_float : android.R.drawable.arrow_up_float)
+                    .centerCrop()
+                    .into(holder.transactionIcon);
         }
     }
 

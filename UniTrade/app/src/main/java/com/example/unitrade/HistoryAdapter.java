@@ -5,26 +5,29 @@ import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Button;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.signature.ObjectKey;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private static final int VIEW_PURCHASED = 0;
     private static final int VIEW_SOLD = 1;
 
-    private Context context;
-    private List<Product> list;
-    private boolean isPurchasedTab;
+    private final Context context;
+    private final List<Product> list;
     private boolean isEditMode = false;
 
     public interface OnHistoryActionListener {
@@ -38,10 +41,9 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         listener = l;
     }
 
-    public HistoryAdapter(Context ctx, List<Product> list, boolean isPurchasedTab) {
+    public HistoryAdapter(Context ctx, List<Product> list, boolean isPurchasedMode) {
         this.context = ctx;
         this.list = list;
-        this.isPurchasedTab = isPurchasedTab;
     }
 
     public void setEditMode(boolean mode) {
@@ -51,7 +53,12 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public int getItemViewType(int position) {
-        return isPurchasedTab ? VIEW_PURCHASED : VIEW_SOLD;
+        Product p = list.get(position);
+        if ("Sold".equalsIgnoreCase(p.getStatus())) {
+            return VIEW_SOLD;
+        } else {
+            return VIEW_PURCHASED;
+        }
     }
 
     @Override
@@ -137,7 +144,16 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
 
         h.txtName.setText(p.getName());
-        h.txtPrice.setText(AppSettings.formatPrice(context, p.getPrice()));
+        h.txtPrice.setText(String.format("-RM%.2f", p.getPrice()));
+        h.txtPrice.setTextColor(ContextCompat.getColor(context, android.R.color.holo_red_dark));
+
+        long transactionDate = p.getTransactionDate();
+        if (transactionDate > 0) {
+            SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy", Locale.getDefault());
+            h.txtDate.setText(sdf.format(new Date(transactionDate)));
+        } else {
+            h.txtDate.setText(""); // Set empty if date is invalid
+        }
 
         // Delete button (only purchased tab)
         h.btnDelete.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
@@ -150,7 +166,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     static class PurchasedHolder extends RecyclerView.ViewHolder {
         ImageView imgItem, imgSeller;
         Button btnDelete;
-        TextView txtName, txtPrice, txtSeller;
+        TextView txtName, txtPrice, txtSeller, txtDate;
 
         public PurchasedHolder(@NonNull View v) {
             super(v);
@@ -159,6 +175,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             txtName = v.findViewById(R.id.txtName);
             txtSeller = v.findViewById(R.id.txtSeller);
             txtPrice = v.findViewById(R.id.txtPrice);
+            txtDate = v.findViewById(R.id.txtDate);
             btnDelete = v.findViewById(R.id.btnConfirm);
         }
     }
@@ -179,25 +196,39 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
 
         h.txtName.setText(p.getName());
-        h.txtPrice.setText(AppSettings.formatPrice(context, p.getPrice()));
+        h.txtPrice.setText(String.format("+RM%.2f", p.getPrice()));
+        h.txtPrice.setTextColor(ContextCompat.getColor(context, android.R.color.holo_green_dark));
 
-
-        // Status badge
-        switch (p.getStatus()) {
-            case "Available":
-                h.txtStatus.setBackgroundResource(R.drawable.bg_status_available);
-                break;
-            case "Sold":
-                h.txtStatus.setBackgroundResource(R.drawable.bg_status_sold);
-                break;
-            case "Donated":
-                h.txtStatus.setBackgroundResource(R.drawable.bg_status_donated);
-                break;
-            default:
-                h.txtStatus.setBackgroundResource(R.drawable.bg_status_available);
+        long transactionDate = p.getTransactionDate();
+        if (transactionDate > 0) {
+            SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy", Locale.getDefault());
+            h.txtDate.setText(sdf.format(new Date(transactionDate)));
+        } else {
+            h.txtDate.setText(""); // Set empty if date is invalid
         }
 
-        h.txtStatus.setText(p.getStatus());
+        // Status badge
+        if (p.getStatus() != null) {
+            h.txtStatus.setText(p.getStatus());
+            switch (p.getStatus()) {
+                case "Available":
+                    h.txtStatus.setBackgroundResource(R.drawable.bg_status_available);
+                    break;
+                case "Sold":
+                    h.txtStatus.setBackgroundResource(R.drawable.bg_status_sold);
+                    break;
+                case "Donated":
+                    h.txtStatus.setBackgroundResource(R.drawable.bg_status_donated);
+                    break;
+                default:
+                    h.txtStatus.setBackgroundResource(R.drawable.bg_status_available);
+                    break;
+            }
+        } else {
+            h.txtStatus.setText("");
+            h.txtStatus.setBackgroundResource(R.drawable.bg_status_available);
+        }
+
 
         // Edit + Delete buttons
         h.btnDelete.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
@@ -216,7 +247,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         ImageView imgItem;
 
         Button btnDelete, btnEdit;
-        TextView txtName, txtPrice, txtStatus;
+        TextView txtName, txtPrice, txtStatus, txtDate;
 
         public SoldHolder(@NonNull View v) {
             super(v);
@@ -224,6 +255,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             txtName = v.findViewById(R.id.txtName);
             txtPrice = v.findViewById(R.id.txtPrice);
             txtStatus = v.findViewById(R.id.txtStatus);
+            txtDate = v.findViewById(R.id.txtDate);
             btnDelete = v.findViewById(R.id.btnConfirm);
             btnEdit = v.findViewById(R.id.btnEdit);
         }
@@ -235,8 +267,4 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         notifyDataSetChanged();
     }
 
-    public void setPurchasedTab(boolean isPurchasedTab) {
-        this.isPurchasedTab = isPurchasedTab;
-        notifyDataSetChanged();
-    }
 }

@@ -13,7 +13,7 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="?attr/colorPrimary"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="48dp"
         app:title="Add a Ticket"
         app:titleTextColor="@android:color/white"/>
 
@@ -94,85 +94,85 @@
 
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <LinearLayout
-                        android:id="@+id/attachmentDropZone"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:gravity="center"
-                        android:padding="32dp"
-                        android:layout_marginTop="24dp"
-                        android:background="@drawable/bg_dotted_border"
-                        android:clickable="true"
-                        android:focusable="true">
-
-                        <ImageView
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:src="@drawable/ic_menu_attachment"
-                            app:tint="#757575"/>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Tap to upload a file"
-                            android:layout_marginTop="8dp"
-                            android:textColor="#757575"/>
-
-                    </LinearLayout>
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/attachmentPreviewCard"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        app:cardCornerRadius="8dp"
-                        android:visibility="gone"
-                        tools:visibility="visible">
-
-                        <RelativeLayout
-                            android:id="@+id/attachmentPreviewLayout"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:padding="12dp"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:foreground="?attr/selectableItemBackground">
-
-                            <ImageView
-                                android:id="@+id/ivAttachmentPreview"
-                                android:layout_width="60dp"
-                                android:layout_height="60dp"
-                                android:scaleType="centerCrop"
-                                tools:src="@drawable/ic_launcher_background"/>
-
-                            <TextView
-                                android:id="@+id/tvAttachedFileName"
-                                android:layout_width="0dp"
-                                android.layout_height="wrap_content"
-                                android:layout_toEndOf="@id/ivAttachmentPreview"
-                                android:layout_toStartOf="@+id/btnClearAttachment"
-                                android:layout_marginStart="12dp"
-                                android:layout_marginEnd="12dp"
-                                android:layout_centerVertical="true"
-                                android:textColor="#333333"
-                                android:textStyle="bold"
-                                tools:text="attachment_image.jpg"/>
-                            
-                            <ImageButton
-                                android:id="@+id/btnClearAttachment"
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:src="@android:drawable/ic_menu_close_clear_cancel"
-                                android:layout_alignParentEnd="true"
-                                android:layout_centerVertical="true"
-                                android:background="?attr/selectableItemBackgroundBorderless"/>
-
-                        </RelativeLayout>
-
-                    </com.google.android.material.card.MaterialCardView>
-
                 </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+            
+            <LinearLayout
+                android:id="@+id/attachmentDropZone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="32dp"
+                android:layout_marginTop="24dp"
+                android:background="@drawable/bg_dotted_border"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:src="@drawable/ic_menu_attachment"
+                    app:tint="#757575"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tap to upload a file"
+                    android:layout_marginTop="8dp"
+                    android:textColor="#757575"/>
+
+            </LinearLayout>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/attachmentPreviewCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardCornerRadius="8dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <RelativeLayout
+                    android:id="@+id/attachmentPreviewLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground">
+
+                    <ImageView
+                        android:id="@+id/ivAttachmentPreview"
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        android:scaleType="centerCrop"
+                        tools:src="@drawable/ic_launcher_background"/>
+
+                    <TextView
+                        android:id="@+id/tvAttachedFileName"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_toEndOf="@id/ivAttachmentPreview"
+                        android:layout_toStartOf="@+id/btnClearAttachment"
+                        android:layout_marginStart="12dp"
+                        android:layout_marginEnd="12dp"
+                        android:layout_centerVertical="true"
+                        android:textColor="#333333"
+                        android:textStyle="bold"
+                        tools:text="attachment_image.jpg"/>
+                    
+                    <ImageButton
+                        android:id="@+id/btnClearAttachment"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@android:drawable/ic_menu_close_clear_cancel"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:background="?attr/selectableItemBackgroundBorderless"/>
+
+                </RelativeLayout>
 
             </com.google.android.material.card.MaterialCardView>
 

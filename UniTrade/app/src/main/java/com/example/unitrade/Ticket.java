@@ -16,11 +16,11 @@ public class Ticket implements Parcelable {
 
     private String subject;
     private String description;
-    private Uri attachmentUri;
+    private String attachmentUri; // Changed to String for better Gson compatibility
     private long timestamp;
     private String status;
 
-    public Ticket(String subject, String description, Uri attachmentUri, long timestamp) {
+    public Ticket(String subject, String description, String attachmentUri, long timestamp) {
         this.subject = subject;
         this.description = description;
         this.attachmentUri = attachmentUri;
@@ -31,7 +31,7 @@ public class Ticket implements Parcelable {
     // Getters
     public String getSubject() { return subject; }
     public String getDescription() { return description; }
-    public Uri getAttachmentUri() { return attachmentUri; }
+    public String getAttachmentUri() { return attachmentUri; }
     public long getTimestamp() { return timestamp; }
     public String getStatus() { return status; }
 
@@ -48,7 +48,7 @@ public class Ticket implements Parcelable {
     protected Ticket(Parcel in) {
         subject = in.readString();
         description = in.readString();
-        attachmentUri = in.readParcelable(Uri.class.getClassLoader());
+        attachmentUri = in.readString();
         timestamp = in.readLong();
         status = in.readString();
     }
@@ -74,7 +74,7 @@ public class Ticket implements Parcelable {
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(subject);
         dest.writeString(description);
-        dest.writeParcelable(attachmentUri, flags);
+        dest.writeString(attachmentUri);
         dest.writeLong(timestamp);
         dest.writeString(status);
     }

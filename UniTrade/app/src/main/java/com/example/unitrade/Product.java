@@ -4,10 +4,12 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class Product implements Parcelable {
 
+    // ---------------- BASIC INFO ----------------
     private String id;
     private String name;
     private double price;
@@ -17,26 +19,47 @@ public class Product implements Parcelable {
     private int usedDaysTotal;
     private String status;
     private String category;
-    private String sellerId;
     private String location;
+
+    // ---------------- USER INFO ----------------
+    private String sellerId;
     private String buyerId;
+
+    // ---------------- UI / META ----------------
     private boolean isHeader = false;
     private String qrPaymentUrl;
 
+    // 🔥 NEW: listing date (auto-created)
+    private Date listingDate;
+
+    // 🔥 Image cache busting
     private long imageVersion;
 
+    private long transactionDate;
 
-    public Product() {}
+    // ---------------- CONSTRUCTORS ----------------
+    public Product() {
+        // empty constructor (required)
+    }
 
-    public Product(String id, String name, double price, List<String> imageUrls,
-                   String description, String condition, int usedDaysTotal,
-                   String status, String category, String location,
-                   String sellerId, String qrPaymentUrl) {
-
+    public Product(
+            String id,
+            String name,
+            double price,
+            List<String> imageUrls,
+            String description,
+            String condition,
+            int usedDaysTotal,
+            String status,
+            String category,
+            String location,
+            String sellerId,
+            String qrPaymentUrl
+    ) {
         this.id = id;
         this.name = name;
         this.price = price;
-        setImageUrls(imageUrls); // ✅ SAFE
+        setImageUrls(imageUrls); // ✅ safe copy
         this.description = description;
         this.condition = condition;
         this.usedDaysTotal = usedDaysTotal;
@@ -45,7 +68,10 @@ public class Product implements Parcelable {
         this.location = location;
         this.sellerId = sellerId;
         this.qrPaymentUrl = qrPaymentUrl;
+
+        // 🔥 auto metadata
         this.imageVersion = System.currentTimeMillis();
+        this.listingDate = new Date();
     }
 
     // ---------------- GETTERS ----------------
@@ -62,11 +88,23 @@ public class Product implements Parcelable {
     public int getUsedDaysTotal() { return usedDaysTotal; }
     public String getStatus() { return status; }
     public String getCategory() { return category; }
-    public String getSellerId() { return sellerId; }
     public String getLocation() { return location; }
-    public String getQrPaymentUrl() { return qrPaymentUrl; }
+    public String getSellerId() { return sellerId; }
     public String getBuyerId() { return buyerId; }
+    public String getQrPaymentUrl() { return qrPaymentUrl; }
     public boolean isHeader() { return isHeader; }
+
+    // 🔥 SAFE listing date (AUTO-CREATE)
+    public Date getListingDate() {
+        if (listingDate == null) {
+            listingDate = new Date();
+        }
+        return listingDate;
+    }
+
+    public long getTransactionDate() {
+        return transactionDate;
+    }
 
     public long getImageVersion() {
         return imageVersion;
@@ -87,11 +125,19 @@ public class Product implements Parcelable {
     public void setUsedDaysTotal(int usedDaysTotal) { this.usedDaysTotal = usedDaysTotal; }
     public void setStatus(String status) { this.status = status; }
     public void setCategory(String category) { this.category = category; }
-    public void setSellerId(String sellerId) { this.sellerId = sellerId; }
     public void setLocation(String location) { this.location = location; }
-    public void setQrPaymentUrl(String qrPaymentUrl) { this.qrPaymentUrl = qrPaymentUrl; }
+    public void setSellerId(String sellerId) { this.sellerId = sellerId; }
     public void setBuyerId(String buyerId) { this.buyerId = buyerId; }
+    public void setQrPaymentUrl(String qrPaymentUrl) { this.qrPaymentUrl = qrPaymentUrl; }
     public void setHeader(boolean header) { isHeader = header; }
+
+    public void setListingDate(Date listingDate) {
+        this.listingDate = listingDate;
+    }
+
+    public void setTransactionDate(long transactionDate) {
+        this.transactionDate = transactionDate;
+    }
 
     public void setImageVersion(long imageVersion) {
         this.imageVersion = imageVersion;
@@ -110,9 +156,14 @@ public class Product implements Parcelable {
         category = in.readString();
         location = in.readString();
         sellerId = in.readString();
+        buyerId = in.readString();
         isHeader = in.readByte() != 0;
         qrPaymentUrl = in.readString();
-        buyerId = in.readString();
+        imageVersion = in.readLong();
+
+        long time = in.readLong();
+        listingDate = time == -1 ? null : new Date(time);
+        transactionDate = in.readLong();
     }
 
     @Override
@@ -128,17 +179,29 @@ public class Product implements Parcelable {
         dest.writeString(category);
         dest.writeString(location);
         dest.writeString(sellerId);
+        dest.writeString(buyerId);
         dest.writeByte((byte) (isHeader ? 1 : 0));
         dest.writeString(qrPaymentUrl);
-        dest.writeString(buyerId);
+        dest.writeLong(imageVersion);
+        dest.writeLong(listingDate != null ? listingDate.getTime() : -1);
+        dest.writeLong(transactionDate);
     }
 
     @Override
-    public int describeContents() { return 0; }
+    public int describeContents() {
+        return 0;
+    }
 
-    public static final Parcelable.Creator<Product> CREATOR = new Creator<>() {
-        @Override public Product createFromParcel(Parcel in) { return new Product(in); }
-        @Override public Product[] newArray(int size) { return new Product[size]; }
+    public static final Creator<Product> CREATOR = new Creator<>() {
+        @Override
+        public Product createFromParcel(Parcel in) {
+            return new Product(in);
+        }
+
+        @Override
+        public Product[] newArray(int size) {
+            return new Product[size];
+        }
     };
 
     // ---------------- EQUALITY ----------------
@@ -155,13 +218,12 @@ public class Product implements Parcelable {
         return id == null ? 0 : id.hashCode();
     }
 
+    // ---------------- UTIL ----------------
     public static List<Product> filterBySeller(
             List<Product> allProducts,
             String sellerId
     ) {
-
         List<Product> result = new ArrayList<>();
-
         if (allProducts == null || sellerId == null) return result;
 
         for (Product p : allProducts) {
@@ -169,7 +231,6 @@ public class Product implements Parcelable {
                 result.add(p);
             }
         }
-
         return result;
     }
 }

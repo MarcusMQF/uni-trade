@@ -1,5 +1,6 @@
 package com.example.unitrade;
 
+import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.graphics.Color;
@@ -10,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -23,9 +25,9 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Random;
 
 public class TransactionStatisticsFragment extends Fragment {
 
@@ -72,91 +74,88 @@ public class TransactionStatisticsFragment extends Fragment {
         transactionAdapter = new TransactionAdapter(getContext(), transactionList);
         rvHistory.setAdapter(transactionAdapter);
 
-        updateDataForDate(currentSelectedDate.get(Calendar.DAY_OF_MONTH), currentSelectedDate.get(Calendar.MONTH), currentSelectedDate.get(Calendar.YEAR));
+        updateDataForDate(currentSelectedDate);
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        updateDataForDate(currentSelectedDate.get(Calendar.DAY_OF_MONTH), currentSelectedDate.get(Calendar.MONTH), currentSelectedDate.get(Calendar.YEAR));
+        updateDataForDate(currentSelectedDate);
     }
 
     private void showDatePickerDialog() {
-        final Calendar c = Calendar.getInstance();
-        int year = c.get(Calendar.YEAR);
-        int month = c.get(Calendar.MONTH);
-        int day = c.get(Calendar.DAY_OF_MONTH);
+        int year = currentSelectedDate.get(Calendar.YEAR);
+        int month = currentSelectedDate.get(Calendar.MONTH);
+        int day = currentSelectedDate.get(Calendar.DAY_OF_MONTH);
 
-        DatePickerDialog datePickerDialog = new DatePickerDialog(getContext(),
+        DatePickerDialog datePickerDialog = new DatePickerDialog(requireContext(),
                 (datePicker, year1, monthOfYear, dayOfMonth) -> {
                     currentSelectedDate.set(year1, monthOfYear, dayOfMonth);
-                    updateDataForDate(dayOfMonth, monthOfYear, year1);
+                    updateDataForDate(currentSelectedDate);
                 }, year, month, day);
         datePickerDialog.getDatePicker().setMaxDate(System.currentTimeMillis());
         datePickerDialog.show();
     }
 
-    private void updateDataForDate(int day, int month, int year) {
-        String dateSeed = day + "/" + (month + 1) + "/" + year;
+    private void updateDataForDate(Calendar selectedCalendar) {
+        SimpleDateFormat sdf = new SimpleDateFormat("EEEE, MMM d, yyyy", Locale.getDefault());
+        selectedDate.setText(sdf.format(selectedCalendar.getTime()));
 
-        Calendar selectedCalendar = Calendar.getInstance();
-        selectedCalendar.set(year, month, day, 0, 0, 0);
-        selectedCalendar.set(Calendar.MILLISECOND, 0);
+        List<Transaction> dailyTransactions = fetchTransactionsForDate(selectedCalendar);
 
-        Calendar today = Calendar.getInstance();
-        today.set(Calendar.HOUR_OF_DAY, 0);
-        today.set(Calendar.MINUTE, 0);
-        today.set(Calendar.SECOND, 0);
-        today.set(Calendar.MILLISECOND, 0);
-
-        if (selectedCalendar.equals(today)) {
-            selectedDate.setText("Today");
-        } else {
-            SimpleDateFormat sdf = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
-            selectedDate.setText(sdf.format(selectedCalendar.getTime()));
-        }
-
-        if (selectedCalendar.after(today)) {
+        if (dailyTransactions.isEmpty()) {
+            new AlertDialog.Builder(getContext())
+                    .setTitle("No Transactions")
+                    .setMessage("No Buy or Sell transactions for this date.")
+                    .setPositiveButton("OK", null)
+                    .show();
             clearAllData();
-        } else {
-            List<Transaction> dailyTransactions = generateTransactionsForDate(dateSeed, selectedCalendar);
-            setupPieChart(dailyTransactions);
-            Collections.shuffle(dailyTransactions);
-            loadRecentTransactions(dailyTransactions);
+            return;
         }
+
+        setupPieChart(dailyTransactions);
+        loadRecentTransactions(dailyTransactions);
     }
 
-    private List<Transaction> generateTransactionsForDate(String dateSeed, Calendar selectedCalendar) {
+    private List<Transaction> fetchTransactionsForDate(Calendar selectedCalendar) {
         List<Transaction> transactions = new ArrayList<>();
-        Random random = new Random(dateSeed.hashCode());
+        List<Product> allProducts = SampleData.generateSampleProducts(requireContext());
         SimpleDateFormat sdf = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
-        String transactionDate = sdf.format(selectedCalendar.getTime());
 
-        String[] buyProductNames = {"Second-hand Textbook", "Used Keyboard", "Antique Desk Lamp", "Classic Novel Set", "Refurbished Laptop"};
-        String[] sellProductNames = {"Vintage T-Shirt", "Handmade Bracelet", "Collectible Action Figure", "Retro Video Game", "Used Smartphone"};
+        for (Product product : allProducts) {
+            Calendar productCalendar = Calendar.getInstance();
+            productCalendar.setTime(new Date(product.getTransactionDate()));
 
-        int totalTransactions = random.nextInt(15) + 5; // 5 to 19 transactions
+            boolean sameDay = selectedCalendar.get(Calendar.YEAR) == productCalendar.get(Calendar.YEAR) &&
+                    selectedCalendar.get(Calendar.DAY_OF_YEAR) == productCalendar.get(Calendar.DAY_OF_YEAR);
 
-        for (int i = 0; i < totalTransactions; i++) {
-            boolean isBuy = random.nextDouble() > 0.6; // Skew towards selling
-            String name;
-            double amount;
+            if (sameDay) {
+                // If status is "Sold", it's a Sell transaction. Otherwise, it's a Buy transaction (as per HistoryActivity logic).
+                boolean isBuy = !"Sold".equalsIgnoreCase(product.getStatus());
+                
+                String imageUrl = null;
+                if (product.getImageUrls() != null && !product.getImageUrls().isEmpty()) {
+                    imageUrl = product.getImageUrls().get(0);
+                }
 
-            if (isBuy) {
-                name = buyProductNames[random.nextInt(buyProductNames.length)];
-                amount = 20 + (random.nextDouble() * 150);
-            } else {
-                name = sellProductNames[random.nextInt(sellProductNames.length)];
-                amount = 30 + (random.nextDouble() * 300);
+                transactions.add(new Transaction(
+                        product.getName(),
+                        sdf.format(productCalendar.getTime()),
+                        product.getPrice(),
+                        isBuy,
+                        imageUrl
+                ));
             }
-            transactions.add(new Transaction(name, transactionDate, amount, isBuy));
         }
+        // No sort needed if following random order? Or sort by time? SampleData doesn't have time other than date granularity often.
+        // But user said "arrange follow the date sequence".
+        // Since we filtered for a specific date, they are all on the same date.
         return transactions;
     }
 
     private void clearAllData() {
         pieChart.clear();
-        pieChart.setCenterText("No Data");
+        pieChart.setCenterText("");
         pieChart.invalidate();
 
         buyItemsText.setText("Buy : 0 items");
@@ -170,11 +169,6 @@ public class TransactionStatisticsFragment extends Fragment {
     }
 
     private void setupPieChart(List<Transaction> transactions) {
-        if (transactions.isEmpty()) {
-            clearAllData();
-            return;
-        }
-
         int buyItems = 0;
         int sellItems = 0;
         float buyAmount = 0;
@@ -195,7 +189,7 @@ public class TransactionStatisticsFragment extends Fragment {
         pieEntries.add(new PieEntry(sellItems, "Sell"));
 
         PieDataSet pieDataSet = new PieDataSet(pieEntries, "");
-        pieDataSet.setColors(new int[]{Color.parseColor("#4CAF50"), Color.parseColor("#F44336")});
+        pieDataSet.setColors(new int[]{Color.parseColor("#E57373"), Color.parseColor("#81C784")}); // Red for Buy, Green for Sell
         pieDataSet.setValueTextColor(Color.WHITE);
         pieDataSet.setValueTextSize(12f);
 
@@ -208,8 +202,10 @@ public class TransactionStatisticsFragment extends Fragment {
 
         buyItemsText.setText("Buy : " + buyItems + " items");
         buyAmountText.setText(AppSettings.formatPrice(getContext(), buyAmount));
+        buyAmountText.setTextColor(Color.parseColor("#E57373"));
         sellItemsText.setText("Sell : " + sellItems + " items");
         sellAmountText.setText(AppSettings.formatPrice(getContext(), sellAmount));
+        sellAmountText.setTextColor(Color.parseColor("#81C784"));
 
         float profit = sellAmount - buyAmount;
         profitText.setText("Profit: " + AppSettings.formatPrice(getContext(), profit));
@@ -217,10 +213,7 @@ public class TransactionStatisticsFragment extends Fragment {
 
     private void loadRecentTransactions(List<Transaction> transactions) {
         transactionList.clear();
-        int itemsToShow = Math.min(transactions.size(), 3);
-        for (int i = 0; i < itemsToShow; i++) {
-            transactionList.add(transactions.get(i));
-        }
+        transactionList.addAll(transactions);
         transactionAdapter.notifyDataSetChanged();
     }
 }

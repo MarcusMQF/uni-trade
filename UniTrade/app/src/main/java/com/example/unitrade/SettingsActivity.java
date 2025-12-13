@@ -10,14 +10,22 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.widget.Toolbar;
 
+import java.util.ArrayList;
+
 public class SettingsActivity extends BaseActivity {
 
     private ActivityResultLauncher<Intent> editProfileLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK) {
-                    // Optionally refresh data or show a message
-                    Toast.makeText(this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
+                    // Save the updated user info
+                    if (result.getData() != null) {
+                        User updatedUser = result.getData().getParcelableExtra("updated_user");
+                        if (updatedUser != null) {
+                            SampleData.updateUser(this, updatedUser);
+                            Toast.makeText(this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
+                        }
+                    }
                 }
             });
 
@@ -26,6 +34,14 @@ public class SettingsActivity extends BaseActivity {
             result -> {
                 if (result.getResultCode() == RESULT_OK) {
                     recreate(); // Recreate the activity to apply changes
+                }
+            });
+
+    private ActivityResultLauncher<Intent> languageActivityLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK) {
+                    recreate(); // Recreate the activity to apply language changes
                 }
             });
 
@@ -64,12 +80,13 @@ public class SettingsActivity extends BaseActivity {
             if (currentUser != null) {
                 intent.putExtra("user_to_edit", currentUser);
             } else {
-                User dummyUser = new User("u1", "User", "User Name", "email@example.com", "0123456789", "", 0.0, 0.0, System.currentTimeMillis(), "Bio",0L);
+                // FIX: Add the two missing arguments at the end of the constructor call
+                User dummyUser = new User("u1", "User", "User Name", "email@example.com", "0123456789", "", 0.0, 0.0, System.currentTimeMillis(), "Bio", 0L, new ArrayList<Address>());
+
                 intent.putExtra("user_to_edit", dummyUser);
             }
             editProfileLauncher.launch(intent);
         });
-
         // Account Section
         findViewById(R.id.setting_login_security).setOnClickListener(v -> {
             Intent intent = new Intent(this, LoginSecurityActivity.class);
@@ -79,7 +96,10 @@ public class SettingsActivity extends BaseActivity {
         // Preferences Section
         setupSettingItem(R.id.setting_notifications, NotificationSettingsActivity.class);
         setupSettingItem(R.id.setting_privacy, PrivacyPolicyActivity.class);
-        setupSettingItem(R.id.setting_language, LanguageActivity.class);
+        findViewById(R.id.setting_language).setOnClickListener(v -> {
+            Intent intent = new Intent(this, LanguageActivity.class);
+            languageActivityLauncher.launch(intent);
+        });
         findViewById(R.id.setting_currency).setOnClickListener(v -> {
             Intent intent = new Intent(this, CurrencyActivity.class);
             currencyActivityLauncher.launch(intent);

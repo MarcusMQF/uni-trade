@@ -7,32 +7,36 @@ import java.util.List;
 
 public class PurchaseHistoryManager {
 
-    // Store purchased items in memory for now
-    public static final List<Product> purchasedItems = new ArrayList<>();
+    // ✅ Store ONLY product IDs
+    private static final List<String> purchasedProductIds = new ArrayList<>();
 
 
     // ----------------------------------------------------------
-    // ADD PURCHASED ITEM
+    // ADD PURCHASED PRODUCT (BY ID)
     // ----------------------------------------------------------
-    public static void addPurchasedItem(Product product) {
-        if (product == null) return;
+    public static void add(String productId) {
+        if (productId == null) return;
 
-        // Avoid duplicate entries (same product ID)
-        if (!purchasedItems.contains(product)) {
-            purchasedItems.add(product);
+        if (!purchasedProductIds.contains(productId)) {
+            purchasedProductIds.add(productId);
         }
     }
 
 
     // ----------------------------------------------------------
-    // GET PURCHASED ITEMS FOR CURRENT USER
-    // (HistoryActivity uses this)
+    // GET PURCHASED PRODUCTS FOR USER (RESOLVED)
+    // Used by HistoryActivity
     // ----------------------------------------------------------
-    public static List<Product> getPurchasedItems(String currentUserId) {
+    public static List<Product> getPurchasedItems(
+            Context context,
+            String currentUserId
+    ) {
         List<Product> result = new ArrayList<>();
 
-        for (Product p : purchasedItems) {
-            if (currentUserId.equals(p.getBuyerId())) {
+        for (String id : purchasedProductIds) {
+            Product p = SampleData.getProductById(context, id);
+
+            if (p != null && currentUserId.equals(p.getBuyerId())) {
                 result.add(p);
             }
         }
@@ -42,9 +46,9 @@ public class PurchaseHistoryManager {
 
 
     // ----------------------------------------------------------
-    // CLEAR ALL (Useful for reset or logout)
+    // CLEAR ALL (logout / reset)
     // ----------------------------------------------------------
     public static void clear() {
-        purchasedItems.clear();
+        purchasedProductIds.clear();
     }
 }

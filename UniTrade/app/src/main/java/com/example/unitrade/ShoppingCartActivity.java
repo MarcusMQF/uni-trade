@@ -11,12 +11,14 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.List;
+
 public class ShoppingCartActivity extends BaseActivity {
 
-    RecyclerView rvCart;
-    Button btnEdit;
-    ShoppingCartAdapter adapter;
-    boolean isEditMode = false;
+    private RecyclerView rvCart;
+    private Button btnEdit;
+    private ShoppingCartAdapter adapter;
+    private boolean isEditMode = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,7 +26,7 @@ public class ShoppingCartActivity extends BaseActivity {
         setContentView(R.layout.activity_shopping_cart);
 
         // -------------------------------
-        // Toolbar Setup
+        // Toolbar
         // -------------------------------
         Toolbar toolbar = findViewById(R.id.appBarShoppingCart);
         setSupportActionBar(toolbar);
@@ -33,7 +35,7 @@ public class ShoppingCartActivity extends BaseActivity {
         tintToolbarOverflow(toolbar);
 
         // -------------------------------
-        // Load cart data
+        // Load cart (IDs)
         // -------------------------------
         CartManager.loadCart(this);
 
@@ -42,20 +44,19 @@ public class ShoppingCartActivity extends BaseActivity {
         // -------------------------------
         rvCart = findViewById(R.id.rvCart);
         btnEdit = findViewById(R.id.btnEditCart);
-        LinearLayout layoutCartHeader = findViewById(R.id.layoutCartHeader);
-        View emptyStateView = findViewById(R.id.emptyStateView);
+
+        rvCart.setLayoutManager(new LinearLayoutManager(this));
 
         // -------------------------------
-        // Adapter (MUST create before using)
+        // Resolve PRODUCTS from IDs
         // -------------------------------
-        adapter = new ShoppingCartAdapter(this, CartManager.cartList);
-        rvCart.setLayoutManager(new LinearLayoutManager(this));
+        List<Product> cartProducts =
+                CartManager.getCartProducts(this);
+
+        adapter = new ShoppingCartAdapter(this, cartProducts);
         rvCart.setAdapter(adapter);
 
-        // -------------------------------
-        // Listener (SAFE now, adapter is not null)
-        // -------------------------------
-        adapter.setOnCartChangedListener(() -> updateEmptyState());
+        adapter.setOnCartChangedListener(this::updateEmptyState);
 
         // -------------------------------
         // Edit Mode
@@ -66,18 +67,19 @@ public class ShoppingCartActivity extends BaseActivity {
             btnEdit.setText(isEditMode ? "Done" : "Edit Shopping Cart");
         });
 
-        // -------------------------------
-        // FIRST TIME UI UPDATE
-        // -------------------------------
         updateEmptyState();
     }
 
+    // =====================================================
     private void updateEmptyState() {
+
         LinearLayout header = findViewById(R.id.layoutCartHeader);
         View emptyState = findViewById(R.id.emptyStateView);
         Button btnShopNow = emptyState.findViewById(R.id.btnShopNow);
 
-        if (CartManager.cartList.isEmpty()) {
+        boolean isEmpty = CartManager.cartProductIds.isEmpty();
+
+        if (isEmpty) {
             rvCart.setVisibility(View.GONE);
             header.setVisibility(View.GONE);
             emptyState.setVisibility(View.VISIBLE);
@@ -89,10 +91,10 @@ public class ShoppingCartActivity extends BaseActivity {
             subtitle.setText("Add some items to get started.");
 
             btnShopNow.setOnClickListener(v -> {
-                Intent intent = new Intent(this, MainActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                intent.putExtra("goToHome", true); // Pass flag to MainActivity
-                startActivity(intent);
+                Intent i = new Intent(this, MainActivity.class);
+                i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                i.putExtra("goToHome", true);
+                startActivity(i);
                 finish();
             });
         } else {
@@ -104,8 +106,7 @@ public class ShoppingCartActivity extends BaseActivity {
 
     @Override
     public boolean onSupportNavigateUp() {
-        finish();     // ⬅️ closes the activity
+        finish();
         return true;
     }
-
 }

@@ -111,18 +111,18 @@
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
-                        <View
-                            android:layout_width="8dp"
+                        <ImageView
+                            android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:layout_marginEnd="16dp"
-                            android:background="@drawable/circle_green"
-                            android:backgroundTint="#4CAF50" />
+                            android:src="@android:drawable/arrow_down_float"
+                            app:tint="@color/red" />
 
                         <TextView
                             android:id="@+id/buyItemsText"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:layout_marginStart="8dp"
                             android:text="Buy : 8 items"
                             android:textColor="#333333"
                             android:textSize="16sp" />
@@ -132,7 +132,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="RM 200"
-                            android:textColor="#333333"
+                            android:textColor="@color/red"
                             android:textSize="16sp"
                             android:textStyle="bold" />
                     </LinearLayout>
@@ -145,18 +145,18 @@
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
-                        <View
-                            android:layout_width="8dp"
+                        <ImageView
+                            android:layout_width="24dp"
                             android:layout_height="24dp"
-                            android:layout_marginEnd="16dp"
-                            android:background="@drawable/circle_green"
-                            android:backgroundTint="#F44336" />
+                            android:src="@android:drawable/arrow_up_float"
+                            app:tint="@color/green" />
 
                         <TextView
                             android:id="@+id/sellItemsText"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_weight="11"
+                            android:layout_weight="1"
+                            android:layout_marginStart="8dp"
                             android:text="Sell : 15 items"
                             android:textColor="#333333"
                             android:textSize="16sp" />
@@ -166,7 +166,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="RM 1280"
-                            android:textColor="#333333"
+                            android:textColor="@color/green"
                             android:textSize="16sp"
                             android:textStyle="bold" />
                     </LinearLayout>

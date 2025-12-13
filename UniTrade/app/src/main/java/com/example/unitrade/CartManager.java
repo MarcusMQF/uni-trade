@@ -13,66 +13,57 @@ import java.util.List;
 
 public class CartManager {
 
-    public static ArrayList<Product> cartList = new ArrayList<>();
     private static final String PREF = "cart_pref";
-    private static final String KEY = "cart_data";
+    private static final String KEY = "cart_product_ids";
 
-    // ---------------------------------------------------------
-    // LOAD CART
-    // ---------------------------------------------------------
+    public static ArrayList<String> cartProductIds = new ArrayList<>();
+
+    // ---------------- LOAD ----------------
     public static void loadCart(Context context) {
         SharedPreferences sp = context.getSharedPreferences(PREF, Context.MODE_PRIVATE);
         String json = sp.getString(KEY, "");
 
         if (!json.isEmpty()) {
-            Type type = new TypeToken<ArrayList<Product>>() {}.getType();
-            cartList = new Gson().fromJson(json, type);
+            Type type = new TypeToken<ArrayList<String>>() {}.getType();
+            cartProductIds = new Gson().fromJson(json, type);
         }
     }
 
-    // ---------------------------------------------------------
-    // SAVE CART
-    // ---------------------------------------------------------
-    public static void saveCart(Context context) {
+    // ---------------- SAVE ----------------
+    private static void save(Context context) {
         SharedPreferences sp = context.getSharedPreferences(PREF, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sp.edit();
-        editor.putString(KEY, new Gson().toJson(cartList));
-        editor.apply();
+        sp.edit().putString(KEY, new Gson().toJson(cartProductIds)).apply();
     }
 
-    // ---------------------------------------------------------
-    // ADD ITEM
-    // ---------------------------------------------------------
-    public static void addItem(Context context, Product p) {
-        cartList.add(p);
-        saveCart(context);
-    }
-
-    // ---------------------------------------------------------
-    // REMOVE ONE ITEM
-    // ---------------------------------------------------------
-    public static void removeItem(Context context, Product p) {
-        cartList.remove(p);
-        saveCart(context);
-    }
-
-    // ---------------------------------------------------------
-    // REMOVE MULTIPLE PURCHASED ITEMS (used in CheckoutActivity)
-    // ---------------------------------------------------------
-    public static void removePurchased(List<Product> purchasedItems) {
-        if (purchasedItems == null || purchasedItems.isEmpty()) return;
-
-        Iterator<Product> it = cartList.iterator();
-
-        while (it.hasNext()) {
-            Product cartItem = it.next();
-
-            for (Product purchased : purchasedItems) {
-                if (cartItem.getId().equals(purchased.getId())) {
-                    it.remove();    // safe removal during iteration
-                    break;
-                }
-            }
+    // ---------------- ADD ----------------
+    public static void addItem(Context context, String productId) {
+        if (!cartProductIds.contains(productId)) {
+            cartProductIds.add(productId);
+            save(context);
         }
+    }
+
+    // ---------------- REMOVE ONE ----------------
+    public static void removeItem(Context context, String productId) {
+        cartProductIds.remove(productId);
+        save(context);
+    }
+
+    // ---------------- REMOVE PURCHASED ----------------
+    public static void removePurchasedByIds(Context context, List<String> purchasedIds) {
+        if (purchasedIds == null) return;
+
+        cartProductIds.removeAll(purchasedIds);
+        save(context);
+    }
+
+    // ---------------- RESOLVE PRODUCTS ----------------
+    public static List<Product> getCartProducts(Context context) {
+        List<Product> products = new ArrayList<>();
+        for (String id : cartProductIds) {
+            Product p = SampleData.getProductById(context, id);
+            if (p != null) products.add(p);
+        }
+        return products;
     }
 }

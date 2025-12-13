@@ -15,16 +15,18 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
+import java.util.List;
+
 public class RateUserActivity extends BaseActivity {
 
     private ImageView star1, star2, star3, star4, star5;
     private MaterialButton btnBuyer, btnSeller, btnSubmit;
     private EditText edtReview;
 
-    private int rating = 0;      // 1–5 stars
-    private String ratingRole = ""; // "buyer" or "seller"
+    private int rating = 0;
+    private String ratingRole = "";
 
-    private User targetUser;     // The user being rated
+    private User targetUser;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -41,7 +43,8 @@ public class RateUserActivity extends BaseActivity {
         tintToolbarOverflow(toolbar);
 
         // Retrieve user to rate
-        targetUser = getIntent().getParcelableExtra("user_to_view");
+        String userId = getIntent().getStringExtra("user_id");
+        targetUser = SampleData.getUserById(this, userId);
         if (targetUser == null) {
             Toast.makeText(this, "No user selected", Toast.LENGTH_SHORT).show();
             finish();
@@ -73,9 +76,7 @@ public class RateUserActivity extends BaseActivity {
         btnSubmit = findViewById(R.id.btnSubmit);
     }
 
-    // -------------------------------------------------------------------
-    // ⭐ STAR RATING HANDLING
-    // -------------------------------------------------------------------
+
     private void setupStarListeners() {
 
         View.OnClickListener listener = v -> {
@@ -109,9 +110,7 @@ public class RateUserActivity extends BaseActivity {
         }
     }
 
-    // -------------------------------------------------------------------
-    // 👤 ROLE SELECTION
-    // -------------------------------------------------------------------
+
     private void setupRoleButtons() {
 
         btnBuyer.setOnClickListener(v -> {
@@ -129,13 +128,10 @@ public class RateUserActivity extends BaseActivity {
         });
     }
 
-    // -------------------------------------------------------------------
-    // ✔ SUBMIT ACTION
-    // -------------------------------------------------------------------
+
     private void setupSubmitAction() {
         btnSubmit.setOnClickListener(v -> {
 
-            // Validate
             if (rating == 0) {
                 Toast.makeText(this, "Please select a rating", Toast.LENGTH_SHORT).show();
                 return;
@@ -147,25 +143,24 @@ public class RateUserActivity extends BaseActivity {
             }
 
             String reviewText = edtReview.getText() != null ? edtReview.getText().toString() : "";
-            //Dumpy loggedin User
-            User loggedinUser = SampleData.generateSampleUsers(this).get(0);
-            // Create review object
+            User loggedInUser = UserSession.get();
+
             Review review = new Review(
                     "rev_" + System.currentTimeMillis(),
-                    loggedinUser, // reviewer
+                    loggedInUser,
                     reviewText,
                     rating,
                     "Today",
                     ratingRole.equals("buyer") ? "user" : "seller"
             );
 
-            // Send back to RatingReviewsActivity
+            // Send only this new review back
             Intent data = new Intent();
             data.putExtra("new_review", review);
+            data.putExtra("user_id", targetUser.getId());
             setResult(RESULT_OK, data);
 
             Toast.makeText(this, "Review submitted!", Toast.LENGTH_SHORT).show();
-
             finish();
         });
     }

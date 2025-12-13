@@ -44,9 +44,9 @@ public class ProductDetailActivity extends BaseActivity {
     private Product product;
     private User seller;
 
-    private final String currentUserId = "u1"; // replace later with UserSession if needed
+    private String currentUserId ;
 
-    // =========================================================
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -55,9 +55,9 @@ public class ProductDetailActivity extends BaseActivity {
         setupToolbar();
         bindViews();
 
-        // -----------------------------------------------------
-        // Load product using product_id ONLY
-        // -----------------------------------------------------
+        currentUserId = UserSession.get().getId();
+
+
         String productId = getIntent().getStringExtra("product_id");
         product = SampleData.getProductById(this, productId);
 
@@ -85,7 +85,7 @@ public class ProductDetailActivity extends BaseActivity {
         }
     }
 
-    // =========================================================
+
     private void setupToolbar() {
         Toolbar toolbar = findViewById(R.id.appBarProductDetail);
         setSupportActionBar(toolbar);
@@ -96,7 +96,7 @@ public class ProductDetailActivity extends BaseActivity {
         }
     }
 
-    // =========================================================
+
     private void bindViews() {
         viewPagerImages = findViewById(R.id.viewPagerImages);
         tabDots = findViewById(R.id.tabDots);
@@ -121,16 +121,21 @@ public class ProductDetailActivity extends BaseActivity {
 
         btnCart = findViewById(R.id.btnCart);
 
-        // Optional movable FAB
+        //movable FAB
         View rootView = getWindow().getDecorView();
         View topView = findViewById(R.id.appBarProductDetail);
-        View bottomView = findViewById(R.id.bottomBar);
+
 
         MovableFabHelper mover = new MovableFabHelper();
-        mover.enable(btnCart, rootView, topView, bottomView);
+        mover.enable(btnCart, rootView, topView, bottomBar);
+
+        btnCart.setOnClickListener(v -> {
+            Intent intent = new Intent(ProductDetailActivity.this, ShoppingCartActivity.class);
+            startActivity(intent);
+        });
     }
 
-    // =========================================================
+
     private void showProductInfo() {
         txtItemTitle.setText(product.getName());
         txtPrice.setText(AppSettings.formatPrice(this, product.getPrice()));
@@ -143,7 +148,7 @@ public class ProductDetailActivity extends BaseActivity {
         applyUsageColor(txtConditionUsedDays, product.getUsedDaysTotal());
     }
 
-    // =========================================================
+
     private void setupSellerInfo() {
         if (seller == null) {
             txtSellerName.setText("Unknown");
@@ -160,12 +165,12 @@ public class ProductDetailActivity extends BaseActivity {
 
         btnVisitProfile.setOnClickListener(v -> {
             Intent i = new Intent(this, UserProfileActivity.class);
-            i.putExtra("user_to_view", seller);
+            i.putExtra("user_id", currentUserId);
             startActivity(i);
         });
     }
 
-    // =========================================================
+
     private void setupImageSlider() {
         imageSliderAdapter = new ImageSliderAdapter(
                 this,
@@ -178,7 +183,7 @@ public class ProductDetailActivity extends BaseActivity {
                 .attach();
     }
 
-    // =========================================================
+
     private void showBuyerBottomBar() {
         bottomBar.setVisibility(View.VISIBLE);
         layoutBuyerButtons.setVisibility(View.VISIBLE);
@@ -193,7 +198,7 @@ public class ProductDetailActivity extends BaseActivity {
         btnManageListing.setOnClickListener(v -> showEditDialog());
     }
 
-    // =========================================================
+
     private void showEditDialog() {
         new AlertDialog.Builder(this)
                 .setTitle("Manage Listing")
@@ -212,7 +217,7 @@ public class ProductDetailActivity extends BaseActivity {
         startActivity(intent);
     }
 
-    // =========================================================
+
     private void applyStatusUI() {
         String status = product.getStatus() == null ? "Available" : product.getStatus();
 
@@ -232,11 +237,11 @@ public class ProductDetailActivity extends BaseActivity {
         }
     }
 
-    // =========================================================
+
     private void setupActions() {
 
         btnAddToCart.setOnClickListener(v -> {
-            CartManager.addItem(this, product);
+            CartManager.addItem(this, product.getId());
             Toast.makeText(this, "Added to cart", Toast.LENGTH_SHORT).show();
         });
 
@@ -246,11 +251,8 @@ public class ProductDetailActivity extends BaseActivity {
                 return;
             }
 
-            ArrayList<Product> items = new ArrayList<>();
-            items.add(product);
-
             Intent i = new Intent(this, CheckoutActivity.class);
-            i.putParcelableArrayListExtra("checkoutItems", items);
+            i.putExtra("product_id", product.getId());
             startActivity(i);
         });
 
@@ -272,7 +274,7 @@ public class ProductDetailActivity extends BaseActivity {
         });
     }
 
-    // =========================================================
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -292,7 +294,7 @@ public class ProductDetailActivity extends BaseActivity {
     }
 
 
-    // =========================================================
+
     private String formatUsage(int totalDays) {
         if (totalDays <= 0) return "Unused";
 
@@ -363,7 +365,7 @@ public class ProductDetailActivity extends BaseActivity {
         txt.setTextColor(Color.parseColor("#C62828"));
     }
 
-    // =========================================================
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.toolbar_menu, menu);

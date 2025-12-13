@@ -71,6 +71,8 @@ public class CurrencyActivity extends BaseActivity implements CurrencyAdapter.On
         Currency selectedCurrency = adapter.getSelectedCurrency();
         if (selectedCurrency != null) {
             AppSettings.setCurrency(this, selectedCurrency.getCode());
+        } else {
+            AppSettings.setCurrency(this, ""); // No currency selected
         }
     }
 

@@ -1,20 +1,16 @@
 package com.example.unitrade;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.content.SharedPreferences;
-import android.content.res.Configuration;
-import android.content.res.Resources;
-import android.os.Bundle;
-
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-import java.util.Locale;
-
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -26,36 +22,49 @@ public abstract class BaseActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        loadLocale(); // Load language preference at the start of every activity
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Apply translation to all views in the current activity
+        translateUI();
+    }
 
-        private void loadLocale() {
-            SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
-            // Default to English if no language is saved
-            String language = prefs.getString("app_language", "en");
-            setLocale(language);
+    private void translateUI() {
+        SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
+        String targetLanguage = prefs.getString("app_language", "en");
+
+        // No translation needed for English
+        if ("en".equals(targetLanguage)) {
+            return;
         }
 
-        private void setLocale(String lang) {
-            if (lang == null || lang.isEmpty()) {
-                return;
+        ViewGroup rootView = (ViewGroup) getWindow().getDecorView().getRootView();
+        translateAllTextViews(rootView, targetLanguage);
+
+        // Translate the toolbar title
+        if (getSupportActionBar() != null && getSupportActionBar().getTitle() != null) {
+            TranslatorUtil.getInstance().translate(getSupportActionBar().getTitle(), targetLanguage, title -> {
+                getSupportActionBar().setTitle(title);
+            });
+        }
+    }
+
+    private void translateAllTextViews(ViewGroup viewGroup, String targetLanguage) {
+        if (viewGroup == null) {
+            return;
+        }
+
+        for (int i = 0; i < viewGroup.getChildCount(); i++) {
+            View child = viewGroup.getChildAt(i);
+            if (child instanceof TextView) {
+                TranslatorUtil.getInstance().translate((TextView) child, targetLanguage);
+            } else if (child instanceof ViewGroup) {
+                translateAllTextViews((ViewGroup) child, targetLanguage);
             }
-            Locale locale = new Locale(lang);
-            Locale.setDefault(locale);
-            Resources resources = getResources();
-            Configuration config = resources.getConfiguration();
-            config.setLocale(locale);
-            resources.updateConfiguration(config, resources.getDisplayMetrics());
         }
-
-        @Override
-        protected void onResume() {
-            super.onResume();
-            // It's also a good practice to reload the locale onResume
-            // in case the activity was paused and settings were changed elsewhere.
-            loadLocale();
-        }
+    }
 
     // Call this in child activities AFTER setContentView()
     protected void setupToolbar(int toolbarId) {
@@ -66,6 +75,15 @@ public abstract class BaseActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.toolbar_menu, menu);
+        // Translate menu items
+        SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
+        String targetLanguage = prefs.getString("app_language", "en");
+        if (!"en".equals(targetLanguage)) {
+            for (int i = 0; i < menu.size(); i++) {
+                MenuItem item = menu.getItem(i);
+                TranslatorUtil.getInstance().translate(item.getTitle(), targetLanguage, item::setTitle);
+            }
+        }
         return true;
     }
 
@@ -104,6 +122,4 @@ public abstract class BaseActivity extends AppCompatActivity {
             overflow.setTint(Color.WHITE);
         }
     }
-
-
 }

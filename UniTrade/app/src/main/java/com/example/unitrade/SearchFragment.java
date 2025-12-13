@@ -25,126 +25,93 @@ import java.util.List;
 
 public class SearchFragment extends Fragment {
 
+    // ---------------- UI ----------------
     private EditText edtSearch;
+    private RecyclerView rvProducts;
 
     private FloatingActionButton btnCart;
     private BottomNavigationView bottomNav;
     private View topView;
-    private MovableFabHelper mover = new MovableFabHelper();
     private View rootView;
 
-    private RecyclerView rvProducts;
+    private final MovableFabHelper mover = new MovableFabHelper();
+
+    // ---------------- Data ----------------
     private ItemAdapter adapter;
     private List<Product> allProducts = new ArrayList<>();
-    private List<Product> filteredProducts = new ArrayList<>();
+    private final List<Product> filteredProducts = new ArrayList<>();
 
     private String currentUserId = "";
 
     public SearchFragment() {}
 
+    // ==========================================================
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-
-        // ----------------------------
-        // ✔ Safe current user handling
-        // ----------------------------
-        if (UserSession.get() != null) {
-            currentUserId = UserSession.get().getId();
-        } else {
-            currentUserId = "";   // fallback
-        }
+    public View onCreateView(
+            @NonNull LayoutInflater inflater,
+            ViewGroup container,
+            Bundle savedInstanceState
+    ) {
 
         View view = inflater.inflate(R.layout.fragment_search, container, false);
-
         rootView = view;
+
+        // ---------------- Current user ----------------
+        if (UserSession.get() != null) {
+            currentUserId = UserSession.get().getId();
+        }
+
+        // ---------------- Views ----------------
+        edtSearch = view.findViewById(R.id.edtSearch);
+        rvProducts = view.findViewById(R.id.rvSearchProducts);
         btnCart = view.findViewById(R.id.btnCart);
+
         bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
         topView = view.findViewById(R.id.searchBarContainer);
 
+        // ---------------- Movable FAB ----------------
         mover.enable(btnCart, rootView, topView, bottomNav);
 
-        btnCart.setOnClickListener(v -> {
-            Intent intent = new Intent(getContext(), ShoppingCartActivity.class);
-            intent.putParcelableArrayListExtra("cart", new ArrayList<>(CartManager.cartList));
-            startActivity(intent);
-        });
+        btnCart.setOnClickListener(v ->
+                startActivity(new Intent(getContext(), ShoppingCartActivity.class))
+        );
 
-        // ----------------------------
-        // Get passed search query
-        // ----------------------------
+        // ---------------- Restore search query ----------------
         Bundle args = getArguments();
-        String query = "";
-
         if (args != null) {
-            query = args.getString("query", "");
+            edtSearch.setText(args.getString("query", ""));
         }
-
-        edtSearch = view.findViewById(R.id.edtSearch);
-        edtSearch.setText(query);
 
         return view;
     }
 
+    // ==========================================================
     @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(
+            @NonNull View view,
+            @Nullable Bundle savedInstanceState
+    ) {
         super.onViewCreated(view, savedInstanceState);
 
-        edtSearch = view.findViewById(R.id.edtSearch);
-        rvProducts = view.findViewById(R.id.rvSearchProducts);
-
+        setupRecycler();
         loadProducts();
+        setupSearchLogic();
 
-        // ------------------------------------------------
-        // Initial filtering if there was a query passed in
-        // ------------------------------------------------
+        // Initial filter if query exists
         String initialQuery = edtSearch.getText().toString().trim();
         if (!initialQuery.isEmpty()) {
             filterProducts(initialQuery);
         }
-
-        // ------------------------------
-        // Search on enter / search button
-        // ------------------------------
-        edtSearch.setOnEditorActionListener((v, actionId, event) -> {
-            boolean isEnter = actionId == EditorInfo.IME_ACTION_SEARCH ||
-                    (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER);
-
-            if (isEnter) {
-                filterProducts(edtSearch.getText().toString());
-                return true;
-            }
-            return false;
-        });
-
-        // ----------
-        // Live search
-        // ----------
-        edtSearch.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int st, int b, int c) {
-                filterProducts(s.toString());
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
-        });
     }
 
-    // ============================================
-    // LOAD AVAILABLE PRODUCTS (NOT SOLD, NOT USER)
-    // ============================================
-    private void loadProducts() {
-
-        allProducts = SampleData.getAvailableItems(requireContext(), currentUserId);
-        filteredProducts = new ArrayList<>(allProducts);
+    // ==========================================================
+    // SETUP RECYCLER
+    // ==========================================================
+    private void setupRecycler() {
 
         adapter = new ItemAdapter(filteredProducts, product -> {
             Intent intent = new Intent(getContext(), ProductDetailActivity.class);
-            intent.putExtra("product", product);
+            intent.putExtra("product_id", product.getId());
             startActivity(intent);
         });
 
@@ -152,21 +119,66 @@ public class SearchFragment extends Fragment {
         rvProducts.setAdapter(adapter);
     }
 
-    // =======================
-    // SEARCH FILTERING LOGIC
-    // =======================
+    // ==========================================================
+    // LOAD AVAILABLE PRODUCTS
+    // ==========================================================
+    private void loadProducts() {
+
+        allProducts = SampleData.getAvailableItems(requireContext(), currentUserId);
+
+        filteredProducts.clear();
+        filteredProducts.addAll(allProducts);
+
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
+    }
+
+    // ==========================================================
+    // SEARCH LOGIC
+    // ==========================================================
+    private void setupSearchLogic() {
+
+        // Search on keyboard action
+        edtSearch.setOnEditorActionListener((v, actionId, event) -> {
+            boolean isSearch =
+                    actionId == EditorInfo.IME_ACTION_SEARCH ||
+                            (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER);
+
+            if (isSearch) {
+                filterProducts(edtSearch.getText().toString());
+                return true;
+            }
+            return false;
+        });
+
+        // Live search
+        edtSearch.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
+            @Override public void afterTextChanged(Editable s) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int st, int b, int c) {
+                filterProducts(s.toString());
+            }
+        });
+    }
+
+    // ==========================================================
+    // FILTER PRODUCTS
+    // ==========================================================
     private void filterProducts(String query) {
 
         filteredProducts.clear();
 
-        if (query == null || query.isEmpty()) {
+        if (query == null || query.trim().isEmpty()) {
             filteredProducts.addAll(allProducts);
         } else {
             String lower = query.toLowerCase().trim();
 
             for (Product p : allProducts) {
-                if (p.getName().toLowerCase().contains(lower) ||
-                        p.getDescription().toLowerCase().contains(lower)) {
+                if (p.getName().toLowerCase().contains(lower)
+                        || p.getDescription().toLowerCase().contains(lower)) {
                     filteredProducts.add(p);
                 }
             }
@@ -175,17 +187,17 @@ public class SearchFragment extends Fragment {
         adapter.notifyDataSetChanged();
     }
 
-    // ==============================================================================
-    // REFRESH WHEN COMING BACK FROM PRODUCT DETAIL OR CHECKOUT (status may change)
-    // ==============================================================================
+    // ==========================================================
+    // REFRESH ON RETURN (STATUS MAY CHANGE)
+    // ==========================================================
     @Override
     public void onResume() {
         super.onResume();
 
-        // Reload list to reflect new Sold / Donated / Reserved status
         loadProducts();
-        adapter.notifyDataSetChanged();
 
-        btnCart.post(() -> mover.enable(btnCart, rootView, topView, bottomNav));
+        btnCart.post(() ->
+                mover.enable(btnCart, rootView, topView, bottomNav)
+        );
     }
 }

@@ -15,6 +15,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class HistoryActivity extends BaseActivity {
@@ -89,7 +90,14 @@ public class HistoryActivity extends BaseActivity {
         String currentUserId = UserSession.get().getId();
 
         // Purchased
-        purchasedList.addAll(PurchaseHistoryManager.purchasedItems);
+        // Purchased (resolve from IDs)
+        purchasedList.addAll(
+                PurchaseHistoryManager.getPurchasedItems(
+                        this,
+                        currentUserId
+                )
+        );
+
 
         // Sold / Donated
         for (Product p : SampleData.getAllProducts(this)) {
@@ -100,6 +108,10 @@ public class HistoryActivity extends BaseActivity {
                 soldList.add(p);
             }
         }
+
+        // Sort both lists by date
+        Collections.sort(purchasedList, (p1, p2) -> Long.compare(p2.getListingDate().getTime(), p1.getListingDate().getTime()));
+        Collections.sort(soldList, (p1, p2) -> Long.compare(p2.getListingDate().getTime(), p1.getListingDate().getTime()));
     }
 
     // ============================================================
@@ -177,7 +189,7 @@ public class HistoryActivity extends BaseActivity {
             emptyState.setVisibility(View.GONE);
         }
 
-        adapter.setPurchasedTab(isPurchasedMode);
+
         adapter.updateList(list);
         adapter.setEditMode(isEditMode);
     }

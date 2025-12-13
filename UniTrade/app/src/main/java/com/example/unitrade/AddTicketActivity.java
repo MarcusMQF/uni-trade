@@ -16,10 +16,17 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.content.FileProvider;
 
 import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.card.MaterialCardView;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 public class AddTicketActivity extends BaseActivity {
 
@@ -35,16 +42,21 @@ public class AddTicketActivity extends BaseActivity {
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                    attachedFileUri = result.getData().getData();
-                    String fileName = getFileName(attachedFileUri);
-                    tvAttachedFileName.setText(fileName);
-                    attachmentPreviewCard.setVisibility(View.VISIBLE);
-                    attachmentDropZone.setVisibility(View.GONE);
+                    Uri uri = result.getData().getData();
+                    attachedFileUri = saveFileLocally(uri);
+                    if (attachedFileUri != null) {
+                        String fileName = getFileName(attachedFileUri);
+                        tvAttachedFileName.setText(fileName);
+                        attachmentPreviewCard.setVisibility(View.VISIBLE);
+                        attachmentDropZone.setVisibility(View.GONE);
 
-                    if (isImage(fileName) || isVideo(fileName)) {
-                        Glide.with(this).load(attachedFileUri).into(ivAttachmentPreview);
+                        if (isImage(fileName) || isVideo(fileName)) {
+                            Glide.with(this).load(attachedFileUri).into(ivAttachmentPreview);
+                        } else {
+                            ivAttachmentPreview.setImageResource(R.drawable.ic_menu_attachment);
+                        }
                     } else {
-                        ivAttachmentPreview.setImageResource(R.drawable.ic_menu_attachment);
+                        Toast.makeText(this, "Failed to attach file.", Toast.LENGTH_SHORT).show();
                     }
                 }
             });
@@ -95,7 +107,9 @@ public class AddTicketActivity extends BaseActivity {
             return;
         }
 
-        Ticket ticket = new Ticket(subject, description, attachedFileUri, System.currentTimeMillis());
+        String attachmentUriString = (attachedFileUri != null) ? attachedFileUri.toString() : null;
+
+        Ticket ticket = new Ticket(subject, description, attachmentUriString, System.currentTimeMillis());
         TicketHistoryManager.addTicket(this, ticket);
 
         Toast.makeText(this, "Ticket submitted successfully", Toast.LENGTH_SHORT).show();
@@ -112,7 +126,8 @@ public class AddTicketActivity extends BaseActivity {
     private void openAttachment() {
         if (attachedFileUri != null) {
             Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setData(attachedFileUri);
+            Uri fileUri = FileProvider.getUriForFile(this, getApplicationContext().getPackageName() + ".provider", new File(attachedFileUri.getPath()));
+            intent.setData(fileUri);
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             startActivity(intent);
         }
@@ -148,5 +163,26 @@ public class AddTicketActivity extends BaseActivity {
     private boolean isVideo(String fileName) {
         String lowerCaseName = fileName.toLowerCase();
         return lowerCaseName.endsWith(".mp4") || lowerCaseName.endsWith(".3gp") || lowerCaseName.endsWith(".mkv");
+    }
+
+    private Uri saveFileLocally(Uri uri) {
+        try {
+            InputStream inputStream = getContentResolver().openInputStream(uri);
+            String fileName = getFileName(uri);
+            if (fileName == null) fileName = "attachment_" + System.currentTimeMillis();
+            File file = new File(getFilesDir(), fileName);
+            try (OutputStream outputStream = new FileOutputStream(file)) {
+                byte[] buffer = new byte[1024];
+                int length;
+                while ((length = inputStream.read(buffer)) > 0) {
+                    outputStream.write(buffer, 0, length);
+                }
+            }
+            inputStream.close();
+            return Uri.fromFile(file);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

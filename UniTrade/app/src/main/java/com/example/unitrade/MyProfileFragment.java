@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -44,12 +45,17 @@ public final class MyProfileFragment extends Fragment {
     private Button btnSellItem;
     private Button btnManageListings;
 
+    private ImageButton btnEditProfile;
+
+
     // -------------------------------------------------
     // STATE
     // -------------------------------------------------
     private boolean manageMode = false;
     private boolean isActiveTab = true;
 
+
+    private TextView txtAddress;
     // =================================================
     // LIFECYCLE
     // =================================================
@@ -97,6 +103,7 @@ public final class MyProfileFragment extends Fragment {
         txtEmail = v.findViewById(R.id.txtEmail);
         txtPhone = v.findViewById(R.id.txtPhone);
         txtRating = v.findViewById(R.id.txtRating);
+        txtAddress = v.findViewById(R.id.txtAddress);
 
         recyclerMyProducts = v.findViewById(R.id.recyclerMyProducts);
         btnManageListings = v.findViewById(R.id.btnManageListings);
@@ -110,6 +117,13 @@ public final class MyProfileFragment extends Fragment {
         btnSellItem.setText("List an Item");
         btnSellItem.setOnClickListener(v1 -> openSellFragmentForNew());
 
+        btnManageListings.setOnClickListener(v1 -> toggleManageMode());
+        btnEditProfile = v.findViewById(R.id.btnEditProfile);
+
+
+
+        btnEditProfile.setOnClickListener(v1 -> openEditProfile());
+        btnSellItem.setOnClickListener(v1 -> openSellFragmentForNew());
         btnManageListings.setOnClickListener(v1 -> toggleManageMode());
 
         tabActive.setOnClickListener(v1 -> showActiveItems());
@@ -126,6 +140,26 @@ public final class MyProfileFragment extends Fragment {
         txtEmail.setText(viewedUser.getEmail());
         txtPhone.setText(viewedUser.getPhoneNumber());
         txtRating.setText(String.format("%.1f rating", viewedUser.getOverallRating()));
+
+        List<Address> addresses = viewedUser.getAddresses();
+        if (addresses == null || addresses.isEmpty()) {
+            txtAddress.setText("No address set");
+        } else {
+            Address defaultAddress = null;
+
+            for (Address a : addresses) {
+                if (a.isDefault()) {
+                    defaultAddress = a;
+                    break;
+                }
+            }
+
+            if (defaultAddress != null) {
+                txtAddress.setText(defaultAddress.getAddress());
+            } else {
+                txtAddress.setText(addresses.get(0).getAddress());
+            }
+        }
 
         Glide.with(requireContext())
                 .load(viewedUser.getProfileImageUrl())
@@ -281,6 +315,19 @@ public final class MyProfileFragment extends Fragment {
     public void onResume() {
         super.onResume();
 
+        // 🔥 RE-READ FROM SESSION
+        viewedUser = UserSession.get();
+
+        if (viewedUser == null) {
+            viewedUser = SampleData.getUserById(requireContext(), "u1");
+        }
+
+        // 🔥 REFRESH HEADER UI
+        showUserData();
+
+        // --------------------
+        // Existing product sync
+        // --------------------
         userProducts.clear();
 
         if (isActiveTab) {
@@ -301,4 +348,11 @@ public final class MyProfileFragment extends Fragment {
             productAdapter.setManageMode(false);
         }
     }
+
+    private void openEditProfile() {
+        Intent i = new Intent(requireActivity(), EditProfileActivity.class);
+        i.putExtra("user_id", viewedUser.getId());   // <-- send only ID
+        startActivity(i);
+    }
+
 }

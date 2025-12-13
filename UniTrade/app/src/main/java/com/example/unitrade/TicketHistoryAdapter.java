@@ -1,20 +1,38 @@
 package com.example.unitrade;
 
+import android.Manifest;
+import android.app.Activity;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
+
 import java.util.List;
 
 public class TicketHistoryAdapter extends RecyclerView.Adapter<TicketHistoryAdapter.TicketViewHolder> {
 
-    private List<Ticket> ticketList;
+    private final List<Ticket> ticketList;
+    private final Context context;
+    private final OnAttachmentClickListener listener;
 
-    public TicketHistoryAdapter(List<Ticket> ticketList) {
+    public interface OnAttachmentClickListener {
+        void onAttachmentClick(String attachmentUri);
+    }
+
+    public TicketHistoryAdapter(Context context, List<Ticket> ticketList, OnAttachmentClickListener listener) {
+        this.context = context;
         this.ticketList = ticketList;
+        this.listener = listener;
     }
 
     @NonNull
@@ -46,12 +64,15 @@ public class TicketHistoryAdapter extends RecyclerView.Adapter<TicketHistoryAdap
         }
         holder.status.setTextColor(statusColor);
 
-
-        if (ticket.getAttachmentUri() != null) {
-            holder.attachment.setText("Attachment: " + getFileName(ticket.getAttachmentUri().toString()));
-            holder.attachment.setVisibility(View.VISIBLE);
+        if (ticket.getAttachmentUri() != null && !ticket.getAttachmentUri().isEmpty()) {
+            holder.attachmentButton.setVisibility(View.VISIBLE);
+            holder.attachmentButton.setOnClickListener(v -> {
+                // Should check permission if targeting older Android or specific storage
+                // For now, simpler logic
+                listener.onAttachmentClick(ticket.getAttachmentUri());
+            });
         } else {
-            holder.attachment.setVisibility(View.GONE);
+            holder.attachmentButton.setVisibility(View.GONE);
         }
     }
 
@@ -60,24 +81,17 @@ public class TicketHistoryAdapter extends RecyclerView.Adapter<TicketHistoryAdap
         return ticketList.size();
     }
 
-    private String getFileName(String path) {
-        int cut = path.lastIndexOf('/');
-        if (cut != -1) {
-            return path.substring(cut + 1);
-        }
-        return path;
-    }
-
     public static class TicketViewHolder extends RecyclerView.ViewHolder {
-        TextView subject, description, timestamp, attachment, status;
+        TextView subject, description, timestamp, status;
+        ImageButton attachmentButton;
 
         public TicketViewHolder(@NonNull View itemView) {
             super(itemView);
             subject = itemView.findViewById(R.id.tvTicketSubject);
             description = itemView.findViewById(R.id.tvTicketDescription);
             timestamp = itemView.findViewById(R.id.tvTicketTimestamp);
-            attachment = itemView.findViewById(R.id.tvTicketAttachment);
             status = itemView.findViewById(R.id.tvTicketStatus);
+            attachmentButton = itemView.findViewById(R.id.imgAttachmentIndicator);
         }
     }
 }

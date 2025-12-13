@@ -21,7 +21,7 @@ public class UserProfileActivity extends BaseActivity {
     private User viewedUser;
 
     private ImageView imgProfile;
-    private TextView txtUsername, txtLastSeen, txtUserDescription, txtShowMore, txtViewMoreListings;
+    private TextView txtUsername, txtLastSeen, txtUserDescription, txtShowMore, txtViewMoreListings, txtUserAddress;
     private RecyclerView rvListings;
     private UserProductsAdapter productAdapter;
     private Button btnViewReviews;
@@ -35,14 +35,9 @@ public class UserProfileActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_profile);
 
-
-
         // Toolbar
         Toolbar toolbar = findViewById(R.id.appBarUserProfile);
         setSupportActionBar(toolbar);
-
-        getSupportActionBar().setTitle("Profile");
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -52,7 +47,15 @@ public class UserProfileActivity extends BaseActivity {
         tintToolbarOverflow(toolbar);
 
         // Receive user
-        viewedUser = getIntent().getParcelableExtra("user_to_view");
+        String userId = getIntent().getStringExtra("user_id");
+
+        if (userId == null) {
+            finish();
+            return;
+        }
+
+        viewedUser = SampleData.getUserById(this, userId);
+
         if (viewedUser == null) {
             finish();
             return;
@@ -137,6 +140,7 @@ public class UserProfileActivity extends BaseActivity {
         txtUsername = findViewById(R.id.txtUsername);
         txtLastSeen = findViewById(R.id.txtLastSeen);
         txtUserDescription = findViewById(R.id.txtUserDescription);
+        txtUserAddress = findViewById(R.id.txtUserAddress);
         txtViewMoreListings = findViewById(R.id.txtViewMoreListings);
         txtShowMore = findViewById(R.id.txtShowFullDescription);
         rvListings = findViewById(R.id.rvProfileListings);
@@ -147,6 +151,14 @@ public class UserProfileActivity extends BaseActivity {
         txtUsername.setText(viewedUser.getUsername());
         txtLastSeen.setText("Last seen: " + viewedUser.getLastSeenString());
         txtUserDescription.setText(viewedUser.getBio());
+
+        String address = viewedUser.getDefaultAddress();
+        if (address != null && !address.isEmpty() && !address.equals("No address set")) {
+            txtUserAddress.setText("Address: " + address);
+            txtUserAddress.setVisibility(View.VISIBLE);
+        } else {
+            txtUserAddress.setVisibility(View.GONE);
+        }
 
         Glide.with(this)
                 .load(viewedUser.getProfileImageUrl())
@@ -198,7 +210,7 @@ public class UserProfileActivity extends BaseActivity {
     private void setupViewReviewsButton() {
         btnViewReviews.setOnClickListener(v -> {
             Intent intent = new Intent(this, RatingReviewsActivity.class);
-            intent.putExtra("user_to_view", viewedUser);
+            intent.putExtra("user_id", viewedUser.getId());
             startActivity(intent);
         });
     }

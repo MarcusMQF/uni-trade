@@ -1,5 +1,7 @@
 package com.example.unitrade;
 
+import static androidx.viewpager.widget.PagerAdapter.POSITION_NONE;
+
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -47,5 +49,18 @@ public class ReviewsPagerAdapter extends FragmentStateAdapter {
     @Override
     public int getItemCount() {
         return 3; // All, User, Seller
+    }
+
+
+    @Override
+    public long getItemId(int position) {
+        // Unique ID based on position + current review count
+        return position + (allReviews == null ? 0 : allReviews.size() * 10L);
+    }
+
+    @Override
+    public boolean containsItem(long itemId) {
+        // Always return false so ViewPager2 recreates fragments
+        return false;
     }
 }

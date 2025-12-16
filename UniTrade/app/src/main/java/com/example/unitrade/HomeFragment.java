@@ -2,7 +2,6 @@ package com.example.unitrade;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -31,8 +30,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HomeFragment extends Fragment {
-
-    private static final String TAG = "HomeFragment";
 
     private RecyclerView rvCategory, rvRecommended;
     private CategoryAdapter categoryAdapter;
@@ -63,25 +60,18 @@ public class HomeFragment extends Fragment {
     }
 
     @Override
-    public View onCreateView(
-            @NonNull LayoutInflater inflater,
-            ViewGroup container,
-            Bundle savedInstanceState) {
-
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_home, container, false);
     }
 
     @Override
-    public void onViewCreated(
-            @NonNull View view,
-            @Nullable Bundle savedInstanceState) {
-
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
         rootView = view;
 
         btnCart = view.findViewById(R.id.btnCart);
-        progressBar = view.findViewById(R.id.progressBar); // Add this to your XML if not exists
+        progressBar = view.findViewById(R.id.progressBar);
         bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
         topView = requireActivity().findViewById(R.id.appBarMain);
 
@@ -97,8 +87,7 @@ public class HomeFragment extends Fragment {
 
         setupCategories();
         setupItemAdapter();
-        loadProductsFromFirebase(); // Changed from loadAvailableProducts()
-
+        loadProductsFromFirebase();
         setupSearch(view);
     }
 
@@ -108,83 +97,37 @@ public class HomeFragment extends Fragment {
     private void loadProductsFromFirebase() {
         String currentUserId = UserSession.get() != null ? UserSession.get().getId() : "";
 
-        // Show loading indicator
-        if (progressBar != null) {
-            progressBar.setVisibility(View.VISIBLE);
-        }
+        if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
 
         db.collection("products")
-                .whereEqualTo("status", "available") // Only show available products
-                .orderBy("transactionDate", Query.Direction.DESCENDING) // Newest first
+                .whereEqualTo("status", "available")
+                .orderBy("transactionDate", Query.Direction.DESCENDING)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     allProducts.clear();
 
-                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        Product product = document.toObject(Product.class);
-
-                        // Exclude current user's own products
+                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
+                        Product product = doc.toObject(Product.class);
                         if (product != null && !product.getSellerId().equals(currentUserId)) {
                             allProducts.add(product);
                         }
                     }
 
-                    // Update UI
                     productList.clear();
                     productList.addAll(allProducts);
 
-                    if (itemAdapter != null) {
-                        itemAdapter.notifyDataSetChanged();
-                    }
+                    if (itemAdapter != null) itemAdapter.notifyDataSetChanged();
 
-                    // Hide loading
-                    if (progressBar != null) {
-                        progressBar.setVisibility(View.GONE);
-                    }
+                    if (progressBar != null) progressBar.setVisibility(View.GONE);
 
-                    // Show message if no products
                     if (allProducts.isEmpty()) {
-                        Toast.makeText(getContext(),
-                                "No products available. Add some products in Firebase!",
-                                Toast.LENGTH_LONG).show();
+                        Toast.makeText(getContext(), "No products available.", Toast.LENGTH_SHORT).show();
                     }
-
-                    Log.d(TAG, "Loaded " + allProducts.size() + " products from Firebase");
                 })
                 .addOnFailureListener(e -> {
-                    // Hide loading
-                    if (progressBar != null) {
-                        progressBar.setVisibility(View.GONE);
-                    }
-
-                    Log.e(TAG, "Error loading products from Firebase", e);
-                    Toast.makeText(getContext(),
-                            "Failed to load products. Check your internet connection.",
-                            Toast.LENGTH_SHORT).show();
-
-                    // Fallback to sample data for testing
-                    loadSampleDataAsFallback(currentUserId);
+                    if (progressBar != null) progressBar.setVisibility(View.GONE);
+                    Toast.makeText(getContext(), "Failed to load products. Check your connection.", Toast.LENGTH_SHORT).show();
                 });
-    }
-
-    // ======================================================
-    // FALLBACK: Load sample data if Firebase fails
-    // ======================================================
-    private void loadSampleDataAsFallback(String currentUserId) {
-        Log.d(TAG, "Loading sample data as fallback");
-
-        allProducts = SampleData.getAvailableItems(requireContext(), currentUserId);
-
-        productList.clear();
-        productList.addAll(allProducts);
-
-        if (itemAdapter != null) {
-            itemAdapter.notifyDataSetChanged();
-        }
-
-        Toast.makeText(getContext(),
-                "Showing sample data (Firebase not connected)",
-                Toast.LENGTH_SHORT).show();
     }
 
     // ======================================================
@@ -194,13 +137,8 @@ public class HomeFragment extends Fragment {
         EditText edtSearch = view.findViewById(R.id.edtSearch);
 
         edtSearch.setOnEditorActionListener((v, actionId, event) -> {
-
-            boolean isEnter =
-                    actionId == EditorInfo.IME_ACTION_SEARCH ||
-                            (event != null
-                                    && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
-                                    && event.getAction() == KeyEvent.ACTION_DOWN);
-
+            boolean isEnter = actionId == EditorInfo.IME_ACTION_SEARCH ||
+                    (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN);
             if (!isEnter) return false;
 
             String query = edtSearch.getText().toString().trim();
@@ -212,9 +150,7 @@ public class HomeFragment extends Fragment {
                 b.putString("currentUserId", UserSession.get().getId());
             }
 
-            NavController navController =
-                    Navigation.findNavController(requireView());
-
+            NavController navController = Navigation.findNavController(requireView());
             navController.navigate(R.id.nav_search, b);
             return true;
         });
@@ -224,7 +160,6 @@ public class HomeFragment extends Fragment {
     // CATEGORY SETUP
     // ======================================================
     private void setupCategories() {
-
         List<Category> categories = new ArrayList<>();
         categories.add(new Category("All", R.drawable.ic_all_category));
         categories.add(new Category("Textbook", R.drawable.sample_textbooks));
@@ -238,44 +173,23 @@ public class HomeFragment extends Fragment {
         categories.add(new Category("Personal Care", R.drawable.sample_personal_care));
         categories.add(new Category("Others", R.drawable.ic_others));
 
-        categoryAdapter = new CategoryAdapter(
-                categories,
-                category -> filterProductsByCategory(category.getName())
-        );
+        categoryAdapter = new CategoryAdapter(categories, category -> filterProductsByCategory(category.getName()));
 
-        rvCategory.setLayoutManager(
-                new LinearLayoutManager(
-                        getContext(),
-                        LinearLayoutManager.HORIZONTAL,
-                        false
-                )
-        );
-
+        rvCategory.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
         rvCategory.setAdapter(categoryAdapter);
     }
 
     // ======================================================
-    // ITEM ADAPTER (uses product_id)
+    // ITEM ADAPTER
     // ======================================================
     private void setupItemAdapter() {
-
         itemAdapter = new ItemAdapter(productList, product -> {
-
-            Intent intent =
-                    new Intent(
-                            requireContext(),
-                            ProductDetailActivity.class
-                    );
-
+            Intent intent = new Intent(requireContext(), ProductDetailActivity.class);
             intent.putExtra("product_id", product.getId());
-
             startActivity(intent);
         });
 
-        rvRecommended.setLayoutManager(
-                new GridLayoutManager(getContext(), 2)
-        );
-
+        rvRecommended.setLayoutManager(new GridLayoutManager(getContext(), 2));
         rvRecommended.setAdapter(itemAdapter);
     }
 
@@ -283,7 +197,6 @@ public class HomeFragment extends Fragment {
     // FILTER BY CATEGORY
     // ======================================================
     private void filterProductsByCategory(String categoryName) {
-
         productList.clear();
 
         if ("All".equalsIgnoreCase(categoryName)) {
@@ -296,21 +209,16 @@ public class HomeFragment extends Fragment {
             }
         }
 
-        itemAdapter.notifyDataSetChanged();
+        if (itemAdapter != null) itemAdapter.notifyDataSetChanged();
     }
 
     // ======================================================
-    // REFRESH WHEN RETURNING
+    // REFRESH ON RESUME
     // ======================================================
     @Override
     public void onResume() {
         super.onResume();
-
-        // Reload products from Firebase
         loadProductsFromFirebase();
-
-        btnCart.post(() ->
-                mover.enable(btnCart, rootView, topView, bottomNav)
-        );
+        btnCart.post(() -> mover.enable(btnCart, rootView, topView, bottomNav));
     }
 }

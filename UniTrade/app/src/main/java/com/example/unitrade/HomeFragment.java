@@ -2,12 +2,15 @@ package com.example.unitrade;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
+import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -20,15 +23,21 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class HomeFragment extends Fragment {
 
+    private static final String TAG = "HomeFragment";
+
     private RecyclerView rvCategory, rvRecommended;
     private CategoryAdapter categoryAdapter;
     private ItemAdapter itemAdapter;
+    private ProgressBar progressBar;
 
     private final List<Product> productList = new ArrayList<>();
     private List<Product> allProducts = new ArrayList<>();
@@ -39,12 +48,18 @@ public class HomeFragment extends Fragment {
 
     private final MovableFabHelper mover = new MovableFabHelper();
 
+    // Firebase
+    private FirebaseFirestore db;
+
     public HomeFragment() {}
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+
+        // Initialize Firebase
+        db = FirebaseFirestore.getInstance();
     }
 
     @Override
@@ -66,6 +81,7 @@ public class HomeFragment extends Fragment {
         rootView = view;
 
         btnCart = view.findViewById(R.id.btnCart);
+        progressBar = view.findViewById(R.id.progressBar); // Add this to your XML if not exists
         bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
         topView = requireActivity().findViewById(R.id.appBarMain);
 
@@ -80,10 +96,95 @@ public class HomeFragment extends Fragment {
         rvRecommended = view.findViewById(R.id.rvRecommended);
 
         setupCategories();
-        loadAvailableProducts();
         setupItemAdapter();
+        loadProductsFromFirebase(); // Changed from loadAvailableProducts()
 
         setupSearch(view);
+    }
+
+    // ======================================================
+    // LOAD PRODUCTS FROM FIREBASE
+    // ======================================================
+    private void loadProductsFromFirebase() {
+        String currentUserId = UserSession.get() != null ? UserSession.get().getId() : "";
+
+        // Show loading indicator
+        if (progressBar != null) {
+            progressBar.setVisibility(View.VISIBLE);
+        }
+
+        db.collection("products")
+                .whereEqualTo("status", "available") // Only show available products
+                .orderBy("transactionDate", Query.Direction.DESCENDING) // Newest first
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    allProducts.clear();
+
+                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                        Product product = document.toObject(Product.class);
+
+                        // Exclude current user's own products
+                        if (product != null && !product.getSellerId().equals(currentUserId)) {
+                            allProducts.add(product);
+                        }
+                    }
+
+                    // Update UI
+                    productList.clear();
+                    productList.addAll(allProducts);
+
+                    if (itemAdapter != null) {
+                        itemAdapter.notifyDataSetChanged();
+                    }
+
+                    // Hide loading
+                    if (progressBar != null) {
+                        progressBar.setVisibility(View.GONE);
+                    }
+
+                    // Show message if no products
+                    if (allProducts.isEmpty()) {
+                        Toast.makeText(getContext(),
+                                "No products available. Add some products in Firebase!",
+                                Toast.LENGTH_LONG).show();
+                    }
+
+                    Log.d(TAG, "Loaded " + allProducts.size() + " products from Firebase");
+                })
+                .addOnFailureListener(e -> {
+                    // Hide loading
+                    if (progressBar != null) {
+                        progressBar.setVisibility(View.GONE);
+                    }
+
+                    Log.e(TAG, "Error loading products from Firebase", e);
+                    Toast.makeText(getContext(),
+                            "Failed to load products. Check your internet connection.",
+                            Toast.LENGTH_SHORT).show();
+
+                    // Fallback to sample data for testing
+                    loadSampleDataAsFallback(currentUserId);
+                });
+    }
+
+    // ======================================================
+    // FALLBACK: Load sample data if Firebase fails
+    // ======================================================
+    private void loadSampleDataAsFallback(String currentUserId) {
+        Log.d(TAG, "Loading sample data as fallback");
+
+        allProducts = SampleData.getAvailableItems(requireContext(), currentUserId);
+
+        productList.clear();
+        productList.addAll(allProducts);
+
+        if (itemAdapter != null) {
+            itemAdapter.notifyDataSetChanged();
+        }
+
+        Toast.makeText(getContext(),
+                "Showing sample data (Firebase not connected)",
+                Toast.LENGTH_SHORT).show();
     }
 
     // ======================================================
@@ -154,27 +255,7 @@ public class HomeFragment extends Fragment {
     }
 
     // ======================================================
-    // LOAD PRODUCTS (EXCLUDING CURRENT USER)
-    // ======================================================
-    private void loadAvailableProducts() {
-
-        String currentUserId =
-                UserSession.get() != null
-                        ? UserSession.get().getId()
-                        : "";
-
-        allProducts =
-                SampleData.getAvailableItems(
-                        requireContext(),
-                        currentUserId
-                );
-
-        productList.clear();
-        productList.addAll(allProducts);
-    }
-
-    // ======================================================
-    // ITEM ADAPTER (FIXED: uses product_id)
+    // ITEM ADAPTER (uses product_id)
     // ======================================================
     private void setupItemAdapter() {
 
@@ -225,14 +306,8 @@ public class HomeFragment extends Fragment {
     public void onResume() {
         super.onResume();
 
-        loadAvailableProducts();
-
-        productList.clear();
-        productList.addAll(allProducts);
-
-        if (itemAdapter != null) {
-            itemAdapter.notifyDataSetChanged();
-        }
+        // Reload products from Firebase
+        loadProductsFromFirebase();
 
         btnCart.post(() ->
                 mover.enable(btnCart, rootView, topView, bottomNav)

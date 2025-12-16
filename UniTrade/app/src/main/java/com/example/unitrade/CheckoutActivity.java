@@ -3,6 +3,7 @@ package com.example.unitrade;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -20,11 +21,17 @@ import androidx.appcompat.widget.Toolbar;
 import com.bumptech.glide.Glide;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class CheckoutActivity extends BaseActivity {
+
+    private static final String TAG = "CheckoutActivity";
+
+    // Firebase
+    private FirebaseFirestore db;
 
     // UI
     private Spinner spinnerReceivingMethod;
@@ -33,7 +40,6 @@ public class CheckoutActivity extends BaseActivity {
     private EditText edtDeliveryAddress;
     private TextView txtDeliveryFee, txtSubtotal, txtTotal, txtDelivery;
     private Button btnPlaceOrder;
-
     private FloatingActionButton btnChatWithSeller;
     private MovableFabHelper mover;
 
@@ -45,15 +51,17 @@ public class CheckoutActivity extends BaseActivity {
     private final double platformFee = 0.54;
     private final double deliveryFee = 3.00;
     private String selectedMethod = "";
+    private String currentUserId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_checkout);
 
-        // -------------------------------
+        db = FirebaseFirestore.getInstance();
+        currentUserId = UserSession.get().getId();
+
         // Toolbar
-        // -------------------------------
         Toolbar toolbar = findViewById(R.id.appBarCheckout);
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle("Checkout");
@@ -63,15 +71,12 @@ public class CheckoutActivity extends BaseActivity {
         initViews();
         setupSpinner();
 
-        // -------------------------------
         // RECEIVE PRODUCT IDS
         checkoutIds = getIntent().getStringArrayListExtra("checkout_ids");
 
         if (checkoutIds == null || checkoutIds.isEmpty()) {
-
             // BUY NOW fallback
             String singleId = getIntent().getStringExtra("product_id");
-
             if (singleId != null) {
                 checkoutIds = new ArrayList<>();
                 checkoutIds.add(singleId);
@@ -80,20 +85,50 @@ public class CheckoutActivity extends BaseActivity {
             }
         }
 
-
-        for (String id : checkoutIds) {
-            Product p = SampleData.getProductById(this, id);
-            if (p != null) checkoutProducts.add(p);
-        }
-
-        displayItems();
-        calculateSubtotal();
-        updateTotal();
+        // Load products from Firebase
+        loadProductsFromFirebase();
     }
 
-    // =================================================
-    private void initViews() {
+    private void loadProductsFromFirebase() {
+        if (checkoutIds.isEmpty()) {
+            Toast.makeText(this, "No products to checkout", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
 
+        // Load each product from Firebase
+        for (String productId : checkoutIds) {
+            db.collection("products")
+                    .document(productId)
+                    .get()
+                    .addOnSuccessListener(doc -> {
+                        Product product = doc.toObject(Product.class);
+                        if (product != null) {
+                            // Check if product is still available
+                            if ("available".equalsIgnoreCase(product.getStatus())) {
+                                checkoutProducts.add(product);
+                            } else {
+                                Toast.makeText(this,
+                                        product.getName() + " is no longer available",
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        }
+
+                        // When all products are loaded
+                        if (checkoutProducts.size() + 1 >= checkoutIds.size()) {
+                            displayItems();
+                            calculateSubtotal();
+                            updateTotal();
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "Error loading product: " + productId, e);
+                        Toast.makeText(this, "Failed to load some products", Toast.LENGTH_SHORT).show();
+                    });
+        }
+    }
+
+    private void initViews() {
         MaterialCardView layoutQrPayment = findViewById(R.id.layoutQrPayment);
         ImageView imgQrCode = findViewById(R.id.imgQrCode);
         Button btnScanQr = findViewById(R.id.btnScanQR);
@@ -107,7 +142,6 @@ public class CheckoutActivity extends BaseActivity {
         txtSubtotal = findViewById(R.id.txtSubtotal);
         txtTotal = findViewById(R.id.txtTotal);
         btnPlaceOrder = findViewById(R.id.btnPlaceOrder);
-
         btnChatWithSeller = findViewById(R.id.btnChatWithSeller);
 
         mover = new MovableFabHelper();
@@ -139,12 +173,10 @@ public class CheckoutActivity extends BaseActivity {
         });
     }
 
-    // =================================================
     private void displayItems() {
         itemsContainer.removeAllViews();
 
         for (Product p : checkoutProducts) {
-
             View row = getLayoutInflater()
                     .inflate(R.layout.item_checkout_row, itemsContainer, false);
 
@@ -157,13 +189,13 @@ public class CheckoutActivity extends BaseActivity {
 
             Glide.with(this)
                     .load(p.getImageUrls().get(0))
+                    .signature(new com.bumptech.glide.signature.ObjectKey(p.getImageVersion()))
                     .into(img);
 
             itemsContainer.addView(row);
         }
     }
 
-    // =================================================
     private void calculateSubtotal() {
         subtotal = 0;
         for (Product p : checkoutProducts) {
@@ -172,9 +204,7 @@ public class CheckoutActivity extends BaseActivity {
         txtSubtotal.setText("RM " + String.format("%.2f", subtotal));
     }
 
-    // =================================================
     private void setupSpinner() {
-
         String[] methods = {
                 "Select Receiving method",
                 "Face-to-face handover",
@@ -228,50 +258,76 @@ public class CheckoutActivity extends BaseActivity {
         );
     }
 
-    // =================================================
     private void updateTotal() {
         double total = subtotal + platformFee;
         if ("Delivery".equals(selectedMethod)) total += deliveryFee;
         txtTotal.setText("RM " + String.format("%.2f", total));
     }
-    // =================================================
-// FINALIZE PURCHASE (ID SAFE)
-// =================================================
+
+    // ============================================
+    // FINALIZE PURCHASE - NOW WITH FIREBASE
+    // ============================================
     private void finalizePurchase() {
-
-        String currentUserId = UserSession.get().getId();
-        List<String> purchasedIds = new ArrayList<>();
-
-        for (String productId : checkoutIds) {
-
-            Product p = SampleData.getProductById(this, productId);
-            if (p == null) continue;
-
-            p.setBuyerId(currentUserId);
-            if (p.getPrice() > 0) {
-                p.setStatus(Product.STATUS_SOLD);
-            } else {
-                p.setStatus(Product.STATUS_DONATED);
-            }
-
-            // ✅ THIS FIXES YOUR ERROR
-            p.setTransactionDate(System.currentTimeMillis());
-
-            purchasedIds.add(productId);
+        // Validate receiving method
+        if (selectedMethod.isEmpty() || "Select Receiving method".equals(selectedMethod)) {
+            Toast.makeText(this, "Please select a receiving method", Toast.LENGTH_SHORT).show();
+            return;
         }
 
-        CartManager.removePurchasedByIds(this, checkoutIds);
+        // Validate delivery address if delivery is selected
+        if ("Delivery".equals(selectedMethod)) {
+            String address = edtDeliveryAddress.getText().toString().trim();
+            if (address.isEmpty()) {
+                Toast.makeText(this, "Please enter delivery address", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
 
-        Toast.makeText(this, "Order placed successfully!", Toast.LENGTH_SHORT).show();
+        // Disable button to prevent double clicks
+        btnPlaceOrder.setEnabled(false);
+        btnPlaceOrder.setText("Processing...");
 
-        Intent i = new Intent(this, MainActivity.class);
-        i.putExtra("goToHome", true);
-        i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        startActivity(i);
-        finish();
+        String deliveryAddress = "Delivery".equals(selectedMethod)
+                ? edtDeliveryAddress.getText().toString().trim()
+                : null;
+
+        // Process all purchases in Firebase
+        PurchaseManager.processMultiplePurchases(
+                checkoutIds,
+                currentUserId,
+                selectedMethod,
+                deliveryAddress,
+                new PurchaseManager.PurchaseCallback() {
+                    @Override
+                    public void onSuccess(String message) {
+                        // Remove from cart
+                        CartManager.removePurchasedByIds(CheckoutActivity.this, checkoutIds);
+
+                        Toast.makeText(CheckoutActivity.this,
+                                "Order placed successfully! Products marked as sold.",
+                                Toast.LENGTH_LONG).show();
+
+                        // Navigate to home
+                        Intent i = new Intent(CheckoutActivity.this, MainActivity.class);
+                        i.putExtra("goToHome", true);
+                        i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                        startActivity(i);
+                        finish();
+                    }
+
+                    @Override
+                    public void onFailure(String error) {
+                        Toast.makeText(CheckoutActivity.this,
+                                "Purchase failed: " + error,
+                                Toast.LENGTH_LONG).show();
+
+                        // Re-enable button
+                        btnPlaceOrder.setEnabled(true);
+                        btnPlaceOrder.setText("Place Order");
+                    }
+                }
+        );
     }
-
-
 
     @Override
     public boolean onSupportNavigateUp() {

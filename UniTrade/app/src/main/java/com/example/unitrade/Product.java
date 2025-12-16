@@ -6,6 +6,7 @@ import android.os.Parcelable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import com.google.firebase.Timestamp;
 
 public class Product implements Parcelable {
 
@@ -45,6 +46,21 @@ public class Product implements Parcelable {
     public Product() {
         // empty constructor (required)
     }
+
+    // purchase
+    private String soldTo;  // buyer's user ID
+    private Timestamp soldAt;  // when it was sold
+    private String purchaseId;  // reference to purchase document
+
+    // Add getters and setters:
+    public String getSoldTo() { return soldTo; }
+    public void setSoldTo(String soldTo) { this.soldTo = soldTo; }
+
+    public Timestamp getSoldAt() { return soldAt; }
+    public void setSoldAt(Timestamp soldAt) { this.soldAt = soldAt; }
+
+    public String getPurchaseId() { return purchaseId; }
+    public void setPurchaseId(String purchaseId) { this.purchaseId = purchaseId; }
 
     public Product(
             String id,
@@ -87,6 +103,48 @@ public class Product implements Parcelable {
         return imageUrls == null ? new ArrayList<>() : new ArrayList<>(imageUrls);
     }
 
+    //ADDED LATER -- TRANSACTION
+    private boolean buyTransaction;
+    private boolean sellTransaction;
+    private boolean donation;
+    private int stability;
+
+    //GETTERS AND SETTERS
+    public boolean isBuyTransactionFlag() {
+        return buyTransaction;
+    }
+
+    public void setBuyTransaction(boolean buyTransaction) {
+        this.buyTransaction = buyTransaction;
+    }
+
+    public boolean isSellTransactionFlag() {
+        return sellTransaction;
+    }
+
+    public void setSellTransaction(boolean sellTransaction) {
+        this.sellTransaction = sellTransaction;
+    }
+
+    public boolean isDonationFlag() {
+        return donation;
+    }
+
+    public void setDonation(boolean donation) {
+        this.donation = donation;
+    }
+
+    public int getStability() {
+        return stability;
+    }
+
+    public void setStability(int stability) {
+        this.stability = stability;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
     public String getDescription() { return description; }
     public String getCondition() { return condition; }
     public int getUsedDaysTotal() { return usedDaysTotal; }

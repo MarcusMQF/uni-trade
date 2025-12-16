@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.view.*;
 import android.widget.*;
+import android.util.Log;
 
 
 import androidx.annotation.NonNull;
@@ -19,6 +20,9 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
 import java.util.*;
 
@@ -72,6 +76,9 @@ public class SellFragment extends Fragment {
     private String selectedCategory = null;
     private String selectedCondition = null;
 
+    // Firebase
+    private FirebaseFirestore db;
+    private FirebaseStorage storage;
 
     public SellFragment() {}
 
@@ -79,15 +86,18 @@ public class SellFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        db = FirebaseFirestore.getInstance();
+        storage = FirebaseStorage.getInstance();
+
         if (getArguments() != null) {
             isEditMode = getArguments().getBoolean("editMode", false);
             origin = getArguments().getString("origin");
 
             if (isEditMode) {
                 String productId = getArguments().getString("product_id");
-
                 if (productId != null) {
-                    productToEdit = SampleData.getProductById(requireContext(), productId);
+                    // Load from Firebase instead of SampleData
+                    loadProductFromFirebase(productId);
                 }
             }
         }
@@ -95,8 +105,28 @@ public class SellFragment extends Fragment {
         setHasOptionsMenu(true);
     }
 
-
-
+    // ADD THIS NEW METHOD
+    private void loadProductFromFirebase(String productId) {
+        db.collection("products")
+                .document(productId)
+                .get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        productToEdit = documentSnapshot.toObject(Product.class);
+                        if (productToEdit != null && getView() != null) {
+                            fillEditForm();
+                        }
+                    } else {
+                        toast("Product not found");
+                        NavHostFragment.findNavController(this).popBackStack();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("SellFragment", "Error loading product", e);
+                    toast("Failed to load product");
+                    NavHostFragment.findNavController(this).popBackStack();
+                });
+    }
 
     @Nullable
     @Override
@@ -120,11 +150,12 @@ public class SellFragment extends Fragment {
         setupUnitSpinner();
         setupImageUpload();
         setupQRUpload();
-
-        if (isEditMode && productToEdit != null)
-            fillEditForm();
-
         setupPostButton();
+
+        // Fill form if in edit mode and product is already loaded
+        if (isEditMode && productToEdit != null) {
+            fillEditForm();
+        }
     }
 
     // BIND VIEWS ------------------------------------------------------------
@@ -278,8 +309,7 @@ public class SellFragment extends Fragment {
 
         if (resultCode != Activity.RESULT_OK || data == null) return;
 
-        if (requestCode == PICK_IMAGES && resultCode == Activity.RESULT_OK && data != null) {
-
+        if (requestCode == PICK_IMAGES && data != null) {
 
             final int takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION;
 
@@ -287,25 +317,16 @@ public class SellFragment extends Fragment {
 
                 for (int i = 0; i < data.getClipData().getItemCount(); i++) {
                     Uri uri = data.getClipData().getItemAt(i).getUri();
-
-                    requireContext()
-                            .getContentResolver()
-                            .takePersistableUriPermission(uri, takeFlags);
-
+                    requireContext().getContentResolver().takePersistableUriPermission(uri, takeFlags);
                     selectedImages.add(uri.toString());
                 }
 
             } else if (data.getData() != null) {
 
                 Uri uri = data.getData();
-
-                requireContext()
-                        .getContentResolver()
-                        .takePersistableUriPermission(uri, takeFlags);
-
+                requireContext().getContentResolver().takePersistableUriPermission(uri, takeFlags);
                 selectedImages.add(uri.toString());
             }
-
 
             imagesModified = true;
             showSelectedImages();
@@ -328,7 +349,6 @@ public class SellFragment extends Fragment {
 
     private void showSelectedImages() {
 
-        // 🔥 CASE 1: NO IMAGES → SHOW DEFAULT PLACEHOLDER
         if (selectedImages.isEmpty()) {
             layoutImagePlaceholder.setVisibility(View.VISIBLE);
             viewPagerSellImages.setVisibility(View.GONE);
@@ -336,7 +356,6 @@ public class SellFragment extends Fragment {
             return;
         }
 
-        // 🔥 CASE 2: HAS IMAGES → SHOW VIEWPAGER
         layoutImagePlaceholder.setVisibility(View.GONE);
         viewPagerSellImages.setVisibility(View.VISIBLE);
         tabDotsSell.setVisibility(View.VISIBLE);
@@ -347,24 +366,16 @@ public class SellFragment extends Fragment {
                         selectedImages,
                         () -> {
                             imagesModified = true;
-
-                            // sync adapter → fragment
                             selectedImages.clear();
                             selectedImages.addAll(sellImageAdapter.getImages());
-
-                            // 🔥 IMPORTANT: re-check after deletion
                             showSelectedImages();
                             updateImageUploadButtonUI();
                         }
                 );
 
         viewPagerSellImages.setAdapter(sellImageAdapter);
-
-        new TabLayoutMediator(tabDotsSell, viewPagerSellImages, (t, p) -> {})
-                .attach();
+        new TabLayoutMediator(tabDotsSell, viewPagerSellImages, (t, p) -> {}).attach();
     }
-
-
 
     // FILL EDIT FORM --------------------------------------------------------
     private void fillEditForm() {
@@ -374,7 +385,6 @@ public class SellFragment extends Fragment {
         edtPrice.setText(String.valueOf(productToEdit.getPrice()));
         edtLocation.setText(productToEdit.getLocation());
         edtDescription.setText(productToEdit.getDescription());
-
         edtUsedDuration.setText(String.valueOf(productToEdit.getUsedDaysTotal()));
         dropdownDurationUnit.setText("Days", false);
 
@@ -383,7 +393,7 @@ public class SellFragment extends Fragment {
 
         selectedImages.clear();
         if (productToEdit.getImageUrls() != null) {
-            selectedImages.addAll(productToEdit.getImageUrls()); // ✅ keep String
+            selectedImages.addAll(productToEdit.getImageUrls());
         }
 
         showSelectedImages();
@@ -400,7 +410,6 @@ public class SellFragment extends Fragment {
         Button btn = requireView().findViewById(R.id.btnPostItem);
         btn.setText("Save Changes");
     }
-
 
     // CATEGORY SELECTION ----------------------------------------------------
     private void setupCategorySelection() {
@@ -427,12 +436,8 @@ public class SellFragment extends Fragment {
         );
 
         for (MaterialButton b : list) {
-            if (b.getText().toString().equals(category)) {
-                b.setChecked(true);
-                selectedCategory = category;
-            } else {
-                b.setChecked(false);
-            }
+            b.setChecked(b.getText().toString().equals(category));
+            if (b.isChecked()) selectedCategory = category;
         }
     }
 
@@ -463,26 +468,21 @@ public class SellFragment extends Fragment {
         );
 
         for (MaterialButton b : list) {
-            if (b.getText().toString().equals(condition)) {
-                b.setChecked(true);
-                selectedCondition = condition;
-            } else {
-                b.setChecked(false);
-            }
+            b.setChecked(b.getText().toString().equals(condition));
+            if (b.isChecked()) selectedCondition = condition;
         }
     }
 
     // POST BUTTON -----------------------------------------------------------
     private void setupPostButton() {
         Button btnPost = requireView().findViewById(R.id.btnPostItem);
-
         btnPost.setOnClickListener(v -> {
             if (isEditMode) updateItem();
             else submitForm();
         });
     }
 
-    // CREATE PRODUCT --------------------------------------------------------
+    // 🔥 SUBMIT FORM TO FIREBASE -------------------------------------------
     private void submitForm() {
 
         String id = "p" + UUID.randomUUID().toString().substring(0, 8);
@@ -499,12 +499,8 @@ public class SellFragment extends Fragment {
         if (priceStr.isEmpty()) { toast("Enter price"); return; }
 
         double price;
-        try {
-            price = Double.parseDouble(priceStr);
-        } catch (Exception e) {
-            toast("Invalid price");
-            return;
-        }
+        try { price = Double.parseDouble(priceStr); }
+        catch (Exception e) { toast("Invalid price"); return; }
 
         if (price > 0 && qrPaymentUri == null) {
             toast("QR required for paid items");
@@ -513,35 +509,62 @@ public class SellFragment extends Fragment {
 
         int usedDays = usedStr.isEmpty() ? 0 : Integer.parseInt(usedStr);
 
-        // 🔥 CRITICAL FIX — CONVERT TO STRING PROPERLY
-        List<String> images = new ArrayList<>();
-        for (Object obj : selectedImages) {
-            images.add(obj.toString());
-        }
-
-        String qrUrl = qrPaymentUri != null ? qrPaymentUri.toString() : null;
-
         User user = UserSession.get();
         String sellerId = user != null ? user.getId() : "u1";
 
         Product p = new Product(
-                id, name, price, images, desc,
+                id, name, price, new ArrayList<>(), desc,
                 selectedCondition, usedDays,
                 "Available", selectedCategory, location,
-                sellerId, qrUrl
+                sellerId, qrPaymentUri != null ? qrPaymentUri.toString() : null
         );
 
-        // 🔥 REQUIRED FOR CACHE INVALIDATION
         p.setImageVersion(System.currentTimeMillis());
 
-        SampleData.addProduct(requireContext(), p);
-
-        toast("Item posted!");
-        NavHostFragment.findNavController(this).popBackStack();
+        // Upload images + save product
+        uploadImagesAndSaveProduct(p);
     }
 
+    private void uploadImagesAndSaveProduct(Product p) {
+        if (selectedImages.isEmpty()) {
+            saveProductToFirestore(p);
+            return;
+        }
 
-    // UPDATE ITEM ----------------------------------------------------------
+        List<String> downloadUrls = new ArrayList<>();
+        String productId = p.getId();
+
+        for (int i = 0; i < selectedImages.size(); i++) {
+            Uri uri = Uri.parse(selectedImages.get(i));
+            StorageReference ref = storage.getReference()
+                    .child("product_images/" + productId + "/img_" + i);
+
+            int index = i;
+            ref.putFile(uri)
+                    .continueWithTask(task -> ref.getDownloadUrl())
+                    .addOnSuccessListener(url -> {
+                        downloadUrls.add(url.toString());
+                        if (downloadUrls.size() == selectedImages.size()) {
+                            p.setImageUrls(downloadUrls);
+                            saveProductToFirestore(p);
+                        }
+                    })
+                    .addOnFailureListener(e -> toast("Image upload failed"));
+        }
+    }
+
+    private void saveProductToFirestore(Product p) {
+        db.collection("products")
+                .document(p.getId())
+                .set(p)
+                .addOnSuccessListener(v -> {
+                    toast("Item posted!");
+                    NavHostFragment.findNavController(this).popBackStack();
+                })
+                .addOnFailureListener(e -> toast("Failed to post item"));
+    }
+
+    // UPDATE ITEM (LOCAL / FIREBASE) --------------------------------------
     private void updateItem() {
 
         if (productToEdit == null) {
@@ -561,12 +584,8 @@ public class SellFragment extends Fragment {
         if (priceStr.isEmpty()) { toast("Enter price"); return; }
 
         double price;
-        try {
-            price = Double.parseDouble(priceStr);
-        } catch (Exception e) {
-            toast("Invalid price");
-            return;
-        }
+        try { price = Double.parseDouble(priceStr); }
+        catch (Exception e) { toast("Invalid price"); return; }
 
         if (price > 0 && qrPaymentUri == null && productToEdit.getQrPaymentUrl() == null) {
             toast("QR required for paid items");
@@ -575,9 +594,6 @@ public class SellFragment extends Fragment {
 
         int usedDays = usedStr.isEmpty() ? 0 : Integer.parseInt(usedStr);
 
-        // ----------------------------
-        // UPDATE FIELDS
-        // ----------------------------
         productToEdit.setName(name);
         productToEdit.setDescription(desc);
         productToEdit.setPrice(price);
@@ -586,55 +602,30 @@ public class SellFragment extends Fragment {
         productToEdit.setCondition(selectedCondition);
         productToEdit.setUsedDaysTotal(usedDays);
 
-        // ----------------------------
-        // 🔥 IMAGES — PROPER CONVERSION
-        // ----------------------------
         if (imagesModified) {
             List<String> newImages = new ArrayList<>();
-            for (Object obj : selectedImages) {
-                newImages.add(obj.toString()); // ✅ FIX
-            }
-
+            for (Object obj : selectedImages) newImages.add(obj.toString());
             productToEdit.setImageUrls(newImages);
-
-            // 🔥 force refresh everywhere
             productToEdit.setImageVersion(System.currentTimeMillis());
         }
 
-        // ----------------------------
-        // QR PAYMENT
-        // ----------------------------
-        if (qrPaymentUri != null) {
-            productToEdit.setQrPaymentUrl(qrPaymentUri.toString());
-        }
+        if (qrPaymentUri != null) productToEdit.setQrPaymentUrl(qrPaymentUri.toString());
 
-        // ----------------------------
-        // SAVE
-        // ----------------------------
-        SampleData.updateProduct(productToEdit);
-
-        toast("Item updated!");
-        navigateBackAfterSave();
+        // Save to Firestore
+        db.collection("products")
+                .document(productToEdit.getId())
+                .set(productToEdit)
+                .addOnSuccessListener(v -> {
+                    toast("Item updated!");
+                    navigateBackAfterSave();
+                })
+                .addOnFailureListener(e -> toast("Failed to update item"));
     }
 
     private void navigateBackAfterSave() {
-
-        if (origin != null) {
-            requireActivity().finish();   // came from Activity
-        } else {
-            NavHostFragment.findNavController(this).popBackStack();
-        }
+        if (origin != null) requireActivity().finish();
+        else NavHostFragment.findNavController(this).popBackStack();
     }
-
-
-
-
-
-
-
-
-
-
 
     private void toast(String msg) {
         Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();

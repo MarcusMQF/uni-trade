@@ -4,6 +4,7 @@ kotlin
 plugins {
     alias(libs.plugins.android.application)
     id("org.jetbrains.kotlin.android")
+    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
@@ -47,10 +48,15 @@ dependencies {
     implementation("de.hdodenhof:circleimageview:3.1.0")
     implementation("com.google.code.gson:gson:2.13.2")
     implementation("com.google.mlkit:translate:17.0.2")
+    implementation(libs.play.services.location)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.storage)
+    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
     // Add these lines for Glide
     implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation(libs.play.services.location)
+    implementation(libs.firebase.firestore)
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
     // Add this line for MPAndroidChart

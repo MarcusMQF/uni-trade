@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF"
+    android:fitsSystemWindows="true">
+
+
+    <!-- ===== HEADER ROW: Item / Description / Price ===== -->
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/appBarShoppingCart"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        app:title="Shopping Cart" />
+
+    <LinearLayout
+        android:id="@+id/layoutCartHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Item"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Description"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Price"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- ===== RECYCLER VIEW FOR CART ===== -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvCart"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingHorizontal="12dp"
+        android:overScrollMode="never"/>
+
+
+    <include
+        android:id="@+id/emptyStateView"
+        layout="@layout/layout_empty_list"
+        android:visibility="gone"/>
+
+    <!-- ===== FIXED BOTTOM BUTTON ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:gravity="center"
+        android:padding="12dp"
+        android:background="#FFFFFF"
+        android:elevation="8dp">
+
+        <Button
+            android:id="@+id/btnEditCart"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Edit Shopping Cart"
+            android:backgroundTint="#52C8A2"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textAllCaps="false" />
+
+    </LinearLayout>
+
+</LinearLayout>
+

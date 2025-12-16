@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="CircleImageView">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <style name="FilterButton" parent="Widget.MaterialComponents.Button.UnelevatedButton">
+
+        <!-- Remove Material enforced height -->
+        <item name="android:minHeight">0dp</item>
+        <item name="minHeight">0dp</item>
+
+
+        <!-- Slim padding (final visible size) -->
+        <item name="android:paddingTop">3dp</item>
+        <item name="android:paddingBottom">3dp</item>
+
+        <!-- Appearance -->
+        <item name="cornerRadius">50dp</item>
+        <item name="strokeWidth">0dp</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+
+    <!-- Setting Item Style -->
+    <style name="SettingItem" parent="android:Widget">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">56dp</item>
+        <item name="android:orientation">horizontal</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:background">?android:attr/selectableItemBackground</item>
+    </style>
+
+    <!-- Month Text Style -->
+    <style name="MonthText">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">#757575</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+        <item name="android:paddingStart">4dp</item>
+        <item name="android:paddingEnd">4dp</item>
+    </style>
+
+    <!-- Selected Month Text Style -->
+    <style name="SelectedMonthText" parent="MonthText">
+        <item name="android:textColor">#2196F3</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Button Style -->
+    <style name="Button.Primary" parent="Widget.AppCompat.Button">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:background">@drawable/button_primary</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:elevation">2dp</item>
+        <item name="android:stateListAnimator">@null</item>
+    </style>
+
+    <style name="Widget.MaterialComponents.TextInputLayout.OutlinedBox" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
+        <item name="boxStrokeColor">#E0E0E0</item>
+        <item name="boxStrokeWidth">1dp</item>
+        <item name="hintTextColor">?attr/colorPrimary</item>
+        <item name="hintTextAppearance">@style/TextAppearance.App.Caption</item>
+    </style>
+
+    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+    <style name="TextAppearance.App.Caption" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">#757575</item>
+    </style>
+
+    <style name="TabLayoutTextAppearance" parent="TextAppearance.MaterialComponents.Button">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+
+    <!-- Custom style for toolbar popup menu -->
+    <style name="ToolbarPopupTheme" parent="ThemeOverlay.MaterialComponents.Light">
+        <item name="android:textColor">@color/black</item>
+        <item name="android:itemBackground">@android:color/white</item>
+        <item name="android:itemTextAppearance">@style/PopupMenuItemTextAppearance</item>
+    </style>
+
+    <style name="PopupMenuItemTextAppearance">
+        <item name="android:textColor">@color/black</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <!-- Style for the logout button in the menu -->
+    <style name="MenuLogoutTextAppearance">
+        <item name="android:textColor">#FF0000</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Bottom Navigation Text Styles -->
+    <style name="BottomNavigationView.Text" parent="TextAppearance.AppCompat.Caption">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">#757575</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="BottomNavigationView.Text.Active" parent="BottomNavigationView.Text">
+        <item name="android:textColor">#3EB697</item>
+    </style>
+
+    <style name="SettingRowArrow">
+        <item name="android:layout_width">24dp</item>
+        <item name="android:layout_height">24dp</item>
+        <item name="android:src">@drawable/ic_arrow_forward</item>
+        <item name="android:tint">#9E9E9E</item>
+    </style>
+
+    <style name="BigHintText">
+        <item name="android:textSize">16sp</item>
+    </style>
+
+
+
+
+
+</resources>

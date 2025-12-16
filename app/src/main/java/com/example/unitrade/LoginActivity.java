@@ -82,41 +82,38 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin.setEnabled(false);
 
         // Firebase Authentication - Sign In
-        mAuth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this, task -> {
-                    btnLogin.setEnabled(true);
+        mAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(this, task -> {
+            btnLogin.setEnabled(true);
 
-                    if (task.isSuccessful()) {
-                        // Login success
-                        Log.d(TAG, "signInWithEmail:success");
-                        FirebaseUser user = mAuth.getCurrentUser();
+            if (task.isSuccessful()) {
+                // Login success
+                Log.d(TAG, "signInWithEmail:success");
+                FirebaseUser user = mAuth.getCurrentUser();
 
-                        if (user != null) {
-                            Toast.makeText(LoginActivity.this,
-                                    "Login successful!",
-                                    Toast.LENGTH_SHORT).show();
+                if (user != null) {
+                    Toast.makeText(LoginActivity.this,
+                            "Login successful!",
+                            Toast.LENGTH_SHORT).show();
 
-                            // Save login time (keep your original method)
-                            saveLoginTime();
+                    // Save login time (keep your original method)
+                    saveLoginTime();
 
-                            // Go to MainActivity
-                            goToMainActivity(user.getEmail());
-                        }
+                    // Go to MainActivity
+                    goToMainActivity(user.getEmail());
+                }
 
-                    } else {
-                        // Login failed
-                        Log.w(TAG, "signInWithEmail:failure", task.getException());
+            } else {
+                // Login failed
+                Log.w(TAG, "signInWithEmail:failure", task.getException());
 
-                        String errorMessage = "Login failed. Please check your credentials.";
-                        if (task.getException() != null) {
-                            errorMessage = task.getException().getMessage();
-                        }
+                String errorMessage = "Login failed. Please check your credentials.";
+                if (task.getException() != null) {
+                    errorMessage = task.getException().getMessage();
+                }
 
-                        Toast.makeText(LoginActivity.this,
-                                errorMessage,
-                                Toast.LENGTH_LONG).show();
-                    }
-                });
+                Toast.makeText(LoginActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void goToMainActivity(String email) {

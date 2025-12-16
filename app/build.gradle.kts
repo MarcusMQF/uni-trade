@@ -1,16 +1,12 @@
-kotlin
-// C:/Users/User/Documents/UniTrade/app/build.gradle.kts
-
 plugins {
     alias(libs.plugins.android.application)
     id("org.jetbrains.kotlin.android")
+    alias(libs.plugins.google.services)  // Add this line - MUST be at the bottom of plugins
 }
 
 android {
     namespace = "com.example.unitrade"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36  // Fixed the syntax issue
 
     defaultConfig {
         applicationId = "com.example.unitrade"
@@ -48,13 +44,20 @@ dependencies {
     implementation("com.google.code.gson:gson:2.13.2")
     implementation("com.google.mlkit:translate:17.0.2")
 
-    // Add these lines for Glide
+    // Glide
     implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation(libs.play.services.location)
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
-    // Add this line for MPAndroidChart
+    // MPAndroidChart
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
+    // Firebase - Add these lines
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.storage)
+    implementation(libs.firebase.analytics)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

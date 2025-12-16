@@ -15,6 +15,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class HistoryActivity extends BaseActivity {
@@ -29,6 +30,8 @@ public class HistoryActivity extends BaseActivity {
 
     private List<Product> purchasedList = new ArrayList<>();
     private List<Product> soldList = new ArrayList<>();
+
+    private HashMap<String,Integer> recommendationList = new HashMap<>();
 
     private boolean isEditMode = false;
     private boolean isPurchasedTab = true;  // default tab = Purchased

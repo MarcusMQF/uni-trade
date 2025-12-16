@@ -21,6 +21,7 @@ public class Product implements Parcelable {
     private String sellerId;
     private String location;
     private boolean isHeader = false;
+    private long createdAt;
 
     private String qrPaymentUrl;   // ← NEW: QR payment image URL
 
@@ -60,6 +61,10 @@ public class Product implements Parcelable {
     public String getLocation() { return location; }
     public boolean isHeader() { return isHeader; }
     public String getQrPaymentUrl() { return qrPaymentUrl; }   // ← NEW
+
+    public long getCreatedAt(){
+        return createdAt;
+    }
 
     // ---------------- SETTERS ----------------
 

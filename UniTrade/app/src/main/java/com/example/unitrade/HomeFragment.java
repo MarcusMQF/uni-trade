@@ -18,8 +18,10 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.unitrade.backend.RecommendationManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.example.unitrade.backend.Sorting;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -97,6 +99,8 @@ public class HomeFragment extends Fragment {
         productList = new ArrayList<>(allProducts);
 
         itemAdapter = new ItemAdapter(productList, product -> {
+            RecommendationManager.recordClick(product.getCategory());
+
             Intent intent = new Intent(getContext(), ProductDetailActivity.class);
             intent.putExtra("product", product);
             startActivity(intent);
@@ -148,6 +152,7 @@ public class HomeFragment extends Fragment {
     public void onResume() {
         super.onResume();
         if (itemAdapter != null) {
+            Sorting.sortByRecommendation(productList);
             itemAdapter.notifyDataSetChanged();
         }
 

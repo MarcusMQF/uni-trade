@@ -1,72 +1,71 @@
 package com.example.unitrade;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
+import java.io.IOException;
+import java.util.Random;
 
-import java.util.HashMap;
-import java.util.Map;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class SignupActivity extends AppCompatActivity {
+
     private static final String TAG = "SignupActivity";
 
-    private EditText edtName, edtSiswamail, edtPassword, edtConfirmPassword;
-    private Button btnCreateAccount;
+    // EmailJS configuration
+    private static final String EMAILJS_SERVICE_ID = "service_2sk1z1h";
+    private static final String EMAILJS_TEMPLATE_ID = "template_t6djzkb";
+    private static final String EMAILJS_PUBLIC_KEY = "xRkUe1XICuj_jAUyf";
 
-    // Firebase
-    private FirebaseAuth mAuth;
-    private FirebaseFirestore db;
+    private static final long OTP_COOLDOWN_MS = 30_000; // 30 seconds
+
+    private EditText edtName;
+    private EditText edtSiswamail;
+    private EditText edtPassword;
+    private EditText edtConfirmPassword;
+    private Button btnCreateAccount;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_signup);
 
-        // Initialize Firebase
-        mAuth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance();
-
-        // Keep your original UI initialization
         edtName = findViewById(R.id.edtName);
         edtSiswamail = findViewById(R.id.edtSiswamail);
         edtPassword = findViewById(R.id.edtPassword);
         edtConfirmPassword = findViewById(R.id.edtConfirmPassword);
         btnCreateAccount = findViewById(R.id.btnSignUp);
 
-        // Keep your original prefill logic
-        String prefillEmail = getIntent().getStringExtra("email_prefill");
-        if (prefillEmail != null) {
-            edtSiswamail.setText(prefillEmail);
-        }
-
-        // Keep your original click listener
-        btnCreateAccount.setOnClickListener(v -> createAccount());
+        btnCreateAccount.setOnClickListener(v -> startOtpFlow());
     }
 
-    private void createAccount() {
-        // Get input values
+    private void startOtpFlow() {
         String name = edtName.getText().toString().trim();
         String email = edtSiswamail.getText().toString().trim();
         String password = edtPassword.getText().toString().trim();
         String confirmPassword = edtConfirmPassword.getText().toString().trim();
 
-        // Validate inputs
-        if (TextUtils.isEmpty(name)) {
-            Toast.makeText(this, "Please enter your name", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        // Basic validation
+        if (TextUtils.isEmpty(name)
+                || TextUtils.isEmpty(email)
+                || TextUtils.isEmpty(password)
+                || TextUtils.isEmpty(confirmPassword)) {
 
-        if (TextUtils.isEmpty(email)) {
-            Toast.makeText(this, "Please enter your email", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "All fields are required", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -75,18 +74,8 @@ public class SignupActivity extends AppCompatActivity {
             return;
         }
 
-        if (TextUtils.isEmpty(password)) {
-            Toast.makeText(this, "Please enter password", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
         if (password.length() < 6) {
             Toast.makeText(this, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if (TextUtils.isEmpty(confirmPassword)) {
-            Toast.makeText(this, "Please confirm your password", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -95,104 +84,117 @@ public class SignupActivity extends AppCompatActivity {
             return;
         }
 
-        // Disable button to prevent multiple clicks
+        SharedPreferences prefs = getSharedPreferences("OTP_PREF", MODE_PRIVATE);
+        long lastOtpTime = prefs.getLong("otp_time", 0);
+
+        if (System.currentTimeMillis() - lastOtpTime < OTP_COOLDOWN_MS) {
+            Toast.makeText(
+                    this,
+                    "Please wait before requesting another code",
+                    Toast.LENGTH_SHORT
+            ).show();
+            return;
+        }
+
         btnCreateAccount.setEnabled(false);
 
-        // Firebase - Create user account
-        mAuth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this, task -> {
-                    if (task.isSuccessful()) {
-                        // Sign up success
-                        Log.d(TAG, "createUserWithEmail:success");
-                        FirebaseUser user = mAuth.getCurrentUser();
+        // Generate 6-digit OTP
+        String otp = String.valueOf(100000 + new Random().nextInt(900000));
 
-                        if (user != null) {
-                            // Save user data to Firestore
-                            saveUserToFirestore(user.getUid(), name, email);
-                        }
+        // Save temporary signup data
+        prefs.edit()
+                .putString("otp", otp)
+                .putLong("otp_time", System.currentTimeMillis())
+                .putString("name", name)
+                .putString("email", email)
+                .putString("password", password)
+                .apply();
 
-                    } else {
-                        // Sign up failed
-                        Log.w(TAG, "createUserWithEmail:failure", task.getException());
-                        btnCreateAccount.setEnabled(true);
+        sendOtpEmail(email, otp);
+    }
 
-                        String errorMessage = "Sign up failed. Please try again.";
-                        if (task.getException() != null) {
-                            errorMessage = task.getException().getMessage();
-                        }
+    private void sendOtpEmail(String email, String otp) {
+        OkHttpClient client = new OkHttpClient();
 
-                        Toast.makeText(SignupActivity.this,
-                                errorMessage,
-                                Toast.LENGTH_LONG).show();
+        String json =
+                "{"
+                        + "\"service_id\":\"" + EMAILJS_SERVICE_ID + "\","
+                        + "\"template_id\":\"" + EMAILJS_TEMPLATE_ID + "\","
+                        + "\"user_id\":\"" + EMAILJS_PUBLIC_KEY + "\","
+                        + "\"template_params\":{"
+                        + "\"email\":\"" + email + "\","
+                        + "\"passcode\":\"" + otp + "\","
+                        + "\"time\":\"15 minutes\""
+                        + "}"
+                        + "}";
+
+        RequestBody body = RequestBody.create(
+                MediaType.parse("application/json; charset=utf-8"),
+                json
+        );
+
+        Request request = new Request.Builder()
+                .url("https://api.emailjs.com/api/v1.0/email/send")
+                .post(body)
+                .addHeader("Content-Type", "application/json")
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.e(TAG, "OTP email failed", e);
+
+                runOnUiThread(() -> {
+                    btnCreateAccount.setEnabled(true);
+                    Toast.makeText(
+                            SignupActivity.this,
+                            "Failed to send verification code. Try again.",
+                            Toast.LENGTH_LONG
+                    ).show();
+                });
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) {
+                try {
+                    String responseBody =
+                            response.body() != null ? response.body().string() : "empty";
+
+                    Log.d(TAG, "EmailJS response code: " + response.code());
+                    Log.d(TAG, "EmailJS response body: " + responseBody);
+
+                } catch (IOException e) {
+                    Log.e(TAG, "Error reading response", e);
+                }
+
+                runOnUiThread(() -> {
+                    btnCreateAccount.setEnabled(true);
+
+                    if (!response.isSuccessful()) {
+                        Toast.makeText(
+                                SignupActivity.this,
+                                "Failed to send verification code. Please retry.",
+                                Toast.LENGTH_LONG
+                        ).show();
+                        return;
                     }
+
+                    Toast.makeText(
+                            SignupActivity.this,
+                            "Verification code sent to email",
+                            Toast.LENGTH_SHORT
+                    ).show();
+
+                    Intent intent = new Intent(
+                            SignupActivity.this,
+                            EmailVerificationActivity.class
+                    );
+                    intent.putExtra("email", email);
+                    startActivity(intent);
+                    finish();
                 });
-    }
-
-    private void saveUserToFirestore(String userId, String name, String email) {
-        // Create user data map
-        Map<String, Object> userData = new HashMap<>();
-        userData.put("fullName", name);
-        userData.put("email", email);
-        userData.put("university", "University of Malaya");
-        userData.put("studentId", "");
-        userData.put("phoneNumber", "");
-        userData.put("address", "");
-        userData.put("profileImageUrl", "");
-        userData.put("rating", 0.0);
-        userData.put("totalRatings", 0);
-        userData.put("isVerified", false);
-        userData.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
-        userData.put("updatedAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
-
-        // Save to Firestore
-        db.collection("users").document(userId)
-                .set(userData)
-                .addOnSuccessListener(aVoid -> {
-                    Log.d(TAG, "User profile created in Firestore");
-                    btnCreateAccount.setEnabled(true);
-
-                    Toast.makeText(SignupActivity.this,
-                            "Account created successfully!",
-                            Toast.LENGTH_SHORT).show();
-
-                    // Send email verification (optional but recommended)
-                    sendEmailVerification(email);
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Error creating user profile", e);
-                    btnCreateAccount.setEnabled(true);
-                    Toast.makeText(SignupActivity.this,
-                            "Account created but profile save failed. Please try logging in.",
-                            Toast.LENGTH_LONG).show();
-
-                    // Still go to verification screen
-                    goToEmailVerification(email);
-                });
-    }
-
-    private void sendEmailVerification(String email) {
-        FirebaseUser user = mAuth.getCurrentUser();
-        if (user != null) {
-            user.sendEmailVerification()
-                    .addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            Log.d(TAG, "Email verification sent");
-                        } else {
-                            Log.w(TAG, "Failed to send verification email", task.getException());
-                        }
-                        // Go to email verification screen regardless
-                        goToEmailVerification(email);
-                    });
-        } else {
-            goToEmailVerification(email);
-        }
-    }
-
-    private void goToEmailVerification(String email) {
-        // Keep your original navigation
-        Intent i = new Intent(this, EmailVerificationActivity.class);
-        i.putExtra("email", email);
-        startActivity(i);
-        finish();
+            }
+        });
     }
 }

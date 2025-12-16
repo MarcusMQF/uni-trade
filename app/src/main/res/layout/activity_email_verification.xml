@@ -55,87 +55,17 @@
             android:textColor="#555"
             android:textSize="18sp" />
 
-        <!-- 6 DIGIT CODE BOXES -->
-        <LinearLayout
+        <EditText
+            android:id="@+id/edtOtp"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="60dp"
+            android:layout_margin="4dp"
+            android:background="@drawable/bg_pin_box"
             android:gravity="center"
-            android:orientation="horizontal"
-            android:weightSum="6">
-
-            <EditText
-                android:id="@+id/code1"
-                android:layout_width="0dp"
-                android:layout_height="60dp"
-                android:layout_margin="4dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_pin_box"
-                android:gravity="center"
-                android:inputType="number"
-                android:maxLength="1"
-                android:textSize="22sp" />
-
-            <EditText
-                android:id="@+id/code2"
-                android:layout_width="0dp"
-                android:layout_height="60dp"
-                android:layout_margin="4dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_pin_box"
-                android:gravity="center"
-                android:inputType="number"
-                android:maxLength="1"
-                android:textSize="22sp" />
-
-            <EditText
-                android:id="@+id/code3"
-                android:layout_width="0dp"
-                android:layout_height="60dp"
-                android:layout_margin="4dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_pin_box"
-                android:gravity="center"
-                android:inputType="number"
-                android:maxLength="1"
-                android:textSize="22sp" />
-
-            <EditText
-                android:id="@+id/code4"
-                android:layout_width="0dp"
-                android:layout_height="60dp"
-                android:layout_margin="4dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_pin_box"
-                android:gravity="center"
-                android:inputType="number"
-                android:maxLength="1"
-                android:textSize="22sp" />
-
-            <EditText
-                android:id="@+id/code5"
-                android:layout_width="0dp"
-                android:layout_height="60dp"
-                android:layout_margin="4dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_pin_box"
-                android:gravity="center"
-                android:inputType="number"
-                android:maxLength="1"
-                android:textSize="22sp" />
-
-            <EditText
-                android:id="@+id/code6"
-                android:layout_width="0dp"
-                android:layout_height="60dp"
-                android:layout_margin="4dp"
-                android:layout_weight="1"
-                android:background="@drawable/bg_pin_box"
-                android:gravity="center"
-                android:inputType="number"
-                android:maxLength="1"
-                android:textSize="22sp" />
-
-        </LinearLayout>
+            android:inputType="number"
+            android:maxLength="6"
+            android:hint="------"
+            android:textSize="22sp" />
 
         <!-- REQUEST CODE BUTTON -->
         <com.google.android.material.button.MaterialButton

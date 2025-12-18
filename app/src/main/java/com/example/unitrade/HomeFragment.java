@@ -8,8 +8,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
-import android.widget.ProgressBar;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -22,9 +20,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +29,6 @@ public class HomeFragment extends Fragment {
     private RecyclerView rvCategory, rvRecommended;
     private CategoryAdapter categoryAdapter;
     private ItemAdapter itemAdapter;
-    private ProgressBar progressBar;
 
     private final List<Product> productList = new ArrayList<>();
     private List<Product> allProducts = new ArrayList<>();
@@ -45,33 +39,33 @@ public class HomeFragment extends Fragment {
 
     private final MovableFabHelper mover = new MovableFabHelper();
 
-    // Firebase
-    private FirebaseFirestore db;
-
     public HomeFragment() {}
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
-
-        // Initialize Firebase
-        db = FirebaseFirestore.getInstance();
     }
 
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(
+            @NonNull LayoutInflater inflater,
+            ViewGroup container,
+            Bundle savedInstanceState) {
+
         return inflater.inflate(R.layout.fragment_home, container, false);
     }
 
     @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(
+            @NonNull View view,
+            @Nullable Bundle savedInstanceState) {
+
         super.onViewCreated(view, savedInstanceState);
 
         rootView = view;
 
         btnCart = view.findViewById(R.id.btnCart);
-        progressBar = view.findViewById(R.id.progressBar);
         bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
         topView = requireActivity().findViewById(R.id.appBarMain);
 
@@ -86,48 +80,10 @@ public class HomeFragment extends Fragment {
         rvRecommended = view.findViewById(R.id.rvRecommended);
 
         setupCategories();
+        loadAvailableProducts();
         setupItemAdapter();
-        loadProductsFromFirebase();
+
         setupSearch(view);
-    }
-
-    // ======================================================
-    // LOAD PRODUCTS FROM FIREBASE
-    // ======================================================
-    private void loadProductsFromFirebase() {
-        String currentUserId = UserSession.get() != null ? UserSession.get().getId() : "";
-
-        if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
-
-        db.collection("products")
-                .whereEqualTo("status", "available")
-                .orderBy("transactionDate", Query.Direction.DESCENDING)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    allProducts.clear();
-
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        Product product = doc.toObject(Product.class);
-                        if (product != null && !product.getSellerId().equals(currentUserId)) {
-                            allProducts.add(product);
-                        }
-                    }
-
-                    productList.clear();
-                    productList.addAll(allProducts);
-
-                    if (itemAdapter != null) itemAdapter.notifyDataSetChanged();
-
-                    if (progressBar != null) progressBar.setVisibility(View.GONE);
-
-                    if (allProducts.isEmpty()) {
-                        Toast.makeText(getContext(), "No products available.", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    if (progressBar != null) progressBar.setVisibility(View.GONE);
-                    Toast.makeText(getContext(), "Failed to load products. Check your connection.", Toast.LENGTH_SHORT).show();
-                });
     }
 
     // ======================================================
@@ -137,8 +93,13 @@ public class HomeFragment extends Fragment {
         EditText edtSearch = view.findViewById(R.id.edtSearch);
 
         edtSearch.setOnEditorActionListener((v, actionId, event) -> {
-            boolean isEnter = actionId == EditorInfo.IME_ACTION_SEARCH ||
-                    (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN);
+
+            boolean isEnter =
+                    actionId == EditorInfo.IME_ACTION_SEARCH ||
+                            (event != null
+                                    && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
+                                    && event.getAction() == KeyEvent.ACTION_DOWN);
+
             if (!isEnter) return false;
 
             String query = edtSearch.getText().toString().trim();
@@ -150,7 +111,9 @@ public class HomeFragment extends Fragment {
                 b.putString("currentUserId", UserSession.get().getId());
             }
 
-            NavController navController = Navigation.findNavController(requireView());
+            NavController navController =
+                    Navigation.findNavController(requireView());
+
             navController.navigate(R.id.nav_search, b);
             return true;
         });
@@ -160,6 +123,7 @@ public class HomeFragment extends Fragment {
     // CATEGORY SETUP
     // ======================================================
     private void setupCategories() {
+
         List<Category> categories = new ArrayList<>();
         categories.add(new Category("All", R.drawable.ic_all_category));
         categories.add(new Category("Textbook", R.drawable.sample_textbooks));
@@ -173,23 +137,64 @@ public class HomeFragment extends Fragment {
         categories.add(new Category("Personal Care", R.drawable.sample_personal_care));
         categories.add(new Category("Others", R.drawable.ic_others));
 
-        categoryAdapter = new CategoryAdapter(categories, category -> filterProductsByCategory(category.getName()));
+        categoryAdapter = new CategoryAdapter(
+                categories,
+                category -> filterProductsByCategory(category.getName())
+        );
 
-        rvCategory.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+        rvCategory.setLayoutManager(
+                new LinearLayoutManager(
+                        getContext(),
+                        LinearLayoutManager.HORIZONTAL,
+                        false
+                )
+        );
+
         rvCategory.setAdapter(categoryAdapter);
     }
 
     // ======================================================
-    // ITEM ADAPTER
+    // LOAD PRODUCTS (EXCLUDING CURRENT USER)
+    // ======================================================
+    private void loadAvailableProducts() {
+
+        String currentUserId =
+                UserSession.get() != null
+                        ? UserSession.get().getId()
+                        : "";
+
+        allProducts =
+                SampleData.getAvailableItems(
+                        requireContext(),
+                        currentUserId
+                );
+
+        productList.clear();
+        productList.addAll(allProducts);
+    }
+
+    // ======================================================
+    // ITEM ADAPTER (FIXED: uses product_id)
     // ======================================================
     private void setupItemAdapter() {
+
         itemAdapter = new ItemAdapter(productList, product -> {
-            Intent intent = new Intent(requireContext(), ProductDetailActivity.class);
+
+            Intent intent =
+                    new Intent(
+                            requireContext(),
+                            ProductDetailActivity.class
+                    );
+
             intent.putExtra("product_id", product.getId());
+
             startActivity(intent);
         });
 
-        rvRecommended.setLayoutManager(new GridLayoutManager(getContext(), 2));
+        rvRecommended.setLayoutManager(
+                new GridLayoutManager(getContext(), 2)
+        );
+
         rvRecommended.setAdapter(itemAdapter);
     }
 
@@ -197,6 +202,7 @@ public class HomeFragment extends Fragment {
     // FILTER BY CATEGORY
     // ======================================================
     private void filterProductsByCategory(String categoryName) {
+
         productList.clear();
 
         if ("All".equalsIgnoreCase(categoryName)) {
@@ -209,16 +215,27 @@ public class HomeFragment extends Fragment {
             }
         }
 
-        if (itemAdapter != null) itemAdapter.notifyDataSetChanged();
+        itemAdapter.notifyDataSetChanged();
     }
 
     // ======================================================
-    // REFRESH ON RESUME
+    // REFRESH WHEN RETURNING
     // ======================================================
     @Override
     public void onResume() {
         super.onResume();
-        loadProductsFromFirebase();
-        btnCart.post(() -> mover.enable(btnCart, rootView, topView, bottomNav));
+
+        loadAvailableProducts();
+
+        productList.clear();
+        productList.addAll(allProducts);
+
+        if (itemAdapter != null) {
+            itemAdapter.notifyDataSetChanged();
+        }
+
+        btnCart.post(() ->
+                mover.enable(btnCart, rootView, topView, bottomNav)
+        );
     }
 }

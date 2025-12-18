@@ -1,17 +1,12 @@
-kotlin
-// C:/Users/User/Documents/UniTrade/app/build.gradle.kts
-
 plugins {
     alias(libs.plugins.android.application)
-    id("org.jetbrains.kotlin.android")
-    alias(libs.plugins.google.gms.google.services)
+    alias(libs.plugins.kotlin.android)  // Use the alias from libs.versions.toml
+    alias(libs.plugins.google.gms.google.services)  // Only need this once
 }
 
 android {
     namespace = "com.example.unitrade"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.unitrade"
@@ -36,6 +31,9 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    kotlinOptions {
+        jvmTarget = "11"
+    }
 }
 
 dependencies {
@@ -49,18 +47,20 @@ dependencies {
     implementation("com.google.code.gson:gson:2.13.2")
     implementation("com.google.mlkit:translate:17.0.2")
     implementation(libs.play.services.location)
+
+    // Glide
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+
+    // MPAndroidChart
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
+    // Firebase - Using BOM for version management
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.storage)
-    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
-
-    // Add these lines for Glide
-    implementation("com.github.bumptech.glide:glide:4.16.0")
-    implementation(libs.play.services.location)
-    implementation(libs.firebase.firestore)
-    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
-
-    // Add this line for MPAndroidChart
-    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    implementation(libs.firebase.analytics)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

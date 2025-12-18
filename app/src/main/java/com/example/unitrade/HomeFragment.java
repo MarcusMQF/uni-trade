@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -20,6 +21,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -163,15 +166,38 @@ public class HomeFragment extends Fragment {
                         ? UserSession.get().getId()
                         : "";
 
-        allProducts =
-                SampleData.getAvailableItems(
-                        requireContext(),
-                        currentUserId
-                );
-
         productList.clear();
-        productList.addAll(allProducts);
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("products")
+                .whereEqualTo("status", "available")
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+
+                    List<Product> products = new ArrayList<>();
+
+                    for (DocumentSnapshot doc : querySnapshot) {
+                        Product p = doc.toObject(Product.class);
+
+                        // Exclude products of current user
+                        if (p != null && !p.getSellerId().equals(currentUserId)) {
+                            products.add(p);
+                        }
+                    }
+
+                    allProducts = products;
+                    productList.clear();
+                    productList.addAll(allProducts);
+
+                    if (itemAdapter != null) itemAdapter.notifyDataSetChanged();
+
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(getContext(), "Failed to load products", Toast.LENGTH_SHORT).show();
+                });
     }
+
 
     // ======================================================
     // ITEM ADAPTER (FIXED: uses product_id)

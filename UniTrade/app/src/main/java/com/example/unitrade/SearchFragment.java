@@ -15,6 +15,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.ScrollView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -24,8 +25,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.unitrade.backend.FetchProductId;
 import com.example.unitrade.backend.Sorting;
-import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,16 +34,19 @@ public class SearchFragment extends Fragment {
     private EditText edtSearch;
     private ImageView btnFilter;
     private RecyclerView rvProducts;
-    private ItemAdapter adapter;
-    private List<Product> filteredProducts;
-
+    private List<Product> filteredProducts = new ArrayList<>();
+    private ItemAdapter adapter = new ItemAdapter(filteredProducts, product -> {
+    });
     private ScrollView filterPanel;
 
     private Button btnLatest, btnNearest, btnPrice;
     private Button currentSelected = null;
     private String selectedPriceMode = null;
 
-    public SearchFragment() {}
+    private TextView tvNoProduct; // For "No Product Match" message
+
+    public SearchFragment() {
+    }
 
     @Nullable
     @Override
@@ -57,6 +59,7 @@ public class SearchFragment extends Fragment {
         btnFilter = view.findViewById(R.id.btnFilter);
         rvProducts = view.findViewById(R.id.rvSearchProducts);
         filterPanel = view.findViewById(R.id.filterPanel);
+        tvNoProduct = view.findViewById(R.id.tvNoProduct);
 
         btnLatest = view.findViewById(R.id.btnLatest);
         btnNearest = view.findViewById(R.id.btnNearest);
@@ -88,12 +91,11 @@ public class SearchFragment extends Fragment {
             showPriceDropdown();
         });
 
-        // Price sorting based on latest time
+        // Latest button sorting
         btnLatest.setOnClickListener(v -> {
             Sorting.sortByLatest(filteredProducts);
             adapter.notifyDataSetChanged();
-
-            resetButtonStyle(btnLatest); // UI style change
+            resetButtonStyle(btnLatest);
         });
 
         // Search when typing or pressing enter
@@ -107,11 +109,18 @@ public class SearchFragment extends Fragment {
         });
 
         edtSearch.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
                 searchProducts(s.toString().trim());
             }
-            @Override public void afterTextChanged(Editable s) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
         });
 
         return view;
@@ -125,7 +134,6 @@ public class SearchFragment extends Fragment {
         menu.getMenu().add("Highest");
 
         menu.setOnMenuItemClickListener(item -> {
-
             selectedPriceMode = item.getTitle().toString();
             btnPrice.setText(selectedPriceMode);
 
@@ -133,15 +141,12 @@ public class SearchFragment extends Fragment {
             resetButtonStyle(btnLatest);
             resetButtonStyle(btnNearest);
             currentSelected = null;
-
             applySelectedStyle(btnPrice);
 
-            // ---- SORTING LOGIC ----
+            // Sorting
             boolean ascending = selectedPriceMode.equalsIgnoreCase("Lowest");
-
             Sorting.sortByPrice(filteredProducts, ascending);
             adapter.notifyDataSetChanged();
-
             return true;
         });
 
@@ -160,25 +165,59 @@ public class SearchFragment extends Fragment {
         b.setTextColor(Color.WHITE);
     }
 
-    // ----- FIRESTORE SEARCH -----
-    private void searchProducts(String query) {
+
+    // ----- Firestore Search -----
+    protected void searchProducts(String query) {
+        if (!isAdded()) return; // Fragment not attached, skip
+
+        // Make sure filteredProducts and adapter are initialized
+        if (filteredProducts == null) filteredProducts = new ArrayList<>();
+        if (adapter == null) {
+            adapter = new ItemAdapter(filteredProducts, product -> {
+                Intent intent = new Intent(getContext(), ProductDetailActivity.class);
+                intent.putExtra("product", product);
+                startActivity(intent);
+            });
+            rvProducts.setAdapter(adapter);
+        }
+
         if (query.isEmpty()) {
             filteredProducts.clear();
             adapter.notifyDataSetChanged();
+            tvNoProduct.setVisibility(View.GONE);
             return;
         }
 
         FetchProductId.searchProductsByKeyword(query, new FetchProductId.OnResultListener() {
             @Override
             public void onSuccess(List<Product> products) {
+                if (!isAdded()) return; // Check again in async callback
+
                 filteredProducts.clear();
-                filteredProducts.addAll(products);
+                if (products != null) {
+                    filteredProducts.addAll(products);
+                }
+
                 adapter.notifyDataSetChanged();
+
+                // Show/hide "No Product Match"
+                if (products == null || products.isEmpty()) {
+                    tvNoProduct.setVisibility(View.VISIBLE);
+                } else {
+                    tvNoProduct.setVisibility(View.GONE);
+                }
             }
 
             @Override
             public void onFailure(Exception e) {
+                if (!isAdded()) return;
+
                 e.printStackTrace();
+                filteredProducts.clear();
+                adapter.notifyDataSetChanged();
+
+                tvNoProduct.setVisibility(View.VISIBLE);
+                tvNoProduct.setText("Error fetching products");
             }
         });
     }

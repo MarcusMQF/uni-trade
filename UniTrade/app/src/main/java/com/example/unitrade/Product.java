@@ -79,6 +79,8 @@ public class Product implements Parcelable {
     public void setName(String name) { this.name = name; }
     public void setLocation(String location) { this.location = location; }
     public void setHeader(boolean header) { this.isHeader = header; }
+
+    public void setId(String id) { this.id = id; }
     public void setQrPaymentUrl(String qrPaymentUrl) { this.qrPaymentUrl = qrPaymentUrl; }   // ← NEW
 
 

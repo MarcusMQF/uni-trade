@@ -2,6 +2,7 @@ package com.example.unitrade;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,7 +18,9 @@ import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import android.widget.TextView;
 
+import com.example.unitrade.backend.FetchProductId;
 import com.example.unitrade.backend.RecommendationManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -25,6 +28,8 @@ import com.example.unitrade.backend.Sorting;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import com.example.unitrade.SearchFragment;
 
 public class HomeFragment extends Fragment {
 
@@ -117,19 +122,29 @@ public class HomeFragment extends Fragment {
                     || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
                     && event.getAction() == KeyEvent.ACTION_DOWN);
 
+            // Inside your edtSearch.setOnEditorActionListener
             if (isEnter) {
+                try {
+                    // Use the action ID you defined in nav_graph.xml
+                    NavController navController = Navigation.findNavController(requireView());
+                    navController.navigate(R.id.action_homeFragment_to_searchFragment);
+                    Log.d("SearchDebug", "Navigation successful");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    Log.e("SearchDebug", "Navigation failed: " + e.getMessage());
+                }
+
                 String query = edtSearch.getText().toString().trim();
-                Bundle b = new Bundle();
-                b.putString("query", query);
+                Log.d("SearchDebug", "User pressed Enter. Query: " + query);
+                SearchFragment sf = new SearchFragment();
+                sf.searchProducts(query);
 
-                NavController navController = Navigation.findNavController(requireView());
-                navController.navigate(R.id.nav_search, b);
-
-                return true;
+                return true; // handled Enter
             }
 
             return false;
         });
+
     }
 
     private void filterProductsByCategory(String categoryName) {

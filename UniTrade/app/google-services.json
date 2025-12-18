@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "237764561914",
+    "project_id": "unitrade---listings",
+    "storage_bucket": "unitrade---listings.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:237764561914:android:ee82208ec054348b187243",
+        "android_client_info": {
+          "package_name": "com.example.unitrade"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBCHOfbA2S3kEs2L_5es9TBZ-Yz6SNa3s0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

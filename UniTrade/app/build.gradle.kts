@@ -45,11 +45,13 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-storage-ktx")
 
     implementation("androidx.navigation:navigation-fragment-ktx:2.7.3")
     implementation("androidx.navigation:navigation-ui-ktx:2.7.3")
 
     implementation("com.github.bumptech.glide:glide:4.16.0")
+    implementation(libs.google.firebase.storage)
     kapt("com.github.bumptech.glide:compiler:4.16.0")
     implementation("com.google.code.gson:gson:2.10.1")
 

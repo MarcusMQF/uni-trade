@@ -12,15 +12,17 @@ import java.util.List;
 public class Product implements Parcelable {
 
     // ---------------- BASIC INFO ----------------
-    private String id;
-    private String name;
-    private double price;
+    private String productId;
+    private String productName;
+    private double productPrice;
+
+    private long createdAt;
     private List<String> imageUrls = new ArrayList<>();
-    private String description;
-    private String condition;
-    private int usedDaysTotal;
-    private String status;
-    private String category;
+    private String productDescription;
+    private String productCondition;
+    private int productUsedDaysTotal;
+    private String productStatus;
+    private String productCategory;
     private String location;
 
     // ---------------- USER INFO ----------------
@@ -72,15 +74,15 @@ public class Product implements Parcelable {
             String sellerId,
             String qrPaymentUrl
     ) {
-        this.id = id;
-        this.name = name;
-        this.price = price;
+        this.productId = id;
+        this.productName = name;
+        this.productPrice = price;
         setImageUrls(imageUrls);
-        this.description = description;
-        this.condition = condition;
-        this.usedDaysTotal = usedDaysTotal;
-        this.status = status;
-        this.category = category;
+        this.productDescription = description;
+        this.productCondition = condition;
+        this.productUsedDaysTotal = usedDaysTotal;
+        this.productStatus = status;
+        this.productCategory = category;
         this.location = location;
         this.sellerId = sellerId;
         this.qrPaymentUrl = qrPaymentUrl;
@@ -90,15 +92,15 @@ public class Product implements Parcelable {
     }
 
     // ---------------- GETTERS ----------------
-    public String getId() { return id; }
-    public String getName() { return name; }
-    public double getPrice() { return price; }
+    public String getId() { return productId; }
+    public String getName() { return productName; }
+    public double getPrice() { return productPrice; }
     public List<String> getImageUrls() { return imageUrls == null ? new ArrayList<>() : new ArrayList<>(imageUrls); }
-    public String getDescription() { return description; }
-    public String getCondition() { return condition; }
-    public int getUsedDaysTotal() { return usedDaysTotal; }
-    public String getStatus() { return status; }
-    public String getCategory() { return category; }
+    public String getDescription() { return productDescription; }
+    public String getCondition() { return productCondition; }
+    public int getUsedDaysTotal() { return productUsedDaysTotal; }
+    public String getStatus() { return productStatus; }
+    public String getCategory() { return productCategory; }
     public String getLocation() { return location; }
     public String getSellerId() { return sellerId; }
     public String getBuyerId() { return buyerId; }
@@ -107,6 +109,10 @@ public class Product implements Parcelable {
     public Date getListingDate() { if (listingDate == null) listingDate = new Date(); return listingDate; }
     public long getTransactionDate() { return transactionDate; }
     public long getImageVersion() { return imageVersion; }
+
+    public long getCreatedAt(){
+        return createdAt;
+    }
 
     public String getSoldTo() { return soldTo; }
     public Timestamp getSoldAt() { return soldAt; }
@@ -118,15 +124,15 @@ public class Product implements Parcelable {
     public int getStability() { return stability; }
 
     // ---------------- SETTERS ----------------
-    public void setId(String id) { this.id = id; }
-    public void setName(String name) { this.name = name; }
-    public void setPrice(double price) { this.price = price; }
+    public void setId(String id) { this.productId = id; }
+    public void setName(String name) { this.productName = name; }
+    public void setPrice(double price) { this.productPrice = price; }
     public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls == null ? new ArrayList<>() : new ArrayList<>(imageUrls); }
-    public void setDescription(String description) { this.description = description; }
-    public void setCondition(String condition) { this.condition = condition; }
-    public void setUsedDaysTotal(int usedDaysTotal) { this.usedDaysTotal = usedDaysTotal; }
-    public void setStatus(String status) { this.status = status; }
-    public void setCategory(String category) { this.category = category; }
+    public void setDescription(String description) { this.productDescription = description; }
+    public void setCondition(String condition) { this.productCondition = condition; }
+    public void setUsedDaysTotal(int usedDaysTotal) { this.productUsedDaysTotal = usedDaysTotal; }
+    public void setStatus(String status) { this.productStatus = status; }
+    public void setCategory(String category) { this.productCategory = category; }
     public void setLocation(String location) { this.location = location; }
     public void setSellerId(String sellerId) { this.sellerId = sellerId; }
     public void setBuyerId(String buyerId) { this.buyerId = buyerId; }
@@ -146,15 +152,15 @@ public class Product implements Parcelable {
 
     // ---------------- PARCELABLE ----------------
     protected Product(Parcel in) {
-        id = in.readString();
-        name = in.readString();
-        price = in.readDouble();
+        productId = in.readString();
+        productName = in.readString();
+        productPrice = in.readDouble();
         imageUrls = in.createStringArrayList();
-        description = in.readString();
-        condition = in.readString();
-        usedDaysTotal = in.readInt();
-        status = in.readString();
-        category = in.readString();
+        productDescription = in.readString();
+        productCondition = in.readString();
+        productUsedDaysTotal = in.readInt();
+        productStatus = in.readString();
+        productCategory = in.readString();
         location = in.readString();
         sellerId = in.readString();
         buyerId = in.readString();
@@ -179,15 +185,15 @@ public class Product implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(id);
-        dest.writeString(name);
-        dest.writeDouble(price);
+        dest.writeString(productStatus);
+        dest.writeString(productName);
+        dest.writeDouble(productPrice);
         dest.writeStringList(imageUrls);
-        dest.writeString(description);
-        dest.writeString(condition);
-        dest.writeInt(usedDaysTotal);
-        dest.writeString(status);
-        dest.writeString(category);
+        dest.writeString(productDescription);
+        dest.writeString(productCondition);
+        dest.writeInt(productUsedDaysTotal);
+        dest.writeString(productStatus);
+        dest.writeString(productCategory);
         dest.writeString(location);
         dest.writeString(sellerId);
         dest.writeString(buyerId);
@@ -223,17 +229,17 @@ public class Product implements Parcelable {
         if (this == o) return true;
         if (!(o instanceof Product)) return false;
         Product p = (Product) o;
-        return id != null && id.equals(p.id);
+        return productId != null && productId.equals(p.productId);
     }
 
     @Override
     public int hashCode() {
-        return id == null ? 0 : id.hashCode();
+        return productId == null ? 0 : productId.hashCode();
     }
 
-    public boolean isBuyTransaction() { return STATUS_BOUGHT.equals(status); }
-    public boolean isSellTransaction() { return STATUS_SOLD.equals(status); }
-    public boolean isDonation() { return STATUS_DONATED.equals(status); }
+    public boolean isBuyTransaction() { return STATUS_BOUGHT.equals(productStatus); }
+    public boolean isSellTransaction() { return STATUS_SOLD.equals(productStatus); }
+    public boolean isDonation() { return STATUS_DONATED.equals(productStatus); }
 
     // ---------------- UTIL ----------------
     public static List<Product> filterBySeller(List<Product> allProducts, String sellerId) {

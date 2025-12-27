@@ -1,12 +1,12 @@
 plugins {
     alias(libs.plugins.android.application)
-    id("org.jetbrains.kotlin.android")
-    alias(libs.plugins.google.services)  // Add this line - MUST be at the bottom of plugins
+    alias(libs.plugins.kotlin.android)  // Use the alias from libs.versions.toml
+    alias(libs.plugins.google.gms.google.services)  // Only need this once
 }
 
 android {
     namespace = "com.example.unitrade"
-    compileSdk = 36  // Fixed the syntax issue
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.unitrade"
@@ -31,6 +31,9 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    kotlinOptions {
+        jvmTarget = "11"
+    }
 }
 
 dependencies {
@@ -43,16 +46,16 @@ dependencies {
     implementation("de.hdodenhof:circleimageview:3.1.0")
     implementation("com.google.code.gson:gson:2.13.2")
     implementation("com.google.mlkit:translate:17.0.2")
+    implementation(libs.play.services.location)
 
     // Glide
     implementation("com.github.bumptech.glide:glide:4.16.0")
-    implementation(libs.play.services.location)
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
     // MPAndroidChart
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
-    // Firebase - Add these lines
+    // Firebase - Using BOM for version management
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -46,7 +47,6 @@
                     android:singleLine="true" />
             </com.google.android.material.card.MaterialCardView>
 
-
             <!-- CATEGORY TITLE -->
             <TextView
                 android:id="@+id/txtCategory"
@@ -57,7 +57,6 @@
                 android:text="Category"
                 android:textSize="20sp"
                 android:textStyle="bold" />
-
 
             <!-- CATEGORY LIST (Horizontal Scroll) -->
             <androidx.recyclerview.widget.RecyclerView
@@ -70,7 +69,6 @@
                 android:paddingEnd="8dp"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
-
             <!-- RECOMMENDED TITLE -->
             <TextView
                 android:id="@+id/txtRecommended"
@@ -81,7 +79,6 @@
                 android:text="Recommended For You"
                 android:textSize="20sp"
                 android:textStyle="bold" />
-
 
             <!-- RECOMMENDED GRID -->
             <androidx.recyclerview.widget.RecyclerView
@@ -97,6 +94,16 @@
 
     </androidx.core.widget.NestedScrollView>
 
+    <!-- ✅ ADDED: LOADING INDICATOR (Shows while loading from Firebase) -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- FLOATING CART BUTTON -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton

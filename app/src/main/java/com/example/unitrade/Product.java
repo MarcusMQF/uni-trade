@@ -3,6 +3,8 @@ package com.example.unitrade;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.google.firebase.Timestamp;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -37,13 +39,23 @@ public class Product implements Parcelable {
 
     private long transactionDate;
 
+    // ---------------- TRANSACTION INFO ----------------
+    private String soldTo;  // buyer's user ID
+    private Timestamp soldAt;  // when it was sold
+    private String purchaseId;  // reference to purchase document
+
+    private boolean buyTransaction;
+    private boolean sellTransaction;
+    private boolean donation;
+    private int stability;
+
     public static final String STATUS_BOUGHT = "BOUGHT";
     public static final String STATUS_SOLD = "SOLD";
     public static final String STATUS_DONATED = "DONATED";
 
     // ---------------- CONSTRUCTORS ----------------
     public Product() {
-        // empty constructor (required)
+        // empty constructor (required for Firebase)
     }
 
     public Product(
@@ -63,7 +75,7 @@ public class Product implements Parcelable {
         this.id = id;
         this.name = name;
         this.price = price;
-        setImageUrls(imageUrls); // ✅ safe copy
+        setImageUrls(imageUrls);
         this.description = description;
         this.condition = condition;
         this.usedDaysTotal = usedDaysTotal;
@@ -73,7 +85,6 @@ public class Product implements Parcelable {
         this.sellerId = sellerId;
         this.qrPaymentUrl = qrPaymentUrl;
 
-        // 🔥 auto metadata
         this.imageVersion = System.currentTimeMillis();
         this.listingDate = new Date();
     }
@@ -82,11 +93,7 @@ public class Product implements Parcelable {
     public String getId() { return id; }
     public String getName() { return name; }
     public double getPrice() { return price; }
-
-    public List<String> getImageUrls() {
-        return imageUrls == null ? new ArrayList<>() : new ArrayList<>(imageUrls);
-    }
-
+    public List<String> getImageUrls() { return imageUrls == null ? new ArrayList<>() : new ArrayList<>(imageUrls); }
     public String getDescription() { return description; }
     public String getCondition() { return condition; }
     public int getUsedDaysTotal() { return usedDaysTotal; }
@@ -97,33 +104,24 @@ public class Product implements Parcelable {
     public String getBuyerId() { return buyerId; }
     public String getQrPaymentUrl() { return qrPaymentUrl; }
     public boolean isHeader() { return isHeader; }
+    public Date getListingDate() { if (listingDate == null) listingDate = new Date(); return listingDate; }
+    public long getTransactionDate() { return transactionDate; }
+    public long getImageVersion() { return imageVersion; }
 
-    // 🔥 SAFE listing date (AUTO-CREATE)
-    public Date getListingDate() {
-        if (listingDate == null) {
-            listingDate = new Date();
-        }
-        return listingDate;
-    }
+    public String getSoldTo() { return soldTo; }
+    public Timestamp getSoldAt() { return soldAt; }
+    public String getPurchaseId() { return purchaseId; }
 
-    public long getTransactionDate() {
-        return transactionDate;
-    }
-
-    public long getImageVersion() {
-        return imageVersion;
-    }
+    public boolean isBuyTransactionFlag() { return buyTransaction; }
+    public boolean isSellTransactionFlag() { return sellTransaction; }
+    public boolean isDonationFlag() { return donation; }
+    public int getStability() { return stability; }
 
     // ---------------- SETTERS ----------------
+    public void setId(String id) { this.id = id; }
     public void setName(String name) { this.name = name; }
     public void setPrice(double price) { this.price = price; }
-
-    public void setImageUrls(List<String> imageUrls) {
-        this.imageUrls = imageUrls == null
-                ? new ArrayList<>()
-                : new ArrayList<>(imageUrls);
-    }
-
+    public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls == null ? new ArrayList<>() : new ArrayList<>(imageUrls); }
     public void setDescription(String description) { this.description = description; }
     public void setCondition(String condition) { this.condition = condition; }
     public void setUsedDaysTotal(int usedDaysTotal) { this.usedDaysTotal = usedDaysTotal; }
@@ -134,18 +132,17 @@ public class Product implements Parcelable {
     public void setBuyerId(String buyerId) { this.buyerId = buyerId; }
     public void setQrPaymentUrl(String qrPaymentUrl) { this.qrPaymentUrl = qrPaymentUrl; }
     public void setHeader(boolean header) { isHeader = header; }
+    public void setListingDate(Date listingDate) { this.listingDate = listingDate; }
+    public void setTransactionDate(long transactionDate) { this.transactionDate = transactionDate; }
+    public void setImageVersion(long imageVersion) { this.imageVersion = imageVersion; }
 
-    public void setListingDate(Date listingDate) {
-        this.listingDate = listingDate;
-    }
-
-    public void setTransactionDate(long transactionDate) {
-        this.transactionDate = transactionDate;
-    }
-
-    public void setImageVersion(long imageVersion) {
-        this.imageVersion = imageVersion;
-    }
+    public void setSoldTo(String soldTo) { this.soldTo = soldTo; }
+    public void setSoldAt(Timestamp soldAt) { this.soldAt = soldAt; }
+    public void setPurchaseId(String purchaseId) { this.purchaseId = purchaseId; }
+    public void setBuyTransaction(boolean buyTransaction) { this.buyTransaction = buyTransaction; }
+    public void setSellTransaction(boolean sellTransaction) { this.sellTransaction = sellTransaction; }
+    public void setDonation(boolean donation) { this.donation = donation; }
+    public void setStability(int stability) { this.stability = stability; }
 
     // ---------------- PARCELABLE ----------------
     protected Product(Parcel in) {
@@ -168,6 +165,16 @@ public class Product implements Parcelable {
         long time = in.readLong();
         listingDate = time == -1 ? null : new Date(time);
         transactionDate = in.readLong();
+
+        soldTo = in.readString();
+        long soldAtTime = in.readLong();
+        soldAt = soldAtTime == -1 ? null : new Timestamp(new Date(soldAtTime));
+        purchaseId = in.readString();
+
+        buyTransaction = in.readByte() != 0;
+        sellTransaction = in.readByte() != 0;
+        donation = in.readByte() != 0;
+        stability = in.readInt();
     }
 
     @Override
@@ -189,23 +196,25 @@ public class Product implements Parcelable {
         dest.writeLong(imageVersion);
         dest.writeLong(listingDate != null ? listingDate.getTime() : -1);
         dest.writeLong(transactionDate);
+
+        dest.writeString(soldTo);
+        dest.writeLong(soldAt != null ? soldAt.toDate().getTime() : -1);
+        dest.writeString(purchaseId);
+
+        dest.writeByte((byte) (buyTransaction ? 1 : 0));
+        dest.writeByte((byte) (sellTransaction ? 1 : 0));
+        dest.writeByte((byte) (donation ? 1 : 0));
+        dest.writeInt(stability);
     }
 
     @Override
-    public int describeContents() {
-        return 0;
-    }
+    public int describeContents() { return 0; }
 
     public static final Creator<Product> CREATOR = new Creator<>() {
         @Override
-        public Product createFromParcel(Parcel in) {
-            return new Product(in);
-        }
-
+        public Product createFromParcel(Parcel in) { return new Product(in); }
         @Override
-        public Product[] newArray(int size) {
-            return new Product[size];
-        }
+        public Product[] newArray(int size) { return new Product[size]; }
     };
 
     // ---------------- EQUALITY ----------------
@@ -222,31 +231,15 @@ public class Product implements Parcelable {
         return id == null ? 0 : id.hashCode();
     }
 
-    public boolean isBuyTransaction() {
-        return STATUS_BOUGHT.equals(status);
-    }
-
-    public boolean isSellTransaction() {
-        return STATUS_SOLD.equals(status);
-    }
-
-    public boolean isDonation() {
-        return STATUS_DONATED.equals(status);
-    }
+    public boolean isBuyTransaction() { return STATUS_BOUGHT.equals(status); }
+    public boolean isSellTransaction() { return STATUS_SOLD.equals(status); }
+    public boolean isDonation() { return STATUS_DONATED.equals(status); }
 
     // ---------------- UTIL ----------------
-    public static List<Product> filterBySeller(
-            List<Product> allProducts,
-            String sellerId
-    ) {
+    public static List<Product> filterBySeller(List<Product> allProducts, String sellerId) {
         List<Product> result = new ArrayList<>();
         if (allProducts == null || sellerId == null) return result;
-
-        for (Product p : allProducts) {
-            if (sellerId.equals(p.getSellerId())) {
-                result.add(p);
-            }
-        }
+        for (Product p : allProducts) if (sellerId.equals(p.getSellerId())) result.add(p);
         return result;
     }
 }

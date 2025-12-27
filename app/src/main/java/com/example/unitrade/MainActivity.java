@@ -24,6 +24,7 @@ public class MainActivity extends BaseActivity{
     private NavController navController;
     private BottomNavigationView bottomNav;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

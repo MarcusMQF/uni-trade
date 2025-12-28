@@ -10,13 +10,13 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -25,13 +25,12 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import java.util.HashMap;
 import java.util.Map;
 
-public class EmailVerificationActivity extends AppCompatActivity {
+public class EmailVerificationActivity extends androidx.appcompat.app.AppCompatActivity {
 
     private static final String TAG = "EmailVerification";
     private static final long OTP_EXPIRY_MS = 15 * 60 * 1000; // 15 minutes
 
     private String currentEmail;
-    private TextView txtEmail;
     private EditText edtOtp;
 
     private FirebaseAuth mAuth;
@@ -44,7 +43,7 @@ public class EmailVerificationActivity extends AppCompatActivity {
 
         currentEmail = getIntent().getStringExtra("email");
 
-        txtEmail = findViewById(R.id.txtEmail);
+        TextView txtEmail = findViewById(R.id.txtEmail);
         edtOtp = findViewById(R.id.edtOtp);
         Button btnChangeEmail = findViewById(R.id.btnChangeEmail);
         Button btnConfirm = findViewById(R.id.btnConfirm);
@@ -161,11 +160,14 @@ public class EmailVerificationActivity extends AppCompatActivity {
 
         dialog.show();
 
-        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        dialog.getWindow().getDecorView().setPadding(0, 0, 0, 0);
-        dialog.getWindow().setLayout(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-        );
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            window.getDecorView().setPadding(0, 0, 0, 0);
+            window.setLayout(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+        }
     }
 }

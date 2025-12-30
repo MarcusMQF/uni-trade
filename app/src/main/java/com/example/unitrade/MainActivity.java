@@ -22,12 +22,11 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-public class MainActivity extends BaseActivity{
+public class MainActivity extends BaseActivity {
 
     private AppBarConfiguration appBarConfiguration;
     private NavController navController;
     private BottomNavigationView bottomNav;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,7 +61,6 @@ public class MainActivity extends BaseActivity{
             Log.e("MainActivity", "No Firebase user logged in");
         }
 
-
         // --------------------------------------------------
         // Toolbar
         // --------------------------------------------------
@@ -70,14 +68,14 @@ public class MainActivity extends BaseActivity{
         setSupportActionBar(toolbar);
 
         Drawable overflow = toolbar.getOverflowIcon();
-        if (overflow != null) overflow.setTint(Color.WHITE);
+        if (overflow != null)
+            overflow.setTint(Color.WHITE);
 
         // --------------------------------------------------
         // NavHost + NavController
         // --------------------------------------------------
-        NavHostFragment navHostFragment =
-                (NavHostFragment) getSupportFragmentManager()
-                        .findFragmentById(R.id.NHFMain);
+        NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.NHFMain);
 
         navController = navHostFragment.getNavController();
 
@@ -89,8 +87,7 @@ public class MainActivity extends BaseActivity{
                 R.id.nav_chat,
                 R.id.nav_sell,
                 R.id.nav_transaction_stats,
-                R.id.nav_profile
-        ).build();
+                R.id.nav_profile).build();
 
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(bottomNav, navController);
@@ -106,7 +103,8 @@ public class MainActivity extends BaseActivity{
     // ==================================================
     private void handleIntent(Intent intent) {
 
-        if (intent == null) return;
+        if (intent == null)
+            return;
 
         // --------------------------------------------------
         // 1. Select bottom navigation tab

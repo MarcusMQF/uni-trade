@@ -198,9 +198,6 @@ public class User implements Parcelable {
         this.addresses = addresses;
     }
 
-    // =========================================================
-    // Firestore Compatibility for 'address' field (String)
-    // =========================================================
     public void setAddress(String address) {
         this.addresses = new ArrayList<>();
         if (address != null && !address.isEmpty()) {

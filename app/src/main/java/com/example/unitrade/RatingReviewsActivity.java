@@ -106,16 +106,28 @@ public class RatingReviewsActivity extends AppCompatActivity {
                 .get()
                 .addOnSuccessListener(doc -> {
                     if (!doc.exists()) {
-                        Toast.makeText(this, "User not found", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "User document not found", Toast.LENGTH_SHORT).show();
                         finish();
                         return;
                     }
 
-                    user = doc.toObject(User.class);
-                    if (user == null) {
+                    try {
+                        user = doc.toObject(User.class);
+                    } catch (Exception e) {
+                        Toast.makeText(this, "Error parsing user: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                        e.printStackTrace();
                         finish();
                         return;
                     }
+
+                    if (user == null) {
+                        Toast.makeText(this, "User object is null", Toast.LENGTH_SHORT).show();
+                        finish();
+                        return;
+                    }
+
+                    // Force set ID if missing
+                    user.setId(doc.getId());
 
                     // Set header UI
                     txtUsername.setText(user.getUsername());
@@ -142,7 +154,10 @@ public class RatingReviewsActivity extends AppCompatActivity {
                             reviewLauncher.launch(intent);
                         });
                 })
-                .addOnFailureListener(e -> finish());
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Network error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    finish();
+                });
     }
 
     private void loadReviewsFromDatabase() {
@@ -152,9 +167,15 @@ public class RatingReviewsActivity extends AppCompatActivity {
                 .addOnSuccessListener(query -> {
                     allReviews.clear();
                     for (var doc : query.getDocuments()) {
-                        Review r = doc.toObject(Review.class);
-                        if (r != null)
-                            allReviews.add(r);
+                        try {
+                            Review r = doc.toObject(Review.class);
+                            if (r != null) {
+                                allReviews.add(r);
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            // Skip malformed review
+                        }
                     }
                     setupViewPager();
                     refreshRatingsAndUser();

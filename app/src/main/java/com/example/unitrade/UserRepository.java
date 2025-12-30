@@ -76,5 +76,4 @@ public class UserRepository {
                 .addOnSuccessListener(aVoid -> callback.onSuccess())
                 .addOnFailureListener(callback::onFailure);
     }
-
 }

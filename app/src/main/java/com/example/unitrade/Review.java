@@ -10,10 +10,14 @@ public class Review implements Parcelable {
     private String comment;
     private double rating;
     private String date;
-    private String type;   // "user" or "seller" or "all"
+    private String type; // "user" or "seller" or "all"
+
+    // Required by Firestore
+    public Review() {
+    }
 
     public Review(String id, User reviewer, String comment,
-                  double rating, String date, String type) {
+            double rating, String date, String type) {
         this.id = id;
         this.reviewer = reviewer;
         this.comment = comment;
@@ -43,15 +47,60 @@ public class Review implements Parcelable {
         }
     };
 
-    public String getId() { return id; }
-    public User getReviewer() { return reviewer; }
-    public String getComment() { return comment; }
-    public double getRating() { return rating; }
-    public String getDate() { return date; }
-    public String getType() { return type; }
+    // Getters
+    public String getId() {
+        return id;
+    }
+
+    public User getReviewer() {
+        return reviewer;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public double getRating() {
+        return rating;
+    }
+
+    public String getDate() {
+        return date;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    // Setters (Required for Firestore)
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void setReviewer(User reviewer) {
+        this.reviewer = reviewer;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
+    }
+
+    public void setRating(double rating) {
+        this.rating = rating;
+    }
+
+    public void setDate(String date) {
+        this.date = date;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
 
     @Override
-    public int describeContents() { return 0; }
+    public int describeContents() {
+        return 0;
+    }
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {

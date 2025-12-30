@@ -1,34 +1,67 @@
 package com.example.unitrade;
 
-import android.net.Uri;
-
 public class Message {
     private String text;
-    private boolean isSent;
-    private Uri imageUri;
+    private String senderId;
+    private long timestamp;
+    private String mediaUrl;
+    private String mediaType; // "image" or "video"
 
-    // Constructor for text-only messages
-    public Message(String text, boolean isSent) {
-        this.text = text;
-        this.isSent = isSent;
+    // Empty constructor for Firestore
+    public Message() {
     }
 
-    // Constructor for messages with both image and text
-    public Message(Uri imageUri, String text, boolean isSent) {
-        this.imageUri = imageUri;
+    public Message(String text, String senderId, long timestamp) {
         this.text = text;
-        this.isSent = isSent;
+        this.senderId = senderId;
+        this.timestamp = timestamp;
+    }
+
+    public Message(String text, String senderId, long timestamp, String mediaUrl, String mediaType) {
+        this.text = text;
+        this.senderId = senderId;
+        this.timestamp = timestamp;
+        this.mediaUrl = mediaUrl;
+        this.mediaType = mediaType;
     }
 
     public String getText() {
         return text;
     }
 
-    public boolean isSent() {
-        return isSent;
+    public void setText(String text) {
+        this.text = text;
     }
 
-    public Uri getImageUri() {
-        return imageUri;
+    public String getSenderId() {
+        return senderId;
+    }
+
+    public void setSenderId(String senderId) {
+        this.senderId = senderId;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public String getMediaUrl() {
+        return mediaUrl;
+    }
+
+    public void setMediaUrl(String mediaUrl) {
+        this.mediaUrl = mediaUrl;
+    }
+
+    public String getMediaType() {
+        return mediaType;
+    }
+
+    public void setMediaType(String mediaType) {
+        this.mediaType = mediaType;
     }
 }

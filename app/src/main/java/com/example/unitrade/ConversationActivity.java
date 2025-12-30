@@ -8,7 +8,6 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
 import android.provider.MediaStore;
 import android.speech.RecognizerIntent;
 import android.text.Editable;
@@ -37,14 +36,23 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.signature.ObjectKey;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentChange;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.SetOptions;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -66,6 +74,11 @@ public class ConversationActivity extends AppCompatActivity {
     private List<Uri> selectedMediaUris = new ArrayList<>();
     private String userPhoneNumber;
 
+    private FirebaseFirestore db;
+    private String currentUserId;
+    private String receiverId;
+    private String chatId;
+
     private final ActivityResultLauncher<Intent> takePictureLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
@@ -73,8 +86,7 @@ public class ConversationActivity extends AppCompatActivity {
                     selectedMediaUris.add(photoURI);
                     showPreview(photoURI);
                 }
-            }
-    );
+            });
 
     private final ActivityResultLauncher<Intent> takeVideoLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -83,8 +95,7 @@ public class ConversationActivity extends AppCompatActivity {
                     selectedMediaUris.add(photoURI);
                     showPreview(photoURI);
                 }
-            }
-    );
+            });
 
     private final ActivityResultLauncher<Intent> pickMediaLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -104,28 +115,47 @@ public class ConversationActivity extends AppCompatActivity {
                         showPreview(selectedMediaUris.get(selectedMediaUris.size() - 1));
                     }
                 }
-            }
-    );
+            });
 
     private final ActivityResultLauncher<Intent> speechLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                    ArrayList<String> matches = result.getData().getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                    ArrayList<String> matches = result.getData()
+                            .getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
                     if (matches != null && !matches.isEmpty()) {
                         String spokenText = matches.get(0);
                         messageEditText.append(spokenText + " ");
                     }
                 }
-            }
-    );
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_conversation);
 
+        db = FirebaseFirestore.getInstance();
+        currentUserId = FirebaseAuth.getInstance().getUid();
+
         Chat chat = getIntent().getParcelableExtra("chat");
+        if (chat != null) {
+            receiverId = chat.getUserId();
+        } else {
+            // Fallback if userId is passed directly
+            receiverId = getIntent().getStringExtra("receiverId");
+        }
+
+        if (currentUserId == null || receiverId == null) {
+            Toast.makeText(this, "Error: User not found", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        // Create Chat ID (Consistent for 1-to-1)
+        List<String> ids = Arrays.asList(currentUserId, receiverId);
+        Collections.sort(ids);
+        chatId = ids.get(0) + "_" + ids.get(1);
 
         setupRecyclerView();
         setupInputLayout();
@@ -133,7 +163,7 @@ public class ConversationActivity extends AppCompatActivity {
         updateSendButtonState();
 
         // Load user from Firebase
-        UserRepository.getUserByUid(chat.getUserId(), new UserRepository.UserCallback() {
+        UserRepository.getUserByUid(receiverId, new UserRepository.UserCallback() {
             @Override
             public void onSuccess(User user) {
                 userPhoneNumber = user.getPhoneNumber();
@@ -146,37 +176,56 @@ public class ConversationActivity extends AppCompatActivity {
                 setupToolbar(chat, null);
             }
         });
+
+        listenForMessages();
     }
 
+    private void listenForMessages() {
+        db.collection("chats")
+                .document(chatId)
+                .collection("messages")
+                .orderBy("timestamp", Query.Direction.ASCENDING)
+                .addSnapshotListener((snapshots, e) -> {
+                    if (e != null) {
+                        return;
+                    }
+                    if (snapshots != null) {
+                        for (DocumentChange dc : snapshots.getDocumentChanges()) {
+                            if (dc.getType() == DocumentChange.Type.ADDED) {
+                                Message message = dc.getDocument().toObject(Message.class);
+                                messageList.add(message);
+                                adapter.notifyItemInserted(messageList.size() - 1);
+                                recyclerView.scrollToPosition(messageList.size() - 1);
+                            }
+                        }
+                    }
+                });
+    }
 
     private void setupToolbar(Chat chat, User user) {
-
         ImageView backButton = findViewById(R.id.backButton);
         backButton.setOnClickListener(v -> onBackPressed());
 
         ImageView callButton = findViewById(R.id.call_button);
         callButton.setOnClickListener(v -> {
             if (userPhoneNumber != null && !userPhoneNumber.isEmpty()) {
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
-                        == PackageManager.PERMISSION_GRANTED) {
+                if (ContextCompat.checkSelfPermission(this,
+                        Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
                     makePhoneCall(userPhoneNumber);
                 } else {
                     ActivityCompat.requestPermissions(
                             this,
-                            new String[]{Manifest.permission.CALL_PHONE},
-                            REQUEST_CALL_PERMISSION
-                    );
+                            new String[] { Manifest.permission.CALL_PHONE },
+                            REQUEST_CALL_PERMISSION);
                 }
             } else {
                 showToast("Phone number not available.");
             }
         });
 
-        // ✅ Use USER for title
         TextView toolbarTitle = findViewById(R.id.toolbar_title);
         toolbarTitle.setText(user != null ? user.getUsername() : "Chat");
 
-        // ✅ Use USER for avatar
         CircleImageView profileImage = findViewById(R.id.profile_image);
 
         if (user != null) {
@@ -189,7 +238,6 @@ public class ConversationActivity extends AppCompatActivity {
             profileImage.setImageResource(R.drawable.profile_pic_2);
         }
 
-        // ✅ Profile click
         profileImage.setOnClickListener(v -> {
             if (user != null) {
                 Intent intent = new Intent(this, UserProfileActivity.class);
@@ -203,7 +251,7 @@ public class ConversationActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         messageList = new ArrayList<>();
-        adapter = new MessageAdapter(messageList);
+        adapter = new MessageAdapter(messageList, currentUserId);
         recyclerView.setAdapter(adapter);
     }
 
@@ -224,7 +272,8 @@ public class ConversationActivity extends AppCompatActivity {
 
         messageEditText.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -232,11 +281,11 @@ public class ConversationActivity extends AppCompatActivity {
             }
 
             @Override
-            public void afterTextChanged(Editable s) {}
+            public void afterTextChanged(Editable s) {
+            }
         });
 
         sendButton.setOnClickListener(v -> sendMessage());
-
         galleryButton.setOnClickListener(v -> showMediaSourceDialog());
     }
 
@@ -248,7 +297,8 @@ public class ConversationActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == REQUEST_CALL_PERMISSION) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -276,38 +326,36 @@ public class ConversationActivity extends AppCompatActivity {
         boolean hasText = !messageText.isEmpty();
         boolean hasMedia = !selectedMediaUris.isEmpty();
 
-        if (!hasText && !hasMedia) {
-            return; // Nothing to send
-        }
+        if (!hasText && !hasMedia)
+            return;
 
-        // Create one message with the text and attach the first media item
+        // TODO: Implement Media Upload to Firebase Storage
+        // For now we only send text. If media is present, we acknowledge it but don't
+        // upload yet.
         if (hasMedia) {
-            messageList.add(new Message(selectedMediaUris.get(0), hasText ? messageText : "", true));
-            // Create separate messages for the remaining media items
-            for (int i = 1; i < selectedMediaUris.size(); i++) {
-                messageList.add(new Message(selectedMediaUris.get(i), "", true));
-            }
-        } else {
-            // If there's only text, create a single message for it
-            messageList.add(new Message(null, messageText, true));
+            showToast("Media sending not yet implemented (requires Storage). Sending text only.");
         }
 
-        int originalSize = messageList.size();
-        int itemsAdded = hasMedia ? selectedMediaUris.size() : (hasText ? 1 : 0);
-        if (hasMedia && hasText) itemsAdded = selectedMediaUris.size();
+        if (hasText) {
+            Message msg = new Message(messageText, currentUserId, System.currentTimeMillis());
 
-        adapter.notifyItemRangeInserted(originalSize - itemsAdded, itemsAdded);
-        recyclerView.scrollToPosition(messageList.size() - 1);
+            // Add to Firestore
+            db.collection("chats").document(chatId).collection("messages").add(msg);
+
+            // Update Parent Chat Document
+            Map<String, Object> chatUpdates = new HashMap<>();
+            chatUpdates.put("lastMessage", messageText);
+            chatUpdates.put("lastMessageTime", System.currentTimeMillis());
+            chatUpdates.put("participants", Arrays.asList(currentUserId, receiverId));
+
+            // Check if it's referenced by a product (optional, if we passed product ID)
+            // for now, just simplified.
+
+            db.collection("chats").document(chatId).set(chatUpdates, SetOptions.merge());
+        }
+
         messageEditText.setText("");
         clearPreview();
-
-        // Simulate Auto-Reply only once after the batch is sent
-        new Handler().postDelayed(() -> {
-            String replyText = "Thanks for your message! I'll get back to you shortly.";
-            messageList.add(new Message(null, replyText, false));
-            adapter.notifyItemInserted(messageList.size() - 1);
-            recyclerView.smoothScrollToPosition(messageList.size() - 1);
-        }, 1500);
     }
 
     private void showPreview(Uri mediaUri) {
@@ -318,10 +366,6 @@ public class ConversationActivity extends AppCompatActivity {
         playIcon.setVisibility(isVideo ? View.VISIBLE : View.GONE);
 
         updateSendButtonState();
-
-        if (selectedMediaUris.size() > 1) {
-            showToast(selectedMediaUris.size() + " items selected");
-        }
     }
 
     private boolean isVideo(Uri uri) {
@@ -362,7 +406,7 @@ public class ConversationActivity extends AppCompatActivity {
     private void showMediaSourceDialog() {
         new AlertDialog.Builder(this)
                 .setTitle("Send Media")
-                .setItems(new CharSequence[]{"Take Photo", "Take Video", "Choose from Gallery"}, (dialog, which) -> {
+                .setItems(new CharSequence[] { "Take Photo", "Take Video", "Choose from Gallery" }, (dialog, which) -> {
                     if (which == 0) {
                         checkCameraPermissionAndTakePhoto();
                     } else if (which == 1) {
@@ -378,7 +422,8 @@ public class ConversationActivity extends AppCompatActivity {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             dispatchTakePictureIntent();
         } else {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
+            ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.CAMERA },
+                    REQUEST_CAMERA_PERMISSION);
         }
     }
 
@@ -386,14 +431,15 @@ public class ConversationActivity extends AppCompatActivity {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             dispatchTakeVideoIntent();
         } else {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
+            ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.CAMERA },
+                    REQUEST_CAMERA_PERMISSION);
         }
     }
 
     private void pickMediaFromGallery() {
         Intent pickIntent = new Intent(Intent.ACTION_GET_CONTENT);
         pickIntent.setType("*/*");
-        pickIntent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/*", "video/*"});
+        pickIntent.putExtra(Intent.EXTRA_MIME_TYPES, new String[] { "image/*", "video/*" });
         pickIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
         pickMediaLauncher.launch(pickIntent);
     }

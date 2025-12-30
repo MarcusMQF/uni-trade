@@ -7,6 +7,10 @@ public class Address implements Parcelable {
     private String address;
     private boolean isDefault;
 
+    // Required by Firestore
+    public Address() {
+    }
+
     public Address(String address, boolean isDefault) {
         this.address = address;
         this.isDefault = isDefault;

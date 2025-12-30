@@ -14,7 +14,13 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentChange;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class ChatFragment extends Fragment {
@@ -22,6 +28,9 @@ public class ChatFragment extends Fragment {
     private RecyclerView recyclerView;
     private ChatAdapter adapter;
     private List<Chat> chatList;
+
+    private FirebaseFirestore db;
+    private String currentUserId;
 
     private boolean fromExternal = false;
 
@@ -36,10 +45,12 @@ public class ChatFragment extends Fragment {
     public View onCreateView(
             @NonNull LayoutInflater inflater,
             @Nullable ViewGroup container,
-            @Nullable Bundle savedInstanceState
-    ) {
+            @Nullable Bundle savedInstanceState) {
 
         View view = inflater.inflate(R.layout.fragment_chat, container, false);
+
+        db = FirebaseFirestore.getInstance();
+        currentUserId = FirebaseAuth.getInstance().getUid();
 
         if (getArguments() != null) {
             fromExternal = getArguments().getBoolean("fromExternal", false);
@@ -48,25 +59,7 @@ public class ChatFragment extends Fragment {
         recyclerView = view.findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        // ---------------------------------------------------------
-        // Chat data (NEW MODEL)
-        // ---------------------------------------------------------
         chatList = new ArrayList<>();
-
-        chatList.add(new Chat(
-                "u2",                                   // userId
-                "[Rating Card] Please rate...",          // last message
-                System.currentTimeMillis() - 5 * 60_000, // 5 min ago
-                false
-        ));
-
-        chatList.add(new Chat(
-                "u3",
-                "Chat has ended. If you need further...",
-                System.currentTimeMillis() - 2 * 60 * 60_000, // 2 hours ago
-                true
-        ));
-
         adapter = new ChatAdapter(chatList, chat -> {
             Intent intent = new Intent(requireActivity(), ConversationActivity.class);
             intent.putExtra("chat", chat);
@@ -75,7 +68,46 @@ public class ChatFragment extends Fragment {
 
         recyclerView.setAdapter(adapter);
 
+        loadChats();
+
         return view;
+    }
+
+    private void loadChats() {
+        if (currentUserId == null)
+            return;
+
+        db.collection("chats")
+                .whereArrayContains("participants", currentUserId)
+                .addSnapshotListener((snapshots, e) -> {
+                    if (e != null)
+                        return;
+
+                    if (snapshots != null) {
+                        chatList.clear();
+                        for (com.google.firebase.firestore.DocumentSnapshot doc : snapshots.getDocuments()) {
+                            List<String> participants = (List<String>) doc.get("participants");
+                            if (participants != null && participants.size() > 1) {
+                                String otherUserId = participants.get(0).equals(currentUserId)
+                                        ? participants.get(1)
+                                        : participants.get(0);
+
+                                String lastMsg = doc.getString("lastMessage");
+                                Long timeVal = doc.getLong("lastMessageTime");
+                                long time = timeVal != null ? timeVal : 0;
+
+                                // Defaulting isBookmarked to false for now
+                                chatList.add(new Chat(otherUserId, lastMsg, time, false));
+                            }
+                        }
+
+                        // Sort by newest first
+                        Collections.sort(chatList,
+                                (c1, c2) -> Long.compare(c2.getLastMessageTime(), c1.getLastMessageTime()));
+
+                        adapter.notifyDataSetChanged();
+                    }
+                });
     }
 
     // ---------------------------------------------------------

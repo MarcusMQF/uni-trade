@@ -19,14 +19,17 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
     private static final int VIEW_TYPE_RECEIVED = 2;
 
     private List<Message> messageList;
+    private String currentUserId;
 
-    public MessageAdapter(List<Message> messageList) {
+    public MessageAdapter(List<Message> messageList, String currentUserId) {
         this.messageList = messageList;
+        this.currentUserId = currentUserId;
     }
 
     @Override
     public int getItemViewType(int position) {
-        if (messageList.get(position).isSent()) {
+        Message msg = messageList.get(position);
+        if (msg.getSenderId() != null && msg.getSenderId().equals(currentUserId)) {
             return VIEW_TYPE_SENT;
         } else {
             return VIEW_TYPE_RECEIVED;
@@ -67,10 +70,10 @@ public class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.MessageV
         }
 
         public void bind(Message message) {
-            if (message.getImageUri() != null) {
+            if (message.getMediaUrl() != null && !message.getMediaUrl().isEmpty()) {
                 messageImageView.setVisibility(View.VISIBLE);
                 Glide.with(itemView.getContext())
-                        .load(message.getImageUri())
+                        .load(message.getMediaUrl())
                         .into(messageImageView);
             } else {
                 messageImageView.setVisibility(View.GONE);

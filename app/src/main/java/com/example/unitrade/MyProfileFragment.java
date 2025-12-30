@@ -39,7 +39,7 @@ public final class MyProfileFragment extends Fragment {
     private final List<Product> userProducts = new ArrayList<>();
 
     private ImageView imgProfile;
-    private TextView txtUserName, txtFullName, txtEmail, txtPhone, txtRating, txtAddress;
+    private TextView txtUserName, txtFullName, txtEmail, txtPhone, txtRating, txtAddress, txtUserDescription;
     private TextView tabActive, tabCompleted;
     private RecyclerView recyclerMyProducts;
     private ProfileProductAdapter productAdapter;
@@ -123,6 +123,7 @@ public final class MyProfileFragment extends Fragment {
         txtPhone = v.findViewById(R.id.txtPhone);
         txtRating = v.findViewById(R.id.txtRating);
         txtAddress = v.findViewById(R.id.txtAddress);
+        txtUserDescription = v.findViewById(R.id.txtUserDescription);
 
         recyclerMyProducts = v.findViewById(R.id.recyclerMyProducts);
         btnManageListings = v.findViewById(R.id.btnManageListings);
@@ -162,7 +163,14 @@ public final class MyProfileFragment extends Fragment {
         txtFullName.setText(viewedUser.getFullName());
         txtEmail.setText(viewedUser.getEmail());
         txtPhone.setText(viewedUser.getPhoneNumber());
-        txtRating.setText(String.format("%.1f rating", viewedUser.getOverallRating()));
+        txtRating.setText(String.format("%.1f", viewedUser.getOverallRating()));
+
+        String bio = viewedUser.getBio();
+        if (bio != null && !bio.isEmpty()) {
+            txtUserDescription.setText(bio);
+        } else {
+            txtUserDescription.setText("No bio available.");
+        }
 
         List<Address> addresses = viewedUser.getAddresses();
         if (addresses == null || addresses.isEmpty()) {
@@ -215,10 +223,11 @@ public final class MyProfileFragment extends Fragment {
     }
 
     private void styleTabs(boolean active) {
-        tabActive.setBackgroundResource(active ? R.drawable.bg_tab_selected : R.drawable.bg_tab_unselected);
-        tabCompleted.setBackgroundResource(active ? R.drawable.bg_tab_unselected : R.drawable.bg_tab_selected);
-        tabActive.setTextColor(active ? Color.parseColor("#009688") : Color.parseColor("#666666"));
-        tabCompleted.setTextColor(active ? Color.parseColor("#666666") : Color.parseColor("#009688"));
+        tabActive.setBackgroundResource(active ? R.drawable.bg_tab_selected_pill : 0);
+        tabCompleted.setBackgroundResource(active ? 0 : R.drawable.bg_tab_selected_pill);
+
+        tabActive.setTextColor(active ? Color.parseColor("#009688") : Color.parseColor("#95A5A6"));
+        tabCompleted.setTextColor(active ? Color.parseColor("#95A5A6") : Color.parseColor("#009688"));
     }
 
     private void loadProductsRealtime(String status) {

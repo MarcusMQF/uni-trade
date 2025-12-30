@@ -74,57 +74,33 @@ public class ProductDetailActivity extends BaseActivity {
             return;
         }
 
-        // Try Firebase first
         db.collection("products")
                 .document(productId)
                 .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        product = documentSnapshot.toObject(Product.class);
-                    }
-
-                    // Fallback to SampleData if Firebase returns null
-                    if (product == null) {
-                        product = SampleData.getProductById(this, productId);
-                    }
-
-                    if (product == null) {
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) {
+                        product = doc.toObject(Product.class);
+                        loadSeller(product.getSellerId());
+                        showProductInfo();
+                        setupImageSlider();
+                        applyStatusUI();
+                        setupActions();
+                    } else {
                         Toast.makeText(this, "Product not found", Toast.LENGTH_SHORT).show();
                         finish();
-                        return;
                     }
-
-                    loadSeller(product.getSellerId());
-                    showProductInfo();
-                    setupImageSlider();
-                    applyStatusUI();
-                    setupActions();
-
-                    Log.d("ProductDetail", "Product loaded: " + product.getName());
                 })
                 .addOnFailureListener(e -> {
-                    Log.e("ProductDetail", "Firebase load failed", e);
-                    // Fallback to SampleData
-                    product = SampleData.getProductById(this, productId);
-
-                    if (product == null) {
-                        Toast.makeText(this, "Product not found", Toast.LENGTH_SHORT).show();
-                        finish();
-                        return;
-                    }
-
-                    loadSeller(product.getSellerId());
-                    showProductInfo();
-                    setupImageSlider();
-                    applyStatusUI();
-                    setupActions();
+                    Toast.makeText(this, "Error loading product", Toast.LENGTH_SHORT).show();
+                    finish();
                 });
     }
+
 
     private void loadSeller(String sellerId) {
         if (sellerId == null) {
             seller = null;
-            setupSellerInfo();
+            setupSellerInfo(); // show "Unknown"
             showBuyerBottomBar();
             return;
         }
@@ -132,18 +108,29 @@ public class ProductDetailActivity extends BaseActivity {
         db.collection("users")
                 .document(sellerId)
                 .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        seller = documentSnapshot.toObject(User.class);
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) {
+                        seller = doc.toObject(User.class);
+
+                        // 🔥 Make sure the seller ID is set
+                        if (seller != null) seller.setId(doc.getId());
+
+                        setupSellerInfo(); // update UI AFTER seller is loaded
                     } else {
-                        seller = SampleData.getUserById(this, sellerId);
+                        seller = null;
+                        setupSellerInfo();
                     }
-                    setupSellerUIBasedOnUser();
+
+                    if (seller != null && seller.getId().equals(currentUserId)) {
+                        showSellerBottomBar();
+                    } else {
+                        showBuyerBottomBar();
+                    }
                 })
                 .addOnFailureListener(e -> {
-                    Log.e("ProductDetail", "Firebase seller load failed", e);
-                    seller = SampleData.getUserById(this, sellerId);
-                    setupSellerUIBasedOnUser();
+                    seller = null;
+                    setupSellerInfo();
+                    showBuyerBottomBar();
                 });
     }
 
@@ -215,7 +202,8 @@ public class ProductDetailActivity extends BaseActivity {
             txtSellerName.setText("Unknown");
             return;
         }
-        txtSellerName.setText(seller.getUsername());
+
+        txtSellerName.setText(seller.getFullName());
         txtRating.setText(String.format("%.1f rating", seller.getOverallRating()));
 
         Glide.with(this)
@@ -230,6 +218,7 @@ public class ProductDetailActivity extends BaseActivity {
             startActivity(i);
         });
     }
+
 
     private void setupImageSlider() {
         imageSliderAdapter = new ImageSliderAdapter(this, product.getImageUrls(), product.getImageVersion());
@@ -323,11 +312,25 @@ public class ProductDetailActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (product != null) {
-            product = SampleData.getProductById(this, product.getId());
-            setupImageSlider();
+        if (product != null && product.getId() != null) {
+            db.collection("products")
+                    .document(product.getId())
+                    .get()
+                    .addOnSuccessListener(doc -> {
+                        if (doc.exists()) {
+                            product = doc.toObject(Product.class);
+                            showProductInfo();
+                            setupImageSlider();
+                            applyStatusUI();
+                            setupActions();
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(this, "Failed to refresh product", Toast.LENGTH_SHORT).show();
+                    });
         }
     }
+
 
     private String formatUsage(int totalDays) {
         if (totalDays <= 0) return "Unused";

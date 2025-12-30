@@ -1,6 +1,9 @@
 package com.example.unitrade;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -9,195 +12,318 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.PopupMenu;
+import android.widget.ScrollView;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.example.unitrade.backend.FetchProductId;
+import com.example.unitrade.backend.RecommendationManager;
+import com.example.unitrade.backend.Sorting;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import android.location.Address;
+import android.location.Geocoder;
+
+
+import java.io.IOException;
+import java.util.Locale;
+
+
 public class SearchFragment extends Fragment {
 
-    // ---------------- UI ----------------
     private EditText edtSearch;
+    private ImageView btnFilter;
     private RecyclerView rvProducts;
+    private List<Product> filteredProducts = new ArrayList<>();
+    private ItemAdapter adapter = new ItemAdapter(filteredProducts, product -> {
+    });
+    private ScrollView filterPanel;
 
-    private FloatingActionButton btnCart;
-    private BottomNavigationView bottomNav;
-    private View topView;
-    private View rootView;
+    private Button btnLatest, btnNearest, btnPrice;
+    private Button currentSelected = null;
+    private String selectedPriceMode = null;
 
-    private final MovableFabHelper mover = new MovableFabHelper();
+    private FusedLocationProviderClient fusedLocationClient;
+    private double userLat = 0;
+    private double userLng = 0;
 
-    // ---------------- Data ----------------
-    private ItemAdapter adapter;
     private List<Product> allProducts = new ArrayList<>();
-    private final List<Product> filteredProducts = new ArrayList<>();
 
-    private String currentUserId = "";
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
 
-    public SearchFragment() {}
+    private TextView tvNoProduct; // For "No Product Match" message
 
-    // ==========================================================
+    public SearchFragment() {
+    }
+
     @Override
-    public View onCreateView(
-            @NonNull LayoutInflater inflater,
-            ViewGroup container,
-            Bundle savedInstanceState
-    ) {
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
+    }
 
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_search, container, false);
-        rootView = view;
 
-        // ---------------- Current user ----------------
-        if (UserSession.get() != null) {
-            currentUserId = UserSession.get().getId();
-        }
-
-        // ---------------- Views ----------------
+        // Views
         edtSearch = view.findViewById(R.id.edtSearch);
+        btnFilter = view.findViewById(R.id.btnFilter);
         rvProducts = view.findViewById(R.id.rvSearchProducts);
-        btnCart = view.findViewById(R.id.btnCart);
+        filterPanel = view.findViewById(R.id.filterPanel);
 
-        bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
-        topView = view.findViewById(R.id.searchBarContainer);
+        btnLatest = view.findViewById(R.id.btnLatest);
+        btnNearest = view.findViewById(R.id.btnNearest);
+        btnPrice = view.findViewById(R.id.btnPrice);
 
-        // ---------------- Movable FAB ----------------
-        mover.enable(btnCart, rootView, topView, bottomNav);
-
-        btnCart.setOnClickListener(v ->
-                startActivity(new Intent(getContext(), ShoppingCartActivity.class))
-        );
-
-        // ---------------- Restore search query ----------------
-        Bundle args = getArguments();
-        if (args != null) {
-            edtSearch.setText(args.getString("query", ""));
-        }
-
-        return view;
-    }
-
-    // ==========================================================
-    @Override
-    public void onViewCreated(
-            @NonNull View view,
-            @Nullable Bundle savedInstanceState
-    ) {
-        super.onViewCreated(view, savedInstanceState);
-
-        setupRecycler();
-        loadProducts();
-        setupSearchLogic();
-
-        // Initial filter if query exists
-        String initialQuery = edtSearch.getText().toString().trim();
-        if (!initialQuery.isEmpty()) {
-            filterProducts(initialQuery);
-        }
-    }
-
-    // ==========================================================
-    // SETUP RECYCLER
-    // ==========================================================
-    private void setupRecycler() {
-
+        // RecyclerView setup
+        filteredProducts = new ArrayList<>();
         adapter = new ItemAdapter(filteredProducts, product -> {
             Intent intent = new Intent(getContext(), ProductDetailActivity.class);
             intent.putExtra("product_id", product.getId());
             startActivity(intent);
         });
-
         rvProducts.setLayoutManager(new GridLayoutManager(getContext(), 2));
         rvProducts.setAdapter(adapter);
-    }
 
-    // ==========================================================
-    // LOAD AVAILABLE PRODUCTS
-    // ==========================================================
-    private void loadProducts() {
+        // Filter panel toggle
+        btnFilter.setOnClickListener(v -> {
+            filterPanel.setVisibility(filterPanel.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
+        });
 
-        allProducts = SampleData.getAvailableItems(requireContext(), currentUserId);
+        // Price dropdown
+        btnPrice.setOnClickListener(v -> {
+            if (selectedPriceMode != null) {
+                selectedPriceMode = null;
+                btnPrice.setText("price ▼");
+                resetButtonStyle(btnPrice);
+                return;
+            }
+            showPriceDropdown();
+        });
 
-        filteredProducts.clear();
-        filteredProducts.addAll(allProducts);
-
-        if (adapter != null) {
+        // Latest button sorting
+        btnLatest.setOnClickListener(v -> {
+            Sorting.sortByLatest(filteredProducts);
             adapter.notifyDataSetChanged();
-        }
-    }
+            resetButtonStyle(btnLatest);
+        });
 
-    // ==========================================================
-    // SEARCH LOGIC
-    // ==========================================================
-    private void setupSearchLogic() {
+        btnNearest.setOnClickListener(v -> {
 
-        // Search on keyboard action
+            // 1️⃣ Check permission
+            if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                    != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                        LOCATION_PERMISSION_REQUEST_CODE
+                );
+                return;
+            }
+
+            // 2️⃣ Get last known location
+            fusedLocationClient.getLastLocation()
+                    .addOnSuccessListener(location -> {
+                        if (location == null) {
+                            Toast.makeText(getContext(), "Unable to get your location", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        double userLat = location.getLatitude();
+                        double userLng = location.getLongitude();
+
+                        filteredProducts.clear();
+
+                        Geocoder geocoder = new Geocoder(getContext(), Locale.getDefault());
+
+                        for (Product p : allProducts) {
+                            try {
+                                List<Address> addresses = geocoder.getFromLocationName(p.getLocation(), 1);
+                                if (!addresses.isEmpty()) {
+                                    double sellerLat = addresses.get(0).getLatitude();
+                                    double sellerLng = addresses.get(0).getLongitude();
+
+                                    double dist = distanceInKm(userLat, userLng, sellerLat, sellerLng);
+                                    if (dist <= 5) {
+                                        filteredProducts.add(p);
+                                    }
+                                }
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        // Optional: sort by recommendation clicks within 5 km
+                        filteredProducts.sort((p1, p2) ->
+                                Integer.compare(
+                                        RecommendationManager.getClicks(p2.getCategory()),
+                                        RecommendationManager.getClicks(p1.getCategory())
+                                )
+                        );
+
+                        adapter.notifyDataSetChanged();
+
+                        resetButtonStyle(btnNearest);
+                        applySelectedStyle(btnNearest);
+                    });
+        });
+
+
+        // Search when typing or pressing enter
         edtSearch.setOnEditorActionListener((v, actionId, event) -> {
-            boolean isSearch =
-                    actionId == EditorInfo.IME_ACTION_SEARCH ||
-                            (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER);
-
-            if (isSearch) {
-                filterProducts(edtSearch.getText().toString());
+            if (actionId == EditorInfo.IME_ACTION_SEARCH ||
+                    (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                searchProducts(edtSearch.getText().toString().trim());
                 return true;
             }
             return false;
         });
 
-        // Live search
         edtSearch.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
-            @Override public void afterTextChanged(Editable s) {}
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
 
             @Override
-            public void onTextChanged(CharSequence s, int st, int b, int c) {
-                filterProducts(s.toString());
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                searchProducts(s.toString().trim());
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
+
+        return view;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        String query = "";
+        if (getArguments() != null) {
+            query = getArguments().getString("query", "");
+        }
+
+        if (!query.isEmpty()) {
+            searchProducts(query);
+        }
+    }
+
+
+    // ----- Helper methods -----
+
+    private void showPriceDropdown() {
+        PopupMenu menu = new PopupMenu(getContext(), btnPrice);
+        menu.getMenu().add("Lowest");
+        menu.getMenu().add("Highest");
+
+        menu.setOnMenuItemClickListener(item -> {
+            selectedPriceMode = item.getTitle().toString();
+            btnPrice.setText(selectedPriceMode);
+
+            // Reset other buttons
+            resetButtonStyle(btnLatest);
+            resetButtonStyle(btnNearest);
+            currentSelected = null;
+            applySelectedStyle(btnPrice);
+
+            // Sorting
+            boolean ascending = selectedPriceMode.equalsIgnoreCase("Lowest");
+            Sorting.sortByPrice(filteredProducts, ascending);
+            adapter.notifyDataSetChanged();
+            return true;
+        });
+
+        menu.show();
+    }
+
+    private void resetButtonStyle(Button b) {
+        b.setBackgroundResource(R.drawable.bg_filter_chip);
+        b.setBackgroundTintList(null);
+        b.setTextColor(Color.BLACK);
+    }
+
+    private void applySelectedStyle(Button b) {
+        b.setBackgroundResource(R.drawable.bg_filter_chip_selected);
+        b.setBackgroundTintList(null);
+        b.setTextColor(Color.WHITE);
+    }
+
+
+    // ----- Firestore Search -----
+    protected void searchProducts(String query) {
+        if (!isAdded()) return; // Fragment not attached, skip
+
+        // Make sure filteredProducts and adapter are initialized
+        if (filteredProducts == null) filteredProducts = new ArrayList<>();
+        if (adapter == null) {
+            adapter = new ItemAdapter(filteredProducts, product -> {
+                Intent intent = new Intent(getContext(), ProductDetailActivity.class);
+                intent.putExtra("product_id", product.getId());
+                startActivity(intent);
+            });
+            rvProducts.setAdapter(adapter);
+        }
+
+        if (query.isEmpty()) {
+            filteredProducts.clear();
+            adapter.notifyDataSetChanged();
+            return;
+        }
+
+        FetchProductId.searchProductsByKeyword(query, new FetchProductId.OnResultListener() {
+            @Override
+            public void onSuccess(List<Product> products) {
+                if (!isAdded()) return; // Check again in async callback
+
+                filteredProducts.clear();
+                if (products != null) {
+                    filteredProducts.addAll(products);
+                }
+
+                adapter.notifyDataSetChanged();
+
+            }
+            @Override
+            public void onFailure(Exception e) {
+                if (!isAdded()) return;
+
+                e.printStackTrace();
+                filteredProducts.clear();
+                adapter.notifyDataSetChanged();
+
             }
         });
     }
 
-    // ==========================================================
-    // FILTER PRODUCTS
-    // ==========================================================
-    private void filterProducts(String query) {
-
-        filteredProducts.clear();
-
-        if (query == null || query.trim().isEmpty()) {
-            filteredProducts.addAll(allProducts);
-        } else {
-            String lower = query.toLowerCase().trim();
-
-            for (Product p : allProducts) {
-                if (p.getName().toLowerCase().contains(lower)
-                        || p.getDescription().toLowerCase().contains(lower)) {
-                    filteredProducts.add(p);
-                }
-            }
-        }
-
-        adapter.notifyDataSetChanged();
+    private double distanceInKm(double lat1, double lng1, double lat2, double lng2) {
+        final int R = 6371; // Earth radius in km
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 
-    // ==========================================================
-    // REFRESH ON RETURN (STATUS MAY CHANGE)
-    // ==========================================================
-    @Override
-    public void onResume() {
-        super.onResume();
-
-        loadProducts();
-
-        btnCart.post(() ->
-                mover.enable(btnCart, rootView, topView, bottomNav)
-        );
-    }
 }

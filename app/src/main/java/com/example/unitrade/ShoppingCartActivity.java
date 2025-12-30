@@ -10,6 +10,7 @@ import android.widget.TextView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import java.util.ArrayList;
 
 import java.util.List;
 
@@ -25,50 +26,43 @@ public class ShoppingCartActivity extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_shopping_cart);
 
-        // -------------------------------
         // Toolbar
-        // -------------------------------
         Toolbar toolbar = findViewById(R.id.appBarShoppingCart);
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle("Shopping Cart");
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         tintToolbarOverflow(toolbar);
 
-        // -------------------------------
-        // Load cart (IDs)
-        // -------------------------------
+        // Load cart IDs
         CartManager.loadCart(this);
 
-        // -------------------------------
         // Views
-        // -------------------------------
         rvCart = findViewById(R.id.rvCart);
         btnEdit = findViewById(R.id.btnEditCart);
-
         rvCart.setLayoutManager(new LinearLayoutManager(this));
 
-        // -------------------------------
-        // Resolve PRODUCTS from IDs
-        // -------------------------------
-        List<Product> cartProducts =
-                CartManager.getCartProducts(this);
-
-        adapter = new ShoppingCartAdapter(this, cartProducts);
+        // Adapter (empty for now)
+        adapter = new ShoppingCartAdapter(this, new ArrayList<>());
         rvCart.setAdapter(adapter);
-
         adapter.setOnCartChangedListener(this::updateEmptyState);
 
-        // -------------------------------
-        // Edit Mode
-        // -------------------------------
+        // Load products async from Firestore
+        CartManager.getCartProducts(this, products -> {
+            adapter.rebuild(products);       // same as your old adapter setList
+            updateEmptyState();              // show/hide empty state
+        });
+
+        // Edit mode
         btnEdit.setOnClickListener(v -> {
             isEditMode = !isEditMode;
             adapter.setEditMode(isEditMode);
             btnEdit.setText(isEditMode ? "Done" : "Edit Shopping Cart");
         });
 
+        // Initial empty state (based on cart IDs)
         updateEmptyState();
     }
+
 
     // =====================================================
     private void updateEmptyState() {

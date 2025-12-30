@@ -10,4 +10,8 @@ public class UserSession {
     public static User get() {
         return currentUser;
     }
+
+    public static void clear() {
+        currentUser = null;
+    }
 }

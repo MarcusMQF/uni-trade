@@ -7,6 +7,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -47,7 +48,7 @@ public class UserProfileActivity extends BaseActivity {
 
         tintToolbarOverflow(toolbar);
 
-        // Receive user
+        // Receive userId
         String userId = getIntent().getStringExtra("user_id");
 
         if (userId == null) {
@@ -55,21 +56,31 @@ public class UserProfileActivity extends BaseActivity {
             return;
         }
 
-        viewedUser = SampleData.getUserById(this, userId);
+        // 🔥 Firebase fetch
+        UserRepository.getUserByUid(userId, new UserRepository.UserCallback() {
+            @Override
+            public void onSuccess(User user) {
+                viewedUser = user;
 
-        if (viewedUser == null) {
-            finish();
-            return;
-        }
+                bindViews();
+                showUserData();
+                loadUserListings();
+                setupViewReviewsButton();
+                setupDescriptionExpand();
+            }
 
-        bindViews();
-        showUserData();
-        loadUserListings();
-        setupViewReviewsButton();
-
-        setupDescriptionExpand();
-
+            @Override
+            public void onFailure(Exception e) {
+                Toast.makeText(
+                        UserProfileActivity.this,
+                        "User not found",
+                        Toast.LENGTH_SHORT
+                ).show();
+                finish();
+            }
+        });
     }
+
 
     private void setupDescriptionExpand() {
 
@@ -153,7 +164,7 @@ public class UserProfileActivity extends BaseActivity {
         txtLastSeen.setText("Last seen: " + viewedUser.getLastSeenString());
         txtUserDescription.setText(viewedUser.getBio());
 
-        String address = viewedUser.getDefaultAddress();
+        List<Address> address = viewedUser.getAddresses();
         if (address != null && !address.isEmpty() && !address.equals("No address set")) {
             txtUserAddress.setText("Address: " + address);
             txtUserAddress.setVisibility(View.VISIBLE);
@@ -170,37 +181,57 @@ public class UserProfileActivity extends BaseActivity {
 
     private void loadUserListings() {
 
-
-        List<Product> userProducts = SampleData.getActiveItems(this, viewedUser.getId());
-
         rvListings.setLayoutManager(new GridLayoutManager(this, 2));
 
-        if (userProducts.size() > MAX_PREVIEW_ITEMS) {
+        ProductRepository.getActiveProductsByUser(
+                viewedUser.getId(),
+                new ProductRepository.ProductListCallback() {
 
-            txtViewMoreListings.setText("show more ▼");
+                    @Override
+                    public void onSuccess(List<Product> userProducts) {
 
-            List<Product> previewList = userProducts.subList(0, MAX_PREVIEW_ITEMS);
+                        if (userProducts.size() > MAX_PREVIEW_ITEMS) {
 
-            productAdapter = new UserProductsAdapter(this, previewList);
-            rvListings.setAdapter(productAdapter);
+                            txtViewMoreListings.setText("show more ▼");
 
-            txtViewMoreListings.setVisibility(View.VISIBLE);
+                            List<Product> previewList =
+                                    userProducts.subList(0, MAX_PREVIEW_ITEMS);
 
-            txtViewMoreListings.setOnClickListener(v -> {
+                            productAdapter =
+                                    new UserProductsAdapter(UserProfileActivity.this, previewList);
+                            rvListings.setAdapter(productAdapter);
 
-                productAdapter = new UserProductsAdapter(UserProfileActivity.this, userProducts);
-                rvListings.setAdapter(productAdapter);
+                            txtViewMoreListings.setVisibility(View.VISIBLE);
 
-                txtViewMoreListings.setText("show less ▲");
-                txtViewMoreListings.setOnClickListener(x -> loadUserListings());
-            });
+                            txtViewMoreListings.setOnClickListener(v -> {
+                                productAdapter =
+                                        new UserProductsAdapter(
+                                                UserProfileActivity.this,
+                                                userProducts
+                                        );
+                                rvListings.setAdapter(productAdapter);
 
-        } else {
+                                txtViewMoreListings.setText("show less ▲");
+                                txtViewMoreListings.setOnClickListener(x -> loadUserListings());
+                            });
 
-            productAdapter = new UserProductsAdapter(this, userProducts);
-            rvListings.setAdapter(productAdapter);
-            txtViewMoreListings.setVisibility(View.GONE);
-        }
+                        } else {
+                            productAdapter =
+                                    new UserProductsAdapter(UserProfileActivity.this, userProducts);
+                            rvListings.setAdapter(productAdapter);
+                            txtViewMoreListings.setVisibility(View.GONE);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        Toast.makeText(
+                                UserProfileActivity.this,
+                                "Failed to load listings",
+                                Toast.LENGTH_SHORT
+                        ).show();
+                    }
+                });
     }
 
 
@@ -218,19 +249,33 @@ public class UserProfileActivity extends BaseActivity {
         return true;
     }
 
+    @Override
     protected void onResume() {
         super.onResume();
 
-        if (viewedUser != null) {
-            // 🔥 Reload user from SampleData (always latest)
-            viewedUser = SampleData.getUserById(this, viewedUser.getId());
+        if (viewedUser == null) return;
 
-            // 🔥 Refresh header (name, bio, address, PFP)
-            showUserData();
+        UserRepository.getUserByUid(
+                viewedUser.getId(),
+                new UserRepository.UserCallback() {
 
-            // 🔥 Refresh listings (seller’s items)
-            loadUserListings();
-        }
+                    @Override
+                    public void onSuccess(User user) {
+                        viewedUser = user;
+                        showUserData();
+                        loadUserListings();
+                    }
+
+                    @Override
+                    public void onFailure(Exception e) {
+                        Toast.makeText(
+                                UserProfileActivity.this,
+                                "Failed to refresh profile",
+                                Toast.LENGTH_SHORT
+                        ).show();
+                    }
+                }
+        );
     }
 
 }

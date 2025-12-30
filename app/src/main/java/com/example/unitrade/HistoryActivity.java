@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -13,6 +14,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.tabs.TabLayout;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -83,42 +86,54 @@ public class HistoryActivity extends BaseActivity {
     // DATA RELOAD (NO SAMPLE DATA)
     // ============================================================
     private void reloadData() {
-
         purchasedList.clear();
         soldList.clear();
 
         String currentUserId = UserSession.get().getId();
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        for (Product p : SampleData.getAllProducts(this)) {
+        // Purchased
+        db.collection("products")
+                .whereEqualTo("buyerId", currentUserId)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        for (DocumentSnapshot doc : task.getResult()) {
+                            Product p = doc.toObject(Product.class);
+                            if (p != null && p.getTransactionDate() > 0 && p.getPrice() > 0) {
+                                purchasedList.add(p);
+                            }
+                        }
+                    }
 
-            // PURCHASED BY ME
-            if (currentUserId.equals(p.getBuyerId())
-                    && p.getTransactionDate() > 0
-                    && p.getPrice() > 0) {
+                    // Sold
+                    db.collection("products")
+                            .whereEqualTo("sellerId", currentUserId)
+                            .get()
+                            .addOnCompleteListener(sellTask -> {
+                                if (sellTask.isSuccessful()) {
+                                    for (DocumentSnapshot doc : sellTask.getResult()) {
+                                        Product p = doc.toObject(Product.class);
+                                        if (p != null &&
+                                                (p.getStatus().equalsIgnoreCase("Sold") ||
+                                                        p.getStatus().equalsIgnoreCase("Donated")) &&
+                                                p.getTransactionDate() > 0) {
+                                            soldList.add(p);
+                                        }
+                                    }
+                                }
 
-                purchasedList.add(p);
-            }
+                                // Sort and update UI
+                                Collections.sort(purchasedList, (p1, p2) -> Long.compare(p2.getTransactionDate(), p1.getTransactionDate()));
+                                Collections.sort(soldList, (p1, p2) -> Long.compare(p2.getTransactionDate(), p1.getTransactionDate()));
 
-            // SOLD BY ME
-            if (currentUserId.equals(p.getSellerId())
-                    && (p.getStatus().equalsIgnoreCase("Sold")
-                    || p.getStatus().equalsIgnoreCase("Donated"))
-                    && p.getTransactionDate() > 0) {
-
-                soldList.add(p);
-            }
-        }
-
-        Collections.sort(
-                purchasedList,
-                (p1, p2) -> Long.compare(p2.getTransactionDate(), p1.getTransactionDate())
-        );
-
-        Collections.sort(
-                soldList,
-                (p1, p2) -> Long.compare(p2.getTransactionDate(), p1.getTransactionDate())
-        );
+                                if (isPurchasedTab) showPurchased();
+                                else showSold();
+                            });
+                });
     }
+
+
 
     // ============================================================
     // TABS
@@ -249,21 +264,27 @@ public class HistoryActivity extends BaseActivity {
     }
 
     private void confirmDelete(Product product) {
-
         ConfirmDialog.show(
                 this,
                 "Delete Listing",
                 "This action cannot be undone.",
                 "Delete",
                 () -> {
-                    // Remove from data source
-                    SampleData.getAllProducts(this).remove(product);
-
-                    // Refresh lists + UI
-                    reloadData();
-                    showSold();
+                    FirebaseFirestore db = FirebaseFirestore.getInstance();
+                    db.collection("products")
+                            .document(product.getId())
+                            .delete()
+                            .addOnSuccessListener(aVoid -> {
+                                // Refresh lists
+                                reloadData();
+                                showSold();
+                            })
+                            .addOnFailureListener(e -> {
+                                Toast.makeText(this, "Failed to delete listing", Toast.LENGTH_SHORT).show();
+                            });
                 }
         );
     }
+
 
 }

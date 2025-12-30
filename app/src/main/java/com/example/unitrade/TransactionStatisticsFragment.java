@@ -9,9 +9,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -25,18 +26,12 @@ import com.google.android.material.button.MaterialButtonToggleGroup;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 public class TransactionStatisticsFragment extends Fragment {
 
-    enum TimeMode {
-        DAY,
-        MONTH,
-        YEAR
-    }
+    enum TimeMode { DAY, MONTH, YEAR }
 
     private TextView selectedDate;
     private PieChart pieChart;
@@ -45,8 +40,10 @@ public class TransactionStatisticsFragment extends Fragment {
     private TransactionAdapter transactionAdapter;
     private List<Transaction> transactionList = new ArrayList<>();
     private Calendar currentSelectedDate = Calendar.getInstance();
-
     private TimeMode currentMode = TimeMode.DAY;
+
+    // Cache all products
+    private List<Product> allProducts = new ArrayList<>();
 
     @Nullable
     @Override
@@ -70,6 +67,10 @@ public class TransactionStatisticsFragment extends Fragment {
         View dateSelector = view.findViewById(R.id.dateSelector);
         TextView viewAllTransactions = view.findViewById(R.id.tvViewAllTransactions);
 
+        rvHistory.setLayoutManager(new LinearLayoutManager(getContext()));
+        transactionAdapter = new TransactionAdapter(getContext(), transactionList);
+        rvHistory.setAdapter(transactionAdapter);
+
         dateSelector.setOnClickListener(v -> showDatePickerDialog());
 
         if (viewAllTransactions != null) {
@@ -79,44 +80,44 @@ public class TransactionStatisticsFragment extends Fragment {
             });
         }
 
-        rvHistory.setLayoutManager(new LinearLayoutManager(getContext()));
-        transactionAdapter = new TransactionAdapter(getContext(), transactionList);
-        rvHistory.setAdapter(transactionAdapter);
-
-
         MaterialButtonToggleGroup toggle = view.findViewById(R.id.toggleTimeRange);
-
         toggle.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
             if (!isChecked) return;
 
             if (checkedId == R.id.btnDay) {
                 currentMode = TimeMode.DAY;
-                // keep exact day
-            }
-            else if (checkedId == R.id.btnMonth) {
+            } else if (checkedId == R.id.btnMonth) {
                 currentMode = TimeMode.MONTH;
-
-
                 currentSelectedDate.set(Calendar.DAY_OF_MONTH, 1);
-            }
-            else if (checkedId == R.id.btnYear) {
+            } else if (checkedId == R.id.btnYear) {
                 currentMode = TimeMode.YEAR;
-
-
                 currentSelectedDate.set(Calendar.MONTH, Calendar.JANUARY);
                 currentSelectedDate.set(Calendar.DAY_OF_MONTH, 1);
             }
 
-            updateDataForDate(currentSelectedDate);
+            // Update data using cached products
+            updateDataForDate(currentSelectedDate, allProducts);
         });
-
-        updateDataForDate(currentSelectedDate);
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        updateDataForDate(currentSelectedDate);
+
+        // Fetch all products asynchronously
+        UserRepository.getAllProducts(new UserRepository.ProductsCallback() {
+            @Override
+            public void onSuccess(List<Product> products) {
+                allProducts = products;
+                updateDataForDate(currentSelectedDate, allProducts);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Toast.makeText(getContext(), "Failed to load transactions", Toast.LENGTH_SHORT).show();
+                clearAllData();
+            }
+        });
     }
 
     private void showDatePickerDialog() {
@@ -127,16 +128,14 @@ public class TransactionStatisticsFragment extends Fragment {
         DatePickerDialog dialog = new DatePickerDialog(
                 requireContext(),
                 (datePicker, y, m, d) -> {
-
                     if (currentMode == TimeMode.DAY) {
                         currentSelectedDate.set(y, m, d);
                     } else if (currentMode == TimeMode.MONTH) {
-                        currentSelectedDate.set(y, m, 1); // ignore day
+                        currentSelectedDate.set(y, m, 1);
                     } else {
-                        currentSelectedDate.set(y, Calendar.JANUARY, 1); // year only
+                        currentSelectedDate.set(y, Calendar.JANUARY, 1);
                     }
-
-                    updateDataForDate(currentSelectedDate);
+                    updateDataForDate(currentSelectedDate, allProducts);
                 },
                 year, month, day
         );
@@ -145,10 +144,10 @@ public class TransactionStatisticsFragment extends Fragment {
         dialog.show();
     }
 
+    private void updateDataForDate(Calendar selectedCalendar, List<Product> products) {
+        if (products == null) return;
 
-    private void updateDataForDate(Calendar selectedCalendar) {
         SimpleDateFormat sdf;
-
         if (currentMode == TimeMode.DAY) {
             sdf = new SimpleDateFormat("EEEE, MMM d, yyyy", Locale.getDefault());
         } else if (currentMode == TimeMode.MONTH) {
@@ -159,7 +158,7 @@ public class TransactionStatisticsFragment extends Fragment {
 
         selectedDate.setText(sdf.format(selectedCalendar.getTime()));
 
-        List<Transaction> dailyTransactions = fetchTransactionsForDate(selectedCalendar);
+        List<Transaction> dailyTransactions = fetchTransactionsForDate(selectedCalendar, products);
 
         if (dailyTransactions.isEmpty()) {
             new AlertDialog.Builder(getContext())
@@ -175,17 +174,14 @@ public class TransactionStatisticsFragment extends Fragment {
         loadRecentTransactions(dailyTransactions);
     }
 
-    private List<Transaction> fetchTransactionsForDate(Calendar selectedCalendar) {
-
+    private List<Transaction> fetchTransactionsForDate(Calendar selectedCalendar, List<Product> products) {
         List<Transaction> transactions = new ArrayList<>();
-        List<Product> allProducts = SampleData.getAllProducts(requireContext());
+        String me = UserSession.get() != null ? UserSession.get().getId() : null;
+        if (me == null || products == null) return transactions;
+
         SimpleDateFormat sdf = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
 
-        String me = UserSession.get().getId();
-        if (me == null) return transactions;
-
-        for (Product product : allProducts) {
-
+        for (Product product : products) {
             if (product.getTransactionDate() <= 0) continue;
 
             Calendar productCal = Calendar.getInstance();
@@ -205,20 +201,14 @@ public class TransactionStatisticsFragment extends Fragment {
             if (!match) continue;
 
             boolean iBought = me.equals(product.getBuyerId());
-            boolean iSold   = me.equals(product.getSellerId());
+            boolean iSold = me.equals(product.getSellerId());
 
             if (!iBought && !iSold) continue;
 
-            // Ignore donations
-            if ("Donated".equalsIgnoreCase(product.getStatus()) || product.getPrice() <= 0) {
-                continue;
-            }
+            if ("Donated".equalsIgnoreCase(product.getStatus()) || product.getPrice() <= 0) continue;
 
             boolean isBuy = iBought;
-
-            String imageUrl = product.getImageUrls().isEmpty()
-                    ? null
-                    : product.getImageUrls().get(0);
+            String imageUrl = product.getImageUrls().isEmpty() ? null : product.getImageUrls().get(0);
 
             transactions.add(new Transaction(
                     product.getName(),
@@ -250,10 +240,8 @@ public class TransactionStatisticsFragment extends Fragment {
     }
 
     private void setupPieChart(List<Transaction> transactions) {
-        int buyItems = 0;
-        int sellItems = 0;
-        float buyAmount = 0;
-        float sellAmount = 0;
+        int buyItems = 0, sellItems = 0;
+        float buyAmount = 0, sellAmount = 0;
 
         for (Transaction t : transactions) {
             if (t.isBuy()) {
@@ -270,12 +258,11 @@ public class TransactionStatisticsFragment extends Fragment {
         pieEntries.add(new PieEntry(sellItems, "Sell"));
 
         PieDataSet pieDataSet = new PieDataSet(pieEntries, "");
-        pieDataSet.setColors(new int[]{Color.parseColor("#E57373"), Color.parseColor("#81C784")}); // Red for Buy, Green for Sell
+        pieDataSet.setColors(new int[]{Color.parseColor("#E57373"), Color.parseColor("#81C784")});
         pieDataSet.setValueTextColor(Color.WHITE);
         pieDataSet.setValueTextSize(12f);
 
-        PieData pieData = new PieData(pieDataSet);
-        pieChart.setData(pieData);
+        pieChart.setData(new PieData(pieDataSet));
         pieChart.getDescription().setEnabled(false);
         pieChart.setCenterText("Items");
         pieChart.animateY(1000);
@@ -284,6 +271,7 @@ public class TransactionStatisticsFragment extends Fragment {
         buyItemsText.setText("Buy : " + buyItems + " items");
         buyAmountText.setText(AppSettings.formatPrice(getContext(), buyAmount));
         buyAmountText.setTextColor(Color.parseColor("#E57373"));
+
         sellItemsText.setText("Sell : " + sellItems + " items");
         sellAmountText.setText(AppSettings.formatPrice(getContext(), sellAmount));
         sellAmountText.setTextColor(Color.parseColor("#81C784"));

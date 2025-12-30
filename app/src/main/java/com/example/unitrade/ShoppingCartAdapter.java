@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -23,17 +24,13 @@ import java.util.Map;
 public class ShoppingCartAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private static final int VIEW_TYPE_HEADER = 0;
-    private static final int VIEW_TYPE_ITEM   = 1;
+    private static final int VIEW_TYPE_ITEM = 1;
 
     private final Context context;
     private final List<Object> flatList = new ArrayList<>();
     private final Map<String, List<Product>> groupedMap = new LinkedHashMap<>();
-
     private boolean isEditMode = false;
 
-    // =====================================================
-    // LISTENER
-    // =====================================================
     public interface OnCartChangedListener {
         void onCartUpdated();
     }
@@ -44,18 +41,12 @@ public class ShoppingCartAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         this.cartListener = listener;
     }
 
-    // =====================================================
-    // CONSTRUCTOR
-    // =====================================================
     public ShoppingCartAdapter(Context ctx, List<Product> cartProducts) {
         this.context = ctx;
         rebuild(cartProducts);
     }
 
-    // =====================================================
-    // REBUILD GROUP STRUCTURE
-    // =====================================================
-    private void rebuild(List<Product> products) {
+    public void rebuild(List<Product> products) {
         flatList.clear();
         groupedMap.clear();
 
@@ -73,22 +64,14 @@ public class ShoppingCartAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         notifyDataSetChanged();
     }
 
-    // =====================================================
-    // EDIT MODE
-    // =====================================================
     public void setEditMode(boolean mode) {
         isEditMode = mode;
         notifyDataSetChanged();
     }
 
-    // =====================================================
-    // ADAPTER OVERRIDES
-    // =====================================================
     @Override
     public int getItemViewType(int position) {
-        return (flatList.get(position) instanceof String)
-                ? VIEW_TYPE_HEADER
-                : VIEW_TYPE_ITEM;
+        return (flatList.get(position) instanceof String) ? VIEW_TYPE_HEADER : VIEW_TYPE_ITEM;
     }
 
     @Override
@@ -98,11 +81,8 @@ public class ShoppingCartAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
 
     @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(
-            @NonNull ViewGroup parent, int viewType) {
-
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(context);
-
         if (viewType == VIEW_TYPE_HEADER) {
             View v = inflater.inflate(R.layout.header_cart_seller, parent, false);
             return new HeaderHolder(v);
@@ -113,35 +93,39 @@ public class ShoppingCartAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
     }
 
     @Override
-    public void onBindViewHolder(
-            @NonNull RecyclerView.ViewHolder holder, int position) {
-
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (getItemViewType(position) == VIEW_TYPE_HEADER) {
-            bindHeader((HeaderHolder) holder,
-                    (String) flatList.get(position));
+            bindHeader((HeaderHolder) holder, (String) flatList.get(position));
         } else {
-            bindItem((ItemHolder) holder,
-                    (Product) flatList.get(position));
+            bindItem((ItemHolder) holder, (Product) flatList.get(position));
         }
     }
 
-    // =====================================================
-    // HEADER BINDING
-    // =====================================================
     private void bindHeader(HeaderHolder h, String headerKey) {
-
         String sellerId = headerKey.replace("HEADER_", "");
         List<Product> sellerItems = groupedMap.get(sellerId);
 
-        User seller = SampleData.getUserById(context, sellerId);
-        if (seller != null) {
-            h.txtSellerName.setText(seller.getUsername());
-            Glide.with(context)
-                    .load(seller.getProfileImageUrl())
-                    .signature(new ObjectKey(seller.getProfileImageVersion()))
-                    .circleCrop()
-                    .into(h.imgSeller);
-        }
+        // Placeholder while loading
+        h.txtSellerName.setText("Loading...");
+        h.imgSeller.setImageResource(R.drawable.ic_profile_small);
+
+        // Fetch seller asynchronously
+        UserRepository.getUserByUid(sellerId, new UserRepository.UserCallback() {
+            @Override
+            public void onSuccess(User user) {
+                h.txtSellerName.setText(user.getUsername());
+                Glide.with(context)
+                        .load(user.getProfileImageUrl())
+                        .signature(new ObjectKey(user.getProfileImageVersion()))
+                        .circleCrop()
+                        .into(h.imgSeller);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                h.txtSellerName.setText("Unknown Seller");
+            }
+        });
 
         h.btnCheckout.setOnClickListener(v -> {
             ArrayList<String> ids = new ArrayList<>();
@@ -153,20 +137,15 @@ public class ShoppingCartAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         });
     }
 
-    // =====================================================
-    // ITEM BINDING
-    // =====================================================
     private void bindItem(ItemHolder h, Product p) {
-
         Glide.with(context)
-                .load(p.getImageUrls().get(0))
+                .load(p.getImageUrls().isEmpty() ? null : p.getImageUrls().get(0))
                 .signature(new ObjectKey(p.getImageVersion()))
                 .into(h.imgItem);
 
         h.txtItemName.setText(p.getName());
         h.txtPrice.setText(AppSettings.formatPrice(context, p.getPrice()));
         h.txtStatus.setText(p.getStatus());
-
         h.btnDelete.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
 
         h.btnDelete.setOnClickListener(v ->
@@ -176,18 +155,23 @@ public class ShoppingCartAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
                         "Do you want to remove this item from cart?",
                         "Remove",
                         () -> {
+                            // 1️⃣ Remove from cart storage
                             CartManager.removeItem(context, p.getId());
 
-                            List<Product> updated =
-                                    CartManager.getCartProducts(context);
+                            // 2️⃣ Reload products from Firestore
+                            CartManager.getCartProducts(context, products -> {
+                                // 3️⃣ Rebuild THIS adapter
+                                rebuild(products);
 
-                            rebuild(updated);
-
-                            if (cartListener != null)
-                                cartListener.onCartUpdated();
+                                // 4️⃣ Notify fragment/activity
+                                if (cartListener != null) {
+                                    cartListener.onCartUpdated();
+                                }
+                            });
                         }
                 )
         );
+
 
         h.itemView.setOnClickListener(v -> {
             Intent i = new Intent(context, ProductDetailActivity.class);
@@ -196,9 +180,6 @@ public class ShoppingCartAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         });
     }
 
-    // =====================================================
-    // VIEW HOLDERS
-    // =====================================================
     static class HeaderHolder extends RecyclerView.ViewHolder {
         ImageView imgSeller;
         TextView txtSellerName;

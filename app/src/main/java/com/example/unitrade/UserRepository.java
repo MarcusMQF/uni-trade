@@ -11,6 +11,7 @@ public class UserRepository {
 
     public interface UserCallback {
         void onSuccess(User user);
+
         void onFailure(Exception e);
     }
 
@@ -21,6 +22,8 @@ public class UserRepository {
                 .addOnSuccessListener(doc -> {
                     if (doc.exists()) {
                         User user = doc.toObject(User.class);
+                        if (user != null)
+                            user.setId(doc.getId());
                         callback.onSuccess(user);
                     } else {
                         callback.onFailure(new Exception("User not found"));
@@ -47,11 +50,13 @@ public class UserRepository {
 
     public interface ProductsCallback {
         void onSuccess(List<Product> products);
+
         void onFailure(Exception e);
     }
 
     public interface UpdateCallback {
         void onSuccess();
+
         void onFailure(Exception e);
     }
 
@@ -66,8 +71,8 @@ public class UserRepository {
                         "bio", user.getBio(),
                         "profileImageUrl", user.getProfileImageUrl(),
                         "profileImageVersion", user.getProfileImageVersion(),
-                        "lastEdited", user.getLastEdited()
-                )
+                        "address", user.getAddress(),
+                        "lastEdited", user.getLastEdited())
                 .addOnSuccessListener(aVoid -> callback.onSuccess())
                 .addOnFailureListener(callback::onFailure);
     }

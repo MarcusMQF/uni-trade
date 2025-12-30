@@ -50,7 +50,8 @@ public class RatingReviewsActivity extends AppCompatActivity {
         // ---------------- Toolbar ----------------
         MaterialToolbar toolbar = findViewById(R.id.appBarRatingReviews);
         setSupportActionBar(toolbar);
-        if (getSupportActionBar() != null) getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        if (getSupportActionBar() != null)
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         toolbar.setNavigationOnClickListener(v -> finish());
 
         // ---------------- UI Elements ----------------
@@ -91,15 +92,15 @@ public class RatingReviewsActivity extends AppCompatActivity {
                             // Save to Firestore
                             db.collection("reviews").document(newReview.getId())
                                     .set(newReview)
-                                    .addOnFailureListener(e -> Toast.makeText(this, "Failed to save review", Toast.LENGTH_SHORT).show());
+                                    .addOnFailureListener(e -> Toast
+                                            .makeText(this, "Failed to save review", Toast.LENGTH_SHORT).show());
                         }
                     }
-                }
-        );
+                });
     }
 
     private void loadUser(String userId, ImageView imgProfile, TextView txtUsername, TextView txtLastSeen,
-                          TextView txtBio, FloatingActionButton btnWriteReview) {
+            TextView txtBio, FloatingActionButton btnWriteReview) {
 
         db.collection("users").document(userId)
                 .get()
@@ -132,12 +133,14 @@ public class RatingReviewsActivity extends AppCompatActivity {
 
                     // FAB action
                     boolean hideFab = getIntent().getBooleanExtra("hide_fab", false);
-                    if (hideFab) btnWriteReview.setVisibility(View.GONE);
-                    else btnWriteReview.setOnClickListener(v -> {
-                        Intent intent = new Intent(this, RateUserActivity.class);
-                        intent.putExtra("user_id", user.getId());
-                        reviewLauncher.launch(intent);
-                    });
+                    if (hideFab)
+                        btnWriteReview.setVisibility(View.GONE);
+                    else
+                        btnWriteReview.setOnClickListener(v -> {
+                            Intent intent = new Intent(this, RateUserActivity.class);
+                            intent.putExtra("user_id", user.getId());
+                            reviewLauncher.launch(intent);
+                        });
                 })
                 .addOnFailureListener(e -> finish());
     }
@@ -150,7 +153,8 @@ public class RatingReviewsActivity extends AppCompatActivity {
                     allReviews.clear();
                     for (var doc : query.getDocuments()) {
                         Review r = doc.toObject(Review.class);
-                        if (r != null) allReviews.add(r);
+                        if (r != null)
+                            allReviews.add(r);
                     }
                     setupViewPager();
                     refreshRatingsAndUser();
@@ -165,9 +169,12 @@ public class RatingReviewsActivity extends AppCompatActivity {
         viewPagerReviews.setAdapter(pagerAdapter);
 
         new TabLayoutMediator(tabReviews, viewPagerReviews, (tab, pos) -> {
-            if (pos == 0) tab.setText("All");
-            else if (pos == 1) tab.setText("User");
-            else tab.setText("Seller");
+            if (pos == 0)
+                tab.setText("All");
+            else if (pos == 1)
+                tab.setText("User");
+            else
+                tab.setText("Seller");
         }).attach();
     }
 
@@ -176,8 +183,15 @@ public class RatingReviewsActivity extends AppCompatActivity {
         int userCount = 0, sellerCount = 0;
 
         for (Review r : allReviews) {
-            if ("user".equals(r.getType())) { userSum += r.getRating(); userCount++; }
-            if ("seller".equals(r.getType())) { sellerSum += r.getRating(); sellerCount++; }
+            String type = r.getType();
+            if ("user".equals(type)) {
+                userSum += r.getRating();
+                userCount++;
+            }
+            if ("seller".equals(type)) {
+                sellerSum += r.getRating();
+                sellerCount++;
+            }
         }
 
         double userAvg = userCount == 0 ? 0 : userSum / userCount;
@@ -189,7 +203,8 @@ public class RatingReviewsActivity extends AppCompatActivity {
         // Persist in Firestore
         db.collection("users").document(user.getId())
                 .update("userRating", userAvg, "sellerRating", sellerAvg)
-                .addOnFailureListener(e -> {});
+                .addOnFailureListener(e -> {
+                });
 
         // Update UI
         txtUserRating.setText(String.format("%.1f", userAvg));

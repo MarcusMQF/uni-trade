@@ -24,12 +24,14 @@ public class UserProfileActivity extends BaseActivity {
 
     private ImageView imgProfile;
     private TextView txtUsername, txtLastSeen, txtUserDescription, txtShowMore, txtViewMoreListings, txtUserAddress;
+    private TextView txtOverallRating, txtOverallCount, txtUserRating, txtUserRatingCount, txtSellerRating,
+            txtSellerRatingCount;
+
     private RecyclerView rvListings;
     private UserProductsAdapter productAdapter;
     private Button btnViewReviews;
 
     private static final int MAX_PREVIEW_ITEMS = 4;
-
     private static final int MAX_DESCRIPTION_LINES = 3;
 
     @Override
@@ -74,31 +76,27 @@ public class UserProfileActivity extends BaseActivity {
                 Toast.makeText(
                         UserProfileActivity.this,
                         "User not found",
-                        Toast.LENGTH_SHORT
-                ).show();
+                        Toast.LENGTH_SHORT).show();
                 finish();
             }
         });
     }
 
-
     private void setupDescriptionExpand() {
-
         TextView txtUserDescription = findViewById(R.id.txtUserDescription);
         TextView txtShowFullDescription = findViewById(R.id.txtShowFullDescription);
-
 
         txtUserDescription.setMaxLines(Integer.MAX_VALUE);
         txtUserDescription.setEllipsize(null);
 
         txtUserDescription.post(() -> {
-
+            if (txtUserDescription == null)
+                return;
             int lineCount = txtUserDescription.getLineCount();
-
 
             if (lineCount > 3) {
                 txtUserDescription.setMaxLines(3);
-                txtUserDescription.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                txtUserDescription.setEllipsize(TextUtils.TruncateAt.END);
                 txtShowFullDescription.setVisibility(View.VISIBLE);
                 txtShowFullDescription.setText("show more ▼");
             } else {
@@ -106,46 +104,40 @@ public class UserProfileActivity extends BaseActivity {
             }
         });
 
-
         txtShowFullDescription.setOnClickListener(new View.OnClickListener() {
-
             boolean expanded = false;
 
             @Override
             public void onClick(View v) {
-
                 if (expanded) {
-                    // collapse
                     txtUserDescription.setMaxLines(3);
                     txtUserDescription.setEllipsize(TextUtils.TruncateAt.END);
                     txtShowFullDescription.setText("show more ▼");
                 } else {
-                    // expand
                     txtUserDescription.setMaxLines(Integer.MAX_VALUE);
                     txtUserDescription.setEllipsize(null);
                     txtShowFullDescription.setText("show less ▲");
                 }
-
                 expanded = !expanded;
             }
         });
     }
 
-
     private void expandDescription() {
+        TextView txtShowMore = findViewById(R.id.txtShowFullDescription);
+        TextView txtUserDescription = findViewById(R.id.txtUserDescription);
         txtUserDescription.setMaxLines(Integer.MAX_VALUE);
         txtShowMore.setText("show less ▲");
-
         txtShowMore.setOnClickListener(v -> collapseDescription());
     }
 
     private void collapseDescription() {
+        TextView txtShowMore = findViewById(R.id.txtShowFullDescription);
+        TextView txtUserDescription = findViewById(R.id.txtUserDescription);
         txtUserDescription.setMaxLines(MAX_DESCRIPTION_LINES);
         txtShowMore.setText("show more ▼");
-
         txtShowMore.setOnClickListener(v -> expandDescription());
     }
-
 
     private void bindViews() {
         imgProfile = findViewById(R.id.imgProfile);
@@ -157,6 +149,14 @@ public class UserProfileActivity extends BaseActivity {
         txtShowMore = findViewById(R.id.txtShowFullDescription);
         rvListings = findViewById(R.id.rvProfileListings);
         btnViewReviews = findViewById(R.id.btnViewReviews);
+
+        // Rating views
+        txtOverallRating = findViewById(R.id.txtOverallRating);
+        txtOverallCount = findViewById(R.id.txtOverallCount);
+        txtUserRating = findViewById(R.id.txtUserRating);
+        txtUserRatingCount = findViewById(R.id.txtUserRatingCount);
+        txtSellerRating = findViewById(R.id.txtSellerRating);
+        txtSellerRatingCount = findViewById(R.id.txtSellerRatingCount);
     }
 
     private void showUserData() {
@@ -164,13 +164,26 @@ public class UserProfileActivity extends BaseActivity {
         txtLastSeen.setText("Last seen: " + viewedUser.getLastSeenString());
         txtUserDescription.setText(viewedUser.getBio());
 
-        List<Address> address = viewedUser.getAddresses();
-        if (address != null && !address.isEmpty() && !address.equals("No address set")) {
+        // Fix Address Display
+        String address = viewedUser.getAddress();
+        if (address != null && !address.trim().isEmpty()) {
             txtUserAddress.setText("Address: " + address);
             txtUserAddress.setVisibility(View.VISIBLE);
         } else {
             txtUserAddress.setVisibility(View.GONE);
         }
+
+        // Fix Ratings Display
+        txtOverallRating.setText(String.format("%.1f", viewedUser.getOverallRating()));
+        txtUserRating.setText(String.format("%.1f", viewedUser.getUserRating()));
+        txtSellerRating.setText(String.format("%.1f", viewedUser.getSellerRating()));
+
+        // Note: Counts might need to be fetched or stored in User object.
+        // For now, setting to "0 ratings" or hiding if logic not present.
+        // Assuming we want to show 0 if real data is missing, rather than fake 23.
+        txtOverallCount.setText("0 ratings"); // TODO: Implement count logic
+        txtUserRatingCount.setText("0 ratings");
+        txtSellerRatingCount.setText("0 ratings");
 
         Glide.with(this)
                 .load(viewedUser.getProfileImageUrl())
@@ -194,21 +207,17 @@ public class UserProfileActivity extends BaseActivity {
 
                             txtViewMoreListings.setText("show more ▼");
 
-                            List<Product> previewList =
-                                    userProducts.subList(0, MAX_PREVIEW_ITEMS);
+                            List<Product> previewList = userProducts.subList(0, MAX_PREVIEW_ITEMS);
 
-                            productAdapter =
-                                    new UserProductsAdapter(UserProfileActivity.this, previewList);
+                            productAdapter = new UserProductsAdapter(UserProfileActivity.this, previewList);
                             rvListings.setAdapter(productAdapter);
 
                             txtViewMoreListings.setVisibility(View.VISIBLE);
 
                             txtViewMoreListings.setOnClickListener(v -> {
-                                productAdapter =
-                                        new UserProductsAdapter(
-                                                UserProfileActivity.this,
-                                                userProducts
-                                        );
+                                productAdapter = new UserProductsAdapter(
+                                        UserProfileActivity.this,
+                                        userProducts);
                                 rvListings.setAdapter(productAdapter);
 
                                 txtViewMoreListings.setText("show less ▲");
@@ -216,8 +225,7 @@ public class UserProfileActivity extends BaseActivity {
                             });
 
                         } else {
-                            productAdapter =
-                                    new UserProductsAdapter(UserProfileActivity.this, userProducts);
+                            productAdapter = new UserProductsAdapter(UserProfileActivity.this, userProducts);
                             rvListings.setAdapter(productAdapter);
                             txtViewMoreListings.setVisibility(View.GONE);
                         }
@@ -228,12 +236,10 @@ public class UserProfileActivity extends BaseActivity {
                         Toast.makeText(
                                 UserProfileActivity.this,
                                 "Failed to load listings",
-                                Toast.LENGTH_SHORT
-                        ).show();
+                                Toast.LENGTH_SHORT).show();
                     }
                 });
     }
-
 
     private void setupViewReviewsButton() {
         btnViewReviews.setOnClickListener(v -> {
@@ -253,7 +259,8 @@ public class UserProfileActivity extends BaseActivity {
     protected void onResume() {
         super.onResume();
 
-        if (viewedUser == null) return;
+        if (viewedUser == null)
+            return;
 
         UserRepository.getUserByUid(
                 viewedUser.getId(),
@@ -271,11 +278,8 @@ public class UserProfileActivity extends BaseActivity {
                         Toast.makeText(
                                 UserProfileActivity.this,
                                 "Failed to refresh profile",
-                                Toast.LENGTH_SHORT
-                        ).show();
+                                Toast.LENGTH_SHORT).show();
                     }
-                }
-        );
+                });
     }
-
 }

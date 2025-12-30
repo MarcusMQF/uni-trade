@@ -3,12 +3,12 @@ package com.example.unitrade;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 public class CartManager {
@@ -57,13 +57,39 @@ public class CartManager {
         save(context);
     }
 
-    // ---------------- RESOLVE PRODUCTS ----------------
-    public static List<Product> getCartProducts(Context context) {
+    // ---------------- RESOLVE PRODUCTS (Firestore) ----------------
+    public interface OnProductsLoadedListener {
+        void onLoaded(List<Product> products);
+    }
+
+    public static void getCartProducts(Context context, OnProductsLoadedListener listener) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
         List<Product> products = new ArrayList<>();
-        for (String id : cartProductIds) {
-            Product p = SampleData.getProductById(context, id);
-            if (p != null) products.add(p);
+        int total = cartProductIds.size();
+
+        if (total == 0) {
+            listener.onLoaded(products);
+            return;
         }
-        return products;
+
+        for (String id : cartProductIds) {
+            db.collection("products")
+                    .document(id)
+                    .get()
+                    .addOnSuccessListener(doc -> {
+                        Product p = doc.toObject(Product.class);
+                        if (p != null) products.add(p);
+
+                        if (products.size() == total) {
+                            listener.onLoaded(products);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        if (products.size() == total) {
+                            listener.onLoaded(products);
+                        }
+                    });
+        }
     }
 }
+

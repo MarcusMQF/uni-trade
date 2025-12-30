@@ -24,6 +24,9 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+
 import java.util.*;
 
 public class SellFragment extends Fragment {
@@ -509,8 +512,15 @@ public class SellFragment extends Fragment {
 
         int usedDays = usedStr.isEmpty() ? 0 : Integer.parseInt(usedStr);
 
-        User user = UserSession.get();
-        String sellerId = user != null ? user.getId() : "u1";
+        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+
+        if (firebaseUser == null) {
+            toast("Please login.");
+            return;
+        }
+
+        String sellerId = firebaseUser.getUid();
+
 
         Product p = new Product(
                 id, name, price, new ArrayList<>(), desc,

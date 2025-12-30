@@ -184,22 +184,16 @@ public class HomeFragment extends Fragment {
 
     // -------- RECOMMENDATION --------
     private void updateRecommendations() {
-        List<String> topCategories =
-                RecommendationManager.getTopCategories(2);
-
+        // Include all products
         productList.clear();
+        productList.addAll(allProducts);
 
-        if (topCategories.isEmpty()) {
-            productList.addAll(allProducts);
-        } else {
-            for (Product p : allProducts) {
-                if (topCategories.contains(p.getCategory())) {
-                    productList.add(p);
-                }
-            }
-        }
+        // Sort products by category click count descending
+        RecommendationManager.sortByRecommendation(productList);
+
         itemAdapter.notifyDataSetChanged();
     }
+
 
     @Override
     public void onResume() {

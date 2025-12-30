@@ -1,6 +1,8 @@
 package com.example.unitrade;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
@@ -16,18 +18,31 @@ import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.unitrade.backend.FetchProductId;
+import com.example.unitrade.backend.RecommendationManager;
 import com.example.unitrade.backend.Sorting;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import android.location.Address;
+import android.location.Geocoder;
+
+
+import java.io.IOException;
+import java.util.Locale;
+
 
 public class SearchFragment extends Fragment {
 
@@ -43,9 +58,23 @@ public class SearchFragment extends Fragment {
     private Button currentSelected = null;
     private String selectedPriceMode = null;
 
+    private FusedLocationProviderClient fusedLocationClient;
+    private double userLat = 0;
+    private double userLng = 0;
+
+    private List<Product> allProducts = new ArrayList<>();
+
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
+
     private TextView tvNoProduct; // For "No Product Match" message
 
     public SearchFragment() {
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
     }
 
     @Nullable
@@ -96,6 +125,66 @@ public class SearchFragment extends Fragment {
             adapter.notifyDataSetChanged();
             resetButtonStyle(btnLatest);
         });
+
+        btnNearest.setOnClickListener(v -> {
+
+            // 1️⃣ Check permission
+            if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+                    != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                        LOCATION_PERMISSION_REQUEST_CODE
+                );
+                return;
+            }
+
+            // 2️⃣ Get last known location
+            fusedLocationClient.getLastLocation()
+                    .addOnSuccessListener(location -> {
+                        if (location == null) {
+                            Toast.makeText(getContext(), "Unable to get your location", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        double userLat = location.getLatitude();
+                        double userLng = location.getLongitude();
+
+                        filteredProducts.clear();
+
+                        Geocoder geocoder = new Geocoder(getContext(), Locale.getDefault());
+
+                        for (Product p : allProducts) {
+                            try {
+                                List<Address> addresses = geocoder.getFromLocationName(p.getLocation(), 1);
+                                if (!addresses.isEmpty()) {
+                                    double sellerLat = addresses.get(0).getLatitude();
+                                    double sellerLng = addresses.get(0).getLongitude();
+
+                                    double dist = distanceInKm(userLat, userLng, sellerLat, sellerLng);
+                                    if (dist <= 5) {
+                                        filteredProducts.add(p);
+                                    }
+                                }
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        // Optional: sort by recommendation clicks within 5 km
+                        filteredProducts.sort((p1, p2) ->
+                                Integer.compare(
+                                        RecommendationManager.getClicks(p2.getCategory()),
+                                        RecommendationManager.getClicks(p1.getCategory())
+                                )
+                        );
+
+                        adapter.notifyDataSetChanged();
+
+                        resetButtonStyle(btnNearest);
+                        applySelectedStyle(btnNearest);
+                    });
+        });
+
 
         // Search when typing or pressing enter
         edtSearch.setOnEditorActionListener((v, actionId, event) -> {
@@ -225,4 +314,16 @@ public class SearchFragment extends Fragment {
             }
         });
     }
+
+    private double distanceInKm(double lat1, double lng1, double lat2, double lng2) {
+        final int R = 6371; // Earth radius in km
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
 }

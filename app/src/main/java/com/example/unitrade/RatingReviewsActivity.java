@@ -1,16 +1,15 @@
 package com.example.unitrade;
 
-import static androidx.viewpager.widget.PagerAdapter.POSITION_NONE;
-
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
@@ -19,11 +18,12 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class RatingReviewsActivity extends BaseActivity {
+public class RatingReviewsActivity extends AppCompatActivity {
 
     private TabLayout tabReviews;
     private ViewPager2 viewPagerReviews;
@@ -34,174 +34,166 @@ public class RatingReviewsActivity extends BaseActivity {
 
     private User user;
     private final List<Review> allReviews = new ArrayList<>();
-
     private ReviewsPagerAdapter pagerAdapter;
+
+    private FirebaseFirestore db;
 
     private ActivityResultLauncher<Intent> reviewLauncher;
 
-    // =====================================================
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
-        // -------------------------------------------------
-        // HANDLE REVIEW RESULT
-        // -------------------------------------------------
-        reviewLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-
-                        Review newReview =
-                                result.getData().getParcelableExtra("new_review");
-
-                        if (newReview != null) {
-                            allReviews.add(0, newReview);
-                            refreshRatingsAndUser();
-                            pagerAdapter.notifyDataSetChanged();
-                        }
-                    }
-                }
-        );
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_rating_reviews);
 
-        // -------------------------------------------------
-        // TOOLBAR
-        // -------------------------------------------------
+        db = FirebaseFirestore.getInstance();
+
+        // ---------------- Toolbar ----------------
         MaterialToolbar toolbar = findViewById(R.id.appBarRatingReviews);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        if (getSupportActionBar() != null) getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         toolbar.setNavigationOnClickListener(v -> finish());
-        tintToolbarOverflow(toolbar);
 
-        // -------------------------------------------------
-        // LOAD USER
-        // -------------------------------------------------
-        String userId = getIntent().getStringExtra("user_id");
-        user = SampleData.getUserById(this, userId);
-        if (user == null) {
-            finish();
-            return;
-        }
-
-        boolean hideFab = getIntent().getBooleanExtra("hide_fab", false);
-
-
-        // -------------------------------------------------
-        // PROFILE HEADER
-        // -------------------------------------------------
-        ImageView imgUserProfile = findViewById(R.id.imgUserProfile);
-        TextView txtUsername = findViewById(R.id.txtUsername);
-        TextView txtLastSeen = findViewById(R.id.txtLastSeen);
-        TextView txtUserDescription = findViewById(R.id.txtUserDescription);
-
-        txtUsername.setText(user.getUsername());
-        txtLastSeen.setText(user.getLastSeenString());
-        txtUserDescription.setText(user.getBio());
-
-        Glide.with(this)
-                . load(user.getProfileImageUrl())
-                .signature(new ObjectKey(user.getProfileImageVersion()))
-                .circleCrop()
-                .into(imgUserProfile);
-
-        // -------------------------------------------------
-        // RATING SUMMARY
-        // -------------------------------------------------
+        // ---------------- UI Elements ----------------
         txtOverall = findViewById(R.id.txtOverallRating);
         txtUserRating = findViewById(R.id.txtUserRating);
         txtSellerRating = findViewById(R.id.txtSellerRating);
 
-        // -------------------------------------------------
-        // LOAD MOCK REVIEWS (ONCE)
-        // -------------------------------------------------
-        if (allReviews.isEmpty()) {
-            allReviews.addAll(
-                    SampleData.generateMockReviewsForUser(this, user)
-            );
-        }
-
-        // -------------------------------------------------
-        // VIEWPAGER
-        // -------------------------------------------------
         tabReviews = findViewById(R.id.tabReviews);
         viewPagerReviews = findViewById(R.id.viewPagerReviews);
 
-        setupViewPager();
-
-        // -------------------------------------------------
-        // WRITE REVIEW FAB
-        // -------------------------------------------------
+        ImageView imgUserProfile = findViewById(R.id.imgUserProfile);
+        TextView txtUsername = findViewById(R.id.txtUsername);
+        TextView txtLastSeen = findViewById(R.id.txtLastSeen);
+        TextView txtUserDescription = findViewById(R.id.txtUserDescription);
         FloatingActionButton btnWriteReview = findViewById(R.id.btnWriteReview);
 
-        if (hideFab) {
-            btnWriteReview.setVisibility(View.GONE);
-        } else {
-            btnWriteReview.setOnClickListener(v -> {
-                Intent intent = new Intent(this, RateUserActivity.class);
-                intent.putExtra("user_id", user.getId());
-                reviewLauncher.launch(intent);
-            });
+        // ---------------- Load User ----------------
+        String userId = getIntent().getStringExtra("user_id");
+        if (userId == null) {
+            Toast.makeText(this, "User ID missing", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
         }
 
-        // -------------------------------------------------
-        // INITIAL CALCULATION
-        // -------------------------------------------------
-        refreshRatingsAndUser();
+        loadUser(userId, imgUserProfile, txtUsername, txtLastSeen, txtUserDescription, btnWriteReview);
+
+        // ---------------- Handle New Review ----------------
+        reviewLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                        Review newReview = result.getData().getParcelableExtra("new_review");
+                        if (newReview != null) {
+                            allReviews.add(0, newReview);
+                            pagerAdapter.notifyDataSetChanged();
+                            refreshRatingsAndUser();
+
+                            // Save to Firestore
+                            db.collection("reviews").document(newReview.getId())
+                                    .set(newReview)
+                                    .addOnFailureListener(e -> Toast.makeText(this, "Failed to save review", Toast.LENGTH_SHORT).show());
+                        }
+                    }
+                }
+        );
     }
 
+    private void loadUser(String userId, ImageView imgProfile, TextView txtUsername, TextView txtLastSeen,
+                          TextView txtBio, FloatingActionButton btnWriteReview) {
+
+        db.collection("users").document(userId)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (!doc.exists()) {
+                        Toast.makeText(this, "User not found", Toast.LENGTH_SHORT).show();
+                        finish();
+                        return;
+                    }
+
+                    user = doc.toObject(User.class);
+                    if (user == null) {
+                        finish();
+                        return;
+                    }
+
+                    // Set header UI
+                    txtUsername.setText(user.getUsername());
+                    txtLastSeen.setText(user.getLastSeenString());
+                    txtBio.setText(user.getBio());
+
+                    Glide.with(this)
+                            .load(user.getProfileImageUrl())
+                            .signature(new ObjectKey(user.getProfileImageVersion()))
+                            .circleCrop()
+                            .into(imgProfile);
+
+                    // Load reviews
+                    loadReviewsFromDatabase();
+
+                    // FAB action
+                    boolean hideFab = getIntent().getBooleanExtra("hide_fab", false);
+                    if (hideFab) btnWriteReview.setVisibility(View.GONE);
+                    else btnWriteReview.setOnClickListener(v -> {
+                        Intent intent = new Intent(this, RateUserActivity.class);
+                        intent.putExtra("user_id", user.getId());
+                        reviewLauncher.launch(intent);
+                    });
+                })
+                .addOnFailureListener(e -> finish());
+    }
+
+    private void loadReviewsFromDatabase() {
+        db.collection("reviews")
+                .whereEqualTo("targetUserId", user.getId())
+                .get()
+                .addOnSuccessListener(query -> {
+                    allReviews.clear();
+                    for (var doc : query.getDocuments()) {
+                        Review r = doc.toObject(Review.class);
+                        if (r != null) allReviews.add(r);
+                    }
+                    setupViewPager();
+                    refreshRatingsAndUser();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to load reviews", Toast.LENGTH_SHORT).show();
+                });
+    }
 
     private void setupViewPager() {
-
         pagerAdapter = new ReviewsPagerAdapter(this, user, allReviews);
         viewPagerReviews.setAdapter(pagerAdapter);
 
-        new TabLayoutMediator(tabReviews, viewPagerReviews,
-                (tab, pos) -> {
-                    if (pos == 0) tab.setText("All");
-                    else if (pos == 1) tab.setText("User");
-                    else tab.setText("Seller");
-                }
-        ).attach();
+        new TabLayoutMediator(tabReviews, viewPagerReviews, (tab, pos) -> {
+            if (pos == 0) tab.setText("All");
+            else if (pos == 1) tab.setText("User");
+            else tab.setText("Seller");
+        }).attach();
     }
 
-    // =====================================================
-    // RATING + USER UPDATE
-    // =====================================================
     private void refreshRatingsAndUser() {
-
-        int userCount = 0;
-        int sellerCount = 0;
-        double userSum = 0;
-        double sellerSum = 0;
+        double userSum = 0, sellerSum = 0;
+        int userCount = 0, sellerCount = 0;
 
         for (Review r : allReviews) {
-
-            if ("user".equals(r.getType())) {
-                userCount++;
-                userSum += r.getRating();
-            }
-
-            if ("seller".equals(r.getType())) {
-                sellerCount++;
-                sellerSum += r.getRating();
-            }
+            if ("user".equals(r.getType())) { userSum += r.getRating(); userCount++; }
+            if ("seller".equals(r.getType())) { sellerSum += r.getRating(); sellerCount++; }
         }
 
         double userAvg = userCount == 0 ? 0 : userSum / userCount;
         double sellerAvg = sellerCount == 0 ? 0 : sellerSum / sellerCount;
 
-        // ✅ Update model (overall auto-updates)
         user.setUserRating(userAvg);
         user.setSellerRating(sellerAvg);
 
-        // ✅ Persist safely
-        SampleData.updateUser(this, user);
+        // Persist in Firestore
+        db.collection("users").document(user.getId())
+                .update("userRating", userAvg, "sellerRating", sellerAvg)
+                .addOnFailureListener(e -> {});
 
-        // ✅ Update UI
-        txtUserRating.setText(String.format("%.1f", user.getUserRating()));
-        txtSellerRating.setText(String.format("%.1f", user.getSellerRating()));
+        // Update UI
+        txtUserRating.setText(String.format("%.1f", userAvg));
+        txtSellerRating.setText(String.format("%.1f", sellerAvg));
         txtOverall.setText(String.format("%.1f", user.getOverallRating()));
     }
 }

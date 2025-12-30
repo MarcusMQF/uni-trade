@@ -3,6 +3,8 @@ package com.example.unitrade;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.google.firebase.firestore.PropertyName;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -24,13 +26,19 @@ public class User implements Parcelable {
     private long lastSeen;
     private String bio;
     private long lastEdited;
-    private List<Address> addresses;
+    private List<Address> addresses = new ArrayList<>();
     private long profileImageVersion = 0;
+
+    // REQUIRED by Firestore
+    public User() {
+        // empty constructor
+    }
+
 
     // Main constructor
     public User(String id, String username, String fullName, String email, String phoneNumber,
                 String profileImageUrl, double sellerRating, double userRating, long lastSeen,
-                String bio, long lastEdited, List<Address> addresses) { // Updated
+                String bio, long lastEdited, String address) { // Updated
         this.id = id;
         this.username = username;
         this.fullName = fullName;
@@ -49,15 +57,15 @@ public class User implements Parcelable {
 
     // Simple constructor
     public User(String id, String username, String profileImageUrl, double sellerRating,
-                double userRating, long lastSeen, String bio, List<Address> addresses, int ignored) { // Updated to match SampleData calls if needed, or I will fix SampleData
-        this(id, username, "", "", "", profileImageUrl, sellerRating, userRating, lastSeen, bio, 0, addresses);
+                double userRating, long lastSeen, String bio, String address, int ignored) { // Updated to match SampleData calls if needed, or I will fix SampleData
+        this(id, username, "", "", "", profileImageUrl, sellerRating, userRating, lastSeen, bio, 0, address);
     }
 
      // Simple constructor for SampleData
-    public User(String id, String username, String profileImageUrl, double sellerRating,
-                double userRating, long lastSeen, String bio) {
-        this(id, username, "", "", "", profileImageUrl, sellerRating, userRating, lastSeen, bio, 0, new ArrayList<>());
-    }
+     public User(String id, String username, String profileImageUrl, double sellerRating,
+                 double userRating, long lastSeen, String bio) {
+         this(id, username, "", "", "", profileImageUrl, sellerRating, userRating, lastSeen, bio, 0, "");
+     }
 
     // Add this field variable near the top with other variables
     private int defaultAddressIndex = 0; // Default to 0 (the first address)
@@ -87,7 +95,10 @@ public class User implements Parcelable {
 
     public String getEmail() { return email; }
     public String getPhoneNumber() { return phoneNumber; }
-    public String getProfileImageUrl() { return profileImageUrl; }
+    @PropertyName("profileImageURL")
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
     public double getSellerRating() { return sellerRating; }
     public double getUserRating() { return userRating; }
     public double getOverallRating() { return overallRating; }
@@ -106,13 +117,18 @@ public class User implements Parcelable {
     public void setFullName(String fullName) { this.fullName = fullName; }
     public void setEmail(String email) { this.email = email; }
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
-    public void setProfileImageUrl(String url) { this.profileImageUrl = url; }
+    @PropertyName("profileImageURL")
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
+    }
     public void setSellerRating(double sellerRating) { this.sellerRating = sellerRating; updateOverallRating(); }
     public void setUserRating(double userRating) { this.userRating = userRating; updateOverallRating(); }
     public void setLastSeen(long lastSeen) { this.lastSeen = lastSeen; }
     public void setBio(String bio) { this.bio = bio; }
     public void setLastEdited(long lastEdited) { this.lastEdited = lastEdited; }
-    public void setAddresses(List<Address> addresses) { this.addresses = addresses; }
+    public void setAddresses(List<Address> addresses) {
+        this.addresses = addresses;
+    }
 
     public void setProfileImageVersion(long version) {
         this.profileImageVersion = version;
@@ -136,16 +152,10 @@ public class User implements Parcelable {
         lastSeen = in.readLong();
         bio = in.readString();
         lastEdited = in.readLong();
-        addresses = in.createTypedArrayList(Address.CREATOR);
+        addresses = new ArrayList<>();
+        in.readList(addresses, Address.class.getClassLoader());
         profileImageVersion = in.readLong();
     }
-
-    public static final Creator<User> CREATOR = new Creator<User>() {
-        @Override
-        public User createFromParcel(Parcel in) { return new User(in); }
-        @Override
-        public User[] newArray(int size) { return new User[size]; }
-    };
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
@@ -161,9 +171,18 @@ public class User implements Parcelable {
         dest.writeLong(lastSeen);
         dest.writeString(bio);
         dest.writeLong(lastEdited);
-        dest.writeTypedList(addresses);
+        dest.writeList(addresses);
         dest.writeLong(profileImageVersion);
     }
+
+
+    public static final Creator<User> CREATOR = new Creator<User>() {
+        @Override
+        public User createFromParcel(Parcel in) { return new User(in); }
+        @Override
+        public User[] newArray(int size) { return new User[size]; }
+    };
+
 
     @Override
     public int describeContents() {
@@ -199,13 +218,5 @@ public class User implements Parcelable {
         if (lastEdited <= 0) return "Never";
         SimpleDateFormat dateFormat = new SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", Locale.getDefault());
         return dateFormat.format(new Date(lastEdited));
-    }
-    
-    public String getDefaultAddress() {
-        if (addresses == null || addresses.isEmpty()) return "No address set";
-        for (Address a : addresses) {
-            if (a.isDefault()) return a.getAddress();
-        }
-        return addresses.get(0).getAddress(); // Fallback to first address
     }
 }

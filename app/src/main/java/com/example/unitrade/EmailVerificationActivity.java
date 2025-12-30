@@ -20,6 +20,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.HashMap;
@@ -34,6 +36,13 @@ public class EmailVerificationActivity extends AppCompatActivity {
     private TextView txtEmail;
     private EditText edtOtp;
 
+    private String fullName = "";
+    private String phoneNumber = "";
+    private String studentId = "";
+    private String university = "University of Malaya"; // default
+    private String address = "";
+    private String profileImageUrl = "";
+
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
 
@@ -43,6 +52,12 @@ public class EmailVerificationActivity extends AppCompatActivity {
         setContentView(R.layout.activity_email_verification);
 
         currentEmail = getIntent().getStringExtra("email");
+
+        Intent intent = getIntent();
+        fullName = intent.getStringExtra("name");
+        phoneNumber = intent.getStringExtra("phoneNumber");
+        studentId = intent.getStringExtra("studentId");
+        address = intent.getStringExtra("address");
 
         txtEmail = findViewById(R.id.txtEmail);
         edtOtp = findViewById(R.id.edtOtp);
@@ -96,44 +111,74 @@ public class EmailVerificationActivity extends AppCompatActivity {
             return;
         }
 
-        createFirebaseAccount(email, password, name);
+        createFirebaseAccount(email, password, name, phoneNumber, studentId, address);
     }
 
-    private void createFirebaseAccount(String email, String password, String name) {
-        mAuth.createUserWithEmailAndPassword(email, password)
-                .addOnSuccessListener(authResult -> {
-                    FirebaseUser user = mAuth.getCurrentUser();
-                    if (user != null) {
-                        saveUserToFirestore(user.getUid(), name, email);
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Firebase account creation failed", e);
-                    Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
-                });
+    private void createFirebaseAccount(String email, String password, String name,
+                                                 String phoneNumber, String studentId, String address) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.runTransaction(transaction -> {
+            DocumentReference counterRef = db.collection("metadata").document("counters");
+            DocumentSnapshot snapshot = transaction.get(counterRef);
+
+            long lastNumber = snapshot.getLong("lastUserNumber") != null ? snapshot.getLong("lastUserNumber") : 0;
+            long newNumber = lastNumber + 1;
+
+            transaction.update(counterRef, "lastUserNumber", newNumber);
+
+            String userId = String.format("UT%04d", newNumber);
+            return userId;
+        }).addOnSuccessListener(userId -> {
+            FirebaseAuth mAuth = FirebaseAuth.getInstance();
+            mAuth.createUserWithEmailAndPassword(email, password)
+                    .addOnSuccessListener(authResult -> {
+                        FirebaseUser user = mAuth.getCurrentUser();
+                        if (user != null) {
+                            saveUserToFirestore(user.getUid(), (String) userId, name, email,
+                                    phoneNumber, studentId, address);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e("Signup", "Firebase account creation failed", e);
+                        Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+                    });
+        }).addOnFailureListener(e -> {
+            Log.e("Signup", "Transaction failed", e);
+            Toast.makeText(this, "Failed to generate user ID", Toast.LENGTH_LONG).show();
+        });
     }
 
-    private void saveUserToFirestore(String userId, String name, String email) {
+
+    private void saveUserToFirestore(String firebaseUid, String ascendingUserId, String name, String email,
+                                     String phoneNumber, String studentId, String address) {
         Map<String, Object> userData = new HashMap<>();
+        userData.put("userId", ascendingUserId);
         userData.put("fullName", name);
         userData.put("email", email);
-        userData.put("university", "University of Malaya");
+        userData.put("phoneNumber", phoneNumber);
+        userData.put("studentId", studentId);
+        userData.put("address", address);
+        userData.put("university", university);
+        userData.put("profileImageUrl", profileImageUrl);
+        userData.put("rating", 0);
+        userData.put("totalRatings", 0);
         userData.put("isVerified", true);
-        userData.put("createdAt",
-                com.google.firebase.firestore.FieldValue.serverTimestamp());
+        userData.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
+        userData.put("updatedAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
 
-        db.collection("users").document(userId)
+        // Use Firebase UID as document ID
+        db.collection("users").document(firebaseUid)
                 .set(userData)
                 .addOnSuccessListener(aVoid -> {
                     clearOtpData();
-                    showEmailVerifiedPopup(); // SAME UI POPUP
+                    showEmailVerifiedPopup();
                 })
                 .addOnFailureListener(e ->
-                        Toast.makeText(this,
-                                "Account created but profile save failed",
-                                Toast.LENGTH_LONG).show()
+                        Toast.makeText(this, "Account created but profile save failed", Toast.LENGTH_LONG).show()
                 );
     }
+
 
     private void clearOtpData() {
         getSharedPreferences("OTP_PREF", MODE_PRIVATE)

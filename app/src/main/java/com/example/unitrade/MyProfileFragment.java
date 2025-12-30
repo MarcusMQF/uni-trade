@@ -22,28 +22,22 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.signature.ObjectKey;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public final class MyProfileFragment extends Fragment {
 
-    // -------------------------------------------------
-    // FIREBASE
-    // -------------------------------------------------
     private FirebaseFirestore db;
 
-    // -------------------------------------------------
-    // USER + DATA
-    // -------------------------------------------------
     private User viewedUser;
     private final List<Product> userProducts = new ArrayList<>();
 
-    // -------------------------------------------------
-    // UI
-    // -------------------------------------------------
     private ImageView imgProfile;
     private TextView txtUserName, txtFullName, txtEmail, txtPhone, txtRating, txtAddress;
     private TextView tabActive, tabCompleted;
@@ -54,15 +48,9 @@ public final class MyProfileFragment extends Fragment {
     private ImageButton btnEditProfile;
     private ImageView imgReviews, imgShoppingCart, imgHistory;
 
-    // -------------------------------------------------
-    // STATE
-    // -------------------------------------------------
     private boolean manageMode = false;
     private boolean isActiveTab = true;
 
-    // =================================================
-    // LIFECYCLE
-    // =================================================
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -76,21 +64,43 @@ public final class MyProfileFragment extends Fragment {
         super.onViewCreated(v, savedInstanceState);
 
         db = FirebaseFirestore.getInstance();
-
-        viewedUser = UserSession.get();
-        if (viewedUser == null) {
-            viewedUser = SampleData.getUserById(requireContext(), "u1"); // fallback
-        }
-
         bindViews(v);
         setupRecycler();
-        showUserData();
-        showActiveItems();
+
+        // Get current Firebase user
+        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (firebaseUser == null) {
+            Toast.makeText(requireContext(), "User not logged in", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String userId = firebaseUser.getUid();
+        loadUser(userId);
     }
 
-    // =================================================
+    // -------------------------------
+    // USER LOADING
+    // -------------------------------
+    private void loadUser(String userId) {
+        UserRepository.getUserByUid(userId, new UserRepository.UserCallback() {
+            @Override
+            public void onSuccess(User user) {
+                viewedUser = user;
+                showUserData();
+                showActiveItems(); // default tab
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Toast.makeText(requireContext(), "Failed to load user", Toast.LENGTH_SHORT).show();
+                Log.e("MyProfile", "User fetch error", e);
+            }
+        });
+    }
+
+    // -------------------------------
     // VIEW BINDING
-    // =================================================
+    // -------------------------------
     private void bindViews(@NonNull View v) {
         imgProfile = v.findViewById(R.id.imgProfile);
         txtUserName = v.findViewById(R.id.txtUsername);
@@ -115,8 +125,10 @@ public final class MyProfileFragment extends Fragment {
         btnSellItem.setText("List an Item");
         btnSellItem.setOnClickListener(v1 -> openSellFragmentForNew());
         btnManageListings.setOnClickListener(v1 -> toggleManageMode());
+
         btnEditProfile = v.findViewById(R.id.btnEditProfile);
         btnEditProfile.setOnClickListener(v1 -> openEditProfile());
+
 
         imgReviews.setOnClickListener(view -> {
             Intent intent = new Intent(requireContext(), RatingReviewsActivity.class);
@@ -124,23 +136,16 @@ public final class MyProfileFragment extends Fragment {
             startActivity(intent);
         });
 
-        imgShoppingCart.setOnClickListener(view -> {
-            Intent intent = new Intent(requireContext(), ShoppingCartActivity.class);
-            startActivity(intent);
-        });
-
-        imgHistory.setOnClickListener(view -> {
-            Intent intent = new Intent(requireContext(), HistoryActivity.class);
-            startActivity(intent);
-        });
+        imgShoppingCart.setOnClickListener(view -> startActivity(new Intent(requireContext(), ShoppingCartActivity.class)));
+        imgHistory.setOnClickListener(view -> startActivity(new Intent(requireContext(), HistoryActivity.class)));
 
         tabActive.setOnClickListener(v1 -> showActiveItems());
         tabCompleted.setOnClickListener(v1 -> showCompletedItems());
     }
 
-    // =================================================
-    // USER HEADER
-    // =================================================
+    // -------------------------------
+    // SHOW USER DATA
+    // -------------------------------
     private void showUserData() {
         txtUserName.setText(viewedUser.getUsername());
         txtFullName.setText(viewedUser.getFullName());
@@ -164,9 +169,9 @@ public final class MyProfileFragment extends Fragment {
                 .into(imgProfile);
     }
 
-    // =================================================
-    // RECYCLER
-    // =================================================
+    // -------------------------------
+    // RECYCLER SETUP
+    // -------------------------------
     private void setupRecycler() {
         recyclerMyProducts.setLayoutManager(new GridLayoutManager(requireContext(), 2));
         productAdapter = new ProfileProductAdapter(requireContext(), userProducts);
@@ -180,40 +185,19 @@ public final class MyProfileFragment extends Fragment {
         });
     }
 
-    // =================================================
-    // TAB LOGIC (FIREBASE)
-    // =================================================
+    // -------------------------------
+    // TAB LOGIC
+    // -------------------------------
     private void showActiveItems() {
         isActiveTab = true;
         styleTabs(true);
-        loadProductsFromFirebase("Available");
+        loadProductsRealtime("Available");
     }
 
     private void showCompletedItems() {
         isActiveTab = false;
         styleTabs(false);
-        loadProductsFromFirebase("Sold");
-    }
-
-    private void loadProductsFromFirebase(String status) {
-        String userId = viewedUser.getId();
-        db.collection("products")
-                .whereEqualTo("sellerId", userId)
-                .whereEqualTo("status", status)
-                .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    userProducts.clear();
-                    for (QueryDocumentSnapshot doc : querySnapshot) userProducts.add(doc.toObject(Product.class));
-                    productAdapter.notifyDataSetChanged();
-                    updateUI();
-                    Log.d("MyProfile", "Loaded " + userProducts.size() + " products with status: " + status);
-                })
-                .addOnFailureListener(e -> {
-                    Log.e("MyProfile", "Error loading products", e);
-                    userProducts.clear();
-                    productAdapter.notifyDataSetChanged();
-                    updateUI();
-                });
+        loadProductsRealtime("Sold");
     }
 
     private void styleTabs(boolean active) {
@@ -223,9 +207,51 @@ public final class MyProfileFragment extends Fragment {
         tabCompleted.setTextColor(active ? Color.parseColor("#666666") : Color.parseColor("#009688"));
     }
 
-    // =================================================
+    // -------------------------------
+    // REAL-TIME PRODUCT LOADING
+    // -------------------------------
+    private void loadProductsRealtime(String status) {
+        if (viewedUser == null) {
+            Log.e("MyProfile", "viewedUser is null! Cannot fetch products.");
+            return;
+        }
+
+        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (firebaseUser == null) {
+            Log.e("MyProfile", "No logged-in user. Cannot fetch products.");
+            return;
+        }
+
+        String uid = firebaseUser.getUid();
+
+        String userId = viewedUser.getId();
+        Log.d("MyProfile", "Fetching products for sellerId=" + userId + ", status=" + status);
+        db.collection("products")
+                .whereEqualTo("sellerId", uid)
+                .whereEqualTo("status", status) // comment out for testing
+                .addSnapshotListener((querySnapshot, error) -> {
+                    if (error != null) {
+                        Log.e("MyProfile", "Error fetching products", error);
+                        return;
+                    }
+                    userProducts.clear();
+                    if (querySnapshot != null) {
+                        for (QueryDocumentSnapshot doc : querySnapshot) {
+                            Product p = doc.toObject(Product.class);
+                            userProducts.add(p);
+                            Log.d("MyProfile", "Loaded product: " + p.getName() + ", status=" + p.getStatus());
+                        }
+                    }
+                    productAdapter.notifyDataSetChanged();
+                    updateUI();
+                });
+
+    }
+
+
+    // -------------------------------
     // UI STATE
-    // =================================================
+    // -------------------------------
     private void updateUI() {
         if (userProducts.isEmpty()) {
             recyclerMyProducts.setVisibility(View.GONE);
@@ -244,9 +270,9 @@ public final class MyProfileFragment extends Fragment {
         btnManageListings.setText(manageMode ? "Done" : "Manage Listings");
     }
 
-    // =================================================
+    // -------------------------------
     // SELL FRAGMENT NAVIGATION
-    // =================================================
+    // -------------------------------
     private void openSellFragmentForEdit(Product product) {
         Intent i = new Intent(requireActivity(), MainActivity.class);
         i.putExtra("editMode", true);
@@ -266,9 +292,9 @@ public final class MyProfileFragment extends Fragment {
         startActivity(i);
     }
 
-    // =================================================
-    // DELETE (FIREBASE)
-    // =================================================
+    // -------------------------------
+    // DELETE PRODUCT
+    // -------------------------------
     private void requestDelete(Product p) {
         ConfirmDialog.show(
                 requireContext(),
@@ -279,42 +305,24 @@ public final class MyProfileFragment extends Fragment {
                         .document(p.getId())
                         .delete()
                         .addOnSuccessListener(v -> {
-                            toast("Listing deleted");
+                            Toast.makeText(getContext(), "Listing deleted", Toast.LENGTH_SHORT).show();
                             userProducts.remove(p);
                             productAdapter.notifyDataSetChanged();
                             updateUI();
                         })
-                        .addOnFailureListener(e -> toast("Failed to delete listing"))
+                        .addOnFailureListener(e -> Toast.makeText(getContext(), "Failed to delete listing", Toast.LENGTH_SHORT).show())
         );
     }
 
-    private void toast(String msg) {
-        Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
-    }
-
-    // =================================================
-    // RESUME (SYNC DATA)
-    // =================================================
-    @Override
-    public void onResume() {
-        super.onResume();
-        viewedUser = UserSession.get();
-        if (viewedUser == null) viewedUser = SampleData.getUserById(requireContext(), "u1");
-        showUserData();
-
-        if (isActiveTab) showActiveItems();
-        else showCompletedItems();
-
-        if (manageMode) {
-            manageMode = false;
-            btnManageListings.setText("Manage Listings");
-            productAdapter.setManageMode(false);
-        }
-    }
-
+    // -------------------------------
+    // EDIT PROFILE NAVIGATION
+    // -------------------------------
     private void openEditProfile() {
+        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (firebaseUser == null) return;
+
         Intent i = new Intent(requireActivity(), EditProfileActivity.class);
-        i.putExtra("user_id", viewedUser.getId());
+        i.putExtra("userId", firebaseUser.getUid()); // directly pass UID
         startActivity(i);
     }
 }

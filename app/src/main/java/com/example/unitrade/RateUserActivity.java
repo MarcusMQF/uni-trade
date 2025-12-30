@@ -13,9 +13,8 @@ import androidx.annotation.Nullable;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.textfield.TextInputEditText;
-
-import java.util.List;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.DocumentSnapshot;
 
 public class RateUserActivity extends BaseActivity {
 
@@ -27,29 +26,48 @@ public class RateUserActivity extends BaseActivity {
     private String ratingRole = "";
 
     private User targetUser;
+    private FirebaseFirestore db;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_rate_user);
 
+        db = FirebaseFirestore.getInstance();
 
         // Toolbar
         MaterialToolbar toolbar = findViewById(R.id.appBarRateUser);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         toolbar.setNavigationOnClickListener(v -> finish());
-
         tintToolbarOverflow(toolbar);
 
-        // Retrieve user to rate
+        // Retrieve target user ID
         String userId = getIntent().getStringExtra("user_id");
-        targetUser = SampleData.getUserById(this, userId);
-        if (targetUser == null) {
+        if (userId == null || userId.isEmpty()) {
             Toast.makeText(this, "No user selected", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
+
+        // Fetch target user from Firestore
+        db.collection("users").document(userId)
+                .get()
+                .addOnSuccessListener(this::onUserFetched)
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to fetch user", Toast.LENGTH_SHORT).show();
+                    finish();
+                });
+    }
+
+    private void onUserFetched(DocumentSnapshot doc) {
+        if (!doc.exists()) {
+            Toast.makeText(this, "User not found", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        targetUser = doc.toObject(User.class);
 
         bindViews();
         setupStarListeners();
@@ -58,40 +76,30 @@ public class RateUserActivity extends BaseActivity {
     }
 
     private void bindViews() {
-        // Stars
         star1 = findViewById(R.id.star1);
         star2 = findViewById(R.id.star2);
         star3 = findViewById(R.id.star3);
         star4 = findViewById(R.id.star4);
         star5 = findViewById(R.id.star5);
 
-        // Role buttons
         btnBuyer = findViewById(R.id.btnBuyer);
         btnSeller = findViewById(R.id.btnSeller);
 
-        // Review input
         edtReview = findViewById(R.id.edtReview);
 
-        // Submit
         btnSubmit = findViewById(R.id.btnSubmit);
     }
 
-
     private void setupStarListeners() {
-
         View.OnClickListener listener = v -> {
-
             int id = v.getId();
-
             if (id == R.id.star1) rating = 1;
             else if (id == R.id.star2) rating = 2;
             else if (id == R.id.star3) rating = 3;
             else if (id == R.id.star4) rating = 4;
             else if (id == R.id.star5) rating = 5;
-
             updateStarUI();
         };
-
         star1.setOnClickListener(listener);
         star2.setOnClickListener(listener);
         star3.setOnClickListener(listener);
@@ -101,49 +109,38 @@ public class RateUserActivity extends BaseActivity {
 
     private void updateStarUI() {
         ImageView[] stars = {star1, star2, star3, star4, star5};
-
         for (int i = 0; i < 5; i++) {
-            if (i < rating)
-                stars[i].setImageResource(R.drawable.ic_star_filled);
-            else
-                stars[i].setImageResource(R.drawable.ic_star_outline);
+            stars[i].setImageResource(i < rating ? R.drawable.ic_star_filled : R.drawable.ic_star_outline);
         }
     }
 
-
     private void setupRoleButtons() {
-
         btnBuyer.setOnClickListener(v -> {
             ratingRole = "buyer";
-
-            btnBuyer.setStrokeColor(ColorStateList.valueOf(Color.parseColor("#00A06A"))); // green border
-            btnSeller.setStrokeColor(ColorStateList.valueOf(Color.parseColor("#BDBDBD"))); // light gray
+            btnBuyer.setStrokeColor(ColorStateList.valueOf(Color.parseColor("#00A06A")));
+            btnSeller.setStrokeColor(ColorStateList.valueOf(Color.parseColor("#BDBDBD")));
         });
 
         btnSeller.setOnClickListener(v -> {
             ratingRole = "seller";
-
-            btnSeller.setStrokeColor(ColorStateList.valueOf(Color.parseColor("#00A06A"))); // green
-            btnBuyer.setStrokeColor(ColorStateList.valueOf(Color.parseColor("#BDBDBD"))); // gray
+            btnSeller.setStrokeColor(ColorStateList.valueOf(Color.parseColor("#00A06A")));
+            btnBuyer.setStrokeColor(ColorStateList.valueOf(Color.parseColor("#BDBDBD")));
         });
     }
 
-
     private void setupSubmitAction() {
         btnSubmit.setOnClickListener(v -> {
-
             if (rating == 0) {
                 Toast.makeText(this, "Please select a rating", Toast.LENGTH_SHORT).show();
                 return;
             }
-
             if (ratingRole.isEmpty()) {
                 Toast.makeText(this, "Please choose a role", Toast.LENGTH_SHORT).show();
                 return;
             }
 
             String reviewText = edtReview.getText() != null ? edtReview.getText().toString() : "";
-            User loggedInUser = UserSession.get();
+            User loggedInUser = UserSession.get(); // current logged-in user
 
             Review review = new Review(
                     "rev_" + System.currentTimeMillis(),
@@ -154,7 +151,7 @@ public class RateUserActivity extends BaseActivity {
                     ratingRole.equals("buyer") ? "user" : "seller"
             );
 
-            // Send only this new review back
+            // Send back result
             Intent data = new Intent();
             data.putExtra("new_review", review);
             data.putExtra("user_id", targetUser.getId());

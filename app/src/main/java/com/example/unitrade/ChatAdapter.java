@@ -19,8 +19,8 @@ import java.util.List;
 
 public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder> {
 
-    private List<Chat> chatList;
-    private OnItemClickListener listener;
+    private final List<Chat> chatList;
+    private final OnItemClickListener listener;
 
     public interface OnItemClickListener {
         void onItemClick(Chat chat);
@@ -51,11 +51,11 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
     static class ChatViewHolder extends RecyclerView.ViewHolder {
 
-        private ImageView avatarImageView;
-        private TextView nameTextView;
-        private TextView lastMessageTextView;
-        private TextView timestampTextView;
-        private ImageButton saveButton;
+        private final ImageView avatarImageView;
+        private final TextView nameTextView;
+        private final TextView lastMessageTextView;
+        private final TextView timestampTextView;
+        private final ImageButton saveButton;
 
         public ChatViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -68,40 +68,21 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
         public void bind(final Chat chat, final OnItemClickListener listener) {
 
-            // 🔹 Resolve user dynamically (auto-update avatar & name)
-            User user = SampleData.getUserById(itemView.getContext(), chat.getUserId());
-
-            if (user != null) {
-                nameTextView.setText(user.getUsername());
-
-                Glide.with(itemView.getContext())
-                        .load(user.getProfileImageUrl())
-                        . signature(new ObjectKey(user.getProfileImageVersion()))
-                        .placeholder(R.drawable.profile_pic_2)
-                        .into(avatarImageView);
-            } else {
-                nameTextView.setText("Unknown User");
-                avatarImageView.setImageResource(R.drawable.profile_pic_2);
-            }
-
-            // 🔹 Last message
+            // 🔹 Set last message
             lastMessageTextView.setText(chat.getLastMessage());
 
-            // 🔹 Timestamp (from long → readable text)
-            timestampTextView.setText(
-                    DateUtils.getRelativeTimeSpanString(
-                            chat.getLastMessageTime(),
-                            System.currentTimeMillis(),
-                            DateUtils.MINUTE_IN_MILLIS
-                    )
-            );
+            // 🔹 Set timestamp
+            timestampTextView.setText(DateUtils.getRelativeTimeSpanString(
+                    chat.getLastMessageTime(),
+                    System.currentTimeMillis(),
+                    DateUtils.MINUTE_IN_MILLIS
+            ));
 
             // 🔹 Click to open chat
             itemView.setOnClickListener(v -> listener.onItemClick(chat));
 
             // 🔹 Bookmark
             updateBookmarkIcon(chat.isBookmarked());
-
             saveButton.setOnClickListener(v -> {
                 chat.setBookmarked(!chat.isBookmarked());
                 updateBookmarkIcon(chat.isBookmarked());
@@ -112,6 +93,34 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                         Toast.LENGTH_SHORT
                 ).show();
             });
+
+            // 🔹 Async user fetch
+            UserRepository.getUserByUid(chat.getUserId(), new UserRepository.UserCallback() {
+                @Override
+                public void onSuccess(User user) {
+                    if (user != null) {
+                        nameTextView.setText(user.getUsername());
+                        Glide.with(itemView.getContext())
+                                .load(user.getProfileImageUrl())
+                                .signature(new ObjectKey(user.getProfileImageVersion()))
+                                .placeholder(R.drawable.profile_pic_2)
+                                .circleCrop()
+                                .into(avatarImageView);
+                    } else {
+                        setUnknownUser();
+                    }
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    setUnknownUser();
+                }
+
+                private void setUnknownUser() {
+                    nameTextView.setText("Unknown User");
+                    avatarImageView.setImageResource(R.drawable.profile_pic_2);
+                }
+            });
         }
 
         private void updateBookmarkIcon(boolean isBookmarked) {
@@ -121,3 +130,4 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         }
     }
 }
+

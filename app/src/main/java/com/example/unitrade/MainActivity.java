@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -17,6 +18,9 @@ import androidx.navigation.ui.NavigationUI;
 
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class MainActivity extends BaseActivity{
 
@@ -33,10 +37,31 @@ public class MainActivity extends BaseActivity{
         // --------------------------------------------------
         // Ensure user session exists
         // --------------------------------------------------
-        if (UserSession.get() == null) {
-            User defaultUser = SampleData.generateSampleUsers(this).get(0);
-            UserSession.set(defaultUser);
+        FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
+
+        if (firebaseUser != null) {
+            String uid = firebaseUser.getUid();
+
+            FirebaseFirestore db = FirebaseFirestore.getInstance();
+            db.collection("users")
+                    .document(uid)
+                    .get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists()) {
+                            User currentUser = documentSnapshot.toObject(User.class);
+                            UserSession.set(currentUser); // store in session
+                            Log.d("MainActivity", "Logged-in user: " + currentUser.getUsername());
+                        } else {
+                            Log.e("MainActivity", "User not found in Firestore");
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e("MainActivity", "Error fetching user", e);
+                    });
+        } else {
+            Log.e("MainActivity", "No Firebase user logged in");
         }
+
 
         // --------------------------------------------------
         // Toolbar

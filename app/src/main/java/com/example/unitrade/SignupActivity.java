@@ -39,6 +39,8 @@ public class SignupActivity extends AppCompatActivity {
     private EditText edtConfirmPassword;
     private Button btnCreateAccount;
 
+    private EditText edtPhone, edtAddress, edtStudentId;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,6 +51,8 @@ public class SignupActivity extends AppCompatActivity {
         edtPassword = findViewById(R.id.edtPassword);
         edtConfirmPassword = findViewById(R.id.edtConfirmPassword);
         btnCreateAccount = findViewById(R.id.btnSignUp);
+        edtPhone = findViewById(R.id.edtPhone);
+        edtAddress = findViewById(R.id.edtAddress);
 
         btnCreateAccount.setOnClickListener(v -> startOtpFlow());
     }
@@ -58,6 +62,8 @@ public class SignupActivity extends AppCompatActivity {
         String email = edtSiswamail.getText().toString().trim();
         String password = edtPassword.getText().toString().trim();
         String confirmPassword = edtConfirmPassword.getText().toString().trim();
+        String phoneNumber = edtPhone.getText().toString().trim();
+        String address = edtAddress.getText().toString().trim();
 
         // Basic validation
         if (TextUtils.isEmpty(name)
@@ -110,10 +116,14 @@ public class SignupActivity extends AppCompatActivity {
                 .putString("password", password)
                 .apply();
 
-        sendOtpEmail(email, otp);
+        final String finalName = name;
+        final String finalPhone = phoneNumber;
+        final String finalAddress = address;
+
+        sendOtpEmail(otp,email, finalName, finalPhone, finalAddress);
     }
 
-    private void sendOtpEmail(String email, String otp) {
+    private void sendOtpEmail(String otp, String email, String name, String phoneNumber, String address) {
         OkHttpClient client = new OkHttpClient();
 
         String json =
@@ -186,11 +196,11 @@ public class SignupActivity extends AppCompatActivity {
                             Toast.LENGTH_SHORT
                     ).show();
 
-                    Intent intent = new Intent(
-                            SignupActivity.this,
-                            EmailVerificationActivity.class
-                    );
+                    Intent intent = new Intent(SignupActivity.this, EmailVerificationActivity.class);
                     intent.putExtra("email", email);
+                    intent.putExtra("name", name);
+                    intent.putExtra("phoneNumber", phoneNumber);
+                    intent.putExtra("address", address);
                     startActivity(intent);
                     finish();
                 });

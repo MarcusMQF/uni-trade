@@ -1,5 +1,7 @@
 package com.example.unitrade.backend;
 
+import com.example.unitrade.Product;
+
 import java.util.HashMap;
 import java.util.List;
 
@@ -26,5 +28,13 @@ public class RecommendationManager {
                 .map(HashMap.Entry::getKey)
                 .toList();
     }
+
+    public static void sortByRecommendation(List<Product> products) {
+        // Sort by category click count descending
+        products.sort((p1, p2) ->
+                Integer.compare(getClicks(p2.getCategory()), getClicks(p1.getCategory()))
+        );
+    }
+
 
 }

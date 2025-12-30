@@ -23,14 +23,4 @@ public class Sorting {
                 Long.compare(p2.getCreatedAt(), p1.getCreatedAt())
         );
     }
-
-    public static void sortByRecommendation(List<Product> products) {
-        Collections.sort(products, (p1, p2) ->
-                Integer.compare(
-                        RecommendationManager.getClicks(p2.getCategory()),
-                        RecommendationManager.getClicks(p1.getCategory())
-                )
-        );
-    }
-
 }

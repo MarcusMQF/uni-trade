@@ -10,6 +10,8 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.widget.Toolbar;
 
+import com.google.firebase.firestore.FirebaseFirestore;
+
 import java.util.ArrayList;
 
 public class SettingsActivity extends BaseActivity {
@@ -17,17 +19,22 @@ public class SettingsActivity extends BaseActivity {
     private ActivityResultLauncher<Intent> editProfileLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
-                if (result.getResultCode() == RESULT_OK) {
-                    // Save the updated user info
-                    if (result.getData() != null) {
-                        User updatedUser = result.getData().getParcelableExtra("updated_user");
-                        if (updatedUser != null) {
-                            SampleData.updateUser(this, updatedUser);
-                            Toast.makeText(this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
-                        }
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    User updatedUser = result.getData().getParcelableExtra("updated_user");
+                    if (updatedUser != null) {
+                        FirebaseFirestore db = FirebaseFirestore.getInstance();
+                        db.collection("users")
+                                .document(updatedUser.getId())
+                                .set(updatedUser)
+                                .addOnSuccessListener(aVoid ->
+                                        Toast.makeText(this, "Profile updated successfully", Toast.LENGTH_SHORT).show())
+                                .addOnFailureListener(e ->
+                                        Toast.makeText(this, "Failed to update profile", Toast.LENGTH_SHORT).show());
                     }
                 }
-            });
+            }
+    );
+
 
     private ActivityResultLauncher<Intent> currencyActivityLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),

@@ -126,16 +126,28 @@ public class ConversationActivity extends AppCompatActivity {
         setContentView(R.layout.activity_conversation);
 
         Chat chat = getIntent().getParcelableExtra("chat");
-        User user = SampleData.getUserById(this, chat.getUserId());
-        userPhoneNumber = (user != null) ? user.getPhoneNumber() : null;
 
-        setupToolbar(chat, user);
         setupRecyclerView();
         setupInputLayout();
         setupQuickReplies();
-
         updateSendButtonState();
+
+        // Load user from Firebase
+        UserRepository.getUserByUid(chat.getUserId(), new UserRepository.UserCallback() {
+            @Override
+            public void onSuccess(User user) {
+                userPhoneNumber = user.getPhoneNumber();
+                setupToolbar(chat, user);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                userPhoneNumber = null;
+                setupToolbar(chat, null);
+            }
+        });
     }
+
 
     private void setupToolbar(Chat chat, User user) {
 

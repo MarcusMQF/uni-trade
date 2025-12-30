@@ -39,10 +39,8 @@ import java.util.List;
 import android.location.Address;
 import android.location.Geocoder;
 
-
 import java.io.IOException;
 import java.util.Locale;
-
 
 public class SearchFragment extends Fragment {
 
@@ -80,7 +78,7 @@ public class SearchFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+            Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_search, container, false);
 
         // Views
@@ -128,17 +126,16 @@ public class SearchFragment extends Fragment {
 
         btnNearest.setOnClickListener(v -> {
 
-            // 1️⃣ Check permission
-            if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-                    != PackageManager.PERMISSION_GRANTED) {
+            // 1. Check permission
+            if (ActivityCompat.checkSelfPermission(requireContext(),
+                    Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(
-                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                        LOCATION_PERMISSION_REQUEST_CODE
-                );
+                        new String[] { Manifest.permission.ACCESS_FINE_LOCATION },
+                        LOCATION_PERMISSION_REQUEST_CODE);
                 return;
             }
 
-            // 2️⃣ Get last known location
+            // 2. Get last known location
             fusedLocationClient.getLastLocation()
                     .addOnSuccessListener(location -> {
                         if (location == null) {
@@ -171,12 +168,9 @@ public class SearchFragment extends Fragment {
                         }
 
                         // Optional: sort by recommendation clicks within 5 km
-                        filteredProducts.sort((p1, p2) ->
-                                Integer.compare(
-                                        RecommendationManager.getClicks(p2.getCategory()),
-                                        RecommendationManager.getClicks(p1.getCategory())
-                                )
-                        );
+                        filteredProducts.sort((p1, p2) -> Integer.compare(
+                                RecommendationManager.getClicks(p2.getCategory()),
+                                RecommendationManager.getClicks(p1.getCategory())));
 
                         adapter.notifyDataSetChanged();
 
@@ -184,7 +178,6 @@ public class SearchFragment extends Fragment {
                         applySelectedStyle(btnNearest);
                     });
         });
-
 
         // Search when typing or pressing enter
         edtSearch.setOnEditorActionListener((v, actionId, event) -> {
@@ -228,7 +221,6 @@ public class SearchFragment extends Fragment {
         }
     }
 
-
     // ----- Helper methods -----
 
     private void showPriceDropdown() {
@@ -268,13 +260,14 @@ public class SearchFragment extends Fragment {
         b.setTextColor(Color.WHITE);
     }
 
-
     // ----- Firestore Search -----
     protected void searchProducts(String query) {
-        if (!isAdded()) return; // Fragment not attached, skip
+        if (!isAdded())
+            return; // Fragment not attached, skip
 
         // Make sure filteredProducts and adapter are initialized
-        if (filteredProducts == null) filteredProducts = new ArrayList<>();
+        if (filteredProducts == null)
+            filteredProducts = new ArrayList<>();
         if (adapter == null) {
             adapter = new ItemAdapter(filteredProducts, product -> {
                 Intent intent = new Intent(getContext(), ProductDetailActivity.class);
@@ -293,7 +286,8 @@ public class SearchFragment extends Fragment {
         FetchProductId.searchProductsByKeyword(query, new FetchProductId.OnResultListener() {
             @Override
             public void onSuccess(List<Product> products) {
-                if (!isAdded()) return; // Check again in async callback
+                if (!isAdded())
+                    return; // Check again in async callback
 
                 filteredProducts.clear();
                 if (products != null) {
@@ -303,9 +297,11 @@ public class SearchFragment extends Fragment {
                 adapter.notifyDataSetChanged();
 
             }
+
             @Override
             public void onFailure(Exception e) {
-                if (!isAdded()) return;
+                if (!isAdded())
+                    return;
 
                 e.printStackTrace();
                 filteredProducts.clear();
@@ -325,5 +321,4 @@ public class SearchFragment extends Fragment {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c;
     }
-
 }

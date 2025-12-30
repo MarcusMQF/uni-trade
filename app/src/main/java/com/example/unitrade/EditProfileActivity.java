@@ -52,8 +52,8 @@ public class EditProfileActivity extends AppCompatActivity {
     private Uri newProfileUri = null;
     private AddressAdapter addressAdapter;
 
-    private final ActivityResultLauncher<Intent> galleryLauncher =
-            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+    private final ActivityResultLauncher<Intent> galleryLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getData() != null) {
                     Uri picked = result.getData().getData();
                     Uri safeUri = ImageStorageUtil.copyFromUri(this, picked);
@@ -64,8 +64,8 @@ public class EditProfileActivity extends AppCompatActivity {
                 }
             });
 
-    private final ActivityResultLauncher<Intent> cameraLauncher =
-            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+    private final ActivityResultLauncher<Intent> cameraLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getData() != null && result.getData().getExtras() != null) {
                     android.graphics.Bitmap bmp = (android.graphics.Bitmap) result.getData().getExtras().get("data");
                     Uri safeUri = ImageStorageUtil.saveBitmap(this, bmp);
@@ -130,7 +130,8 @@ public class EditProfileActivity extends AppCompatActivity {
     }
 
     private void loadUserInfo() {
-        if (currentUser == null) return;
+        if (currentUser == null)
+            return;
 
         etFullName.setText(currentUser.getFullName());
         etUsername.setText(currentUser.getUsername());
@@ -153,14 +154,15 @@ public class EditProfileActivity extends AppCompatActivity {
 
     private void setupChangePhotoButton() {
         btnChangePhoto.setOnClickListener(v -> {
-            String[] options = {"Take Photo", "Choose From Gallery", "Cancel"};
+            String[] options = { "Take Photo", "Choose From Gallery", "Cancel" };
             new android.app.AlertDialog.Builder(this)
                     .setTitle("Change Profile Photo")
                     .setItems(options, (dialog, which) -> {
                         if (which == 0) {
                             cameraLauncher.launch(new Intent(MediaStore.ACTION_IMAGE_CAPTURE));
                         } else if (which == 1) {
-                            galleryLauncher.launch(new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI));
+                            galleryLauncher.launch(
+                                    new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI));
                         }
                     })
                     .show();
@@ -181,7 +183,8 @@ public class EditProfileActivity extends AppCompatActivity {
     }
 
     private void saveProfile() {
-        if (currentUser == null) return;
+        if (currentUser == null)
+            return;
 
         currentUser.setFullName(etFullName.getText().toString().trim());
         currentUser.setUsername(etUsername.getText().toString().trim());
@@ -202,35 +205,50 @@ public class EditProfileActivity extends AppCompatActivity {
                                 currentUser.setProfileImageVersion(System.currentTimeMillis());
                                 saveUserToFirestore();
                             })
-                            .addOnFailureListener(e ->
-                                    Toast.makeText(this, "Failed to get image URL", Toast.LENGTH_SHORT).show())
-                    )
-                    .addOnFailureListener(e ->
-                            Toast.makeText(this, "Failed to upload image", Toast.LENGTH_SHORT).show());
+                            .addOnFailureListener(
+                                    e -> Toast.makeText(this, "Failed to get image URL", Toast.LENGTH_SHORT).show()))
+                    .addOnFailureListener(
+                            e -> Toast.makeText(this, "Failed to upload image", Toast.LENGTH_SHORT).show());
         } else {
             saveUserToFirestore();
         }
     }
 
     private void saveUserToFirestore() {
-        String uid = currentUser.getId(); // must be Firebase UID
-        FirebaseFirestore.getInstance()
-                .collection("users")
-                .document(uid)
-                .set(currentUser)
-                .addOnSuccessListener(aVoid -> {
-                    UserSession.set(currentUser);
-                    Toast.makeText(this, "Profile updated", Toast.LENGTH_SHORT).show();
-                    finish();
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Failed to update profile", Toast.LENGTH_SHORT).show());
+        if (currentUser.getId() == null) {
+            if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+                currentUser.setId(FirebaseAuth.getInstance().getCurrentUser().getUid());
+            } else {
+                Toast.makeText(this, "Error: User ID is missing", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+
+        UserRepository.updateUser(currentUser, new UserRepository.UpdateCallback() {
+            @Override
+            public void onSuccess() {
+                UserSession.set(currentUser);
+                Toast.makeText(EditProfileActivity.this, "Profile updated", Toast.LENGTH_SHORT).show();
+
+                Intent resultIntent = new Intent();
+                resultIntent.putExtra("updated_user", currentUser);
+                setResult(RESULT_OK, resultIntent);
+
+                finish();
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Toast.makeText(EditProfileActivity.this, "Failed to update profile", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void fetchLocation() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    new String[] { Manifest.permission.ACCESS_FINE_LOCATION },
                     LOCATION_PERMISSION_REQUEST_CODE);
             return;
         }
@@ -243,7 +261,8 @@ public class EditProfileActivity extends AppCompatActivity {
                     }
                     try {
                         Geocoder geocoder = new Geocoder(this, Locale.getDefault());
-                        List<Address> list = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
+                        List<Address> list = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(),
+                                1);
                         if (!list.isEmpty()) {
                             etNewAddress.setText(list.get(0).getAddressLine(0));
                         }

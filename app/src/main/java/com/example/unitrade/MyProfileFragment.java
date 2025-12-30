@@ -47,6 +47,8 @@ public final class MyProfileFragment extends Fragment {
     private Button btnSellItem, btnManageListings;
     private ImageButton btnEditProfile;
     private ImageView imgReviews, imgShoppingCart, imgHistory;
+    private android.widget.ProgressBar progressBar;
+    private View profileContent;
 
     private boolean manageMode = false;
     private boolean isActiveTab = true;
@@ -54,8 +56,8 @@ public final class MyProfileFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+            @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_my_profile, container, false);
     }
 
@@ -78,30 +80,42 @@ public final class MyProfileFragment extends Fragment {
         loadUser(userId);
     }
 
-    // -------------------------------
-    // USER LOADING
-    // -------------------------------
     private void loadUser(String userId) {
+        if (progressBar != null && profileContent != null) {
+            progressBar.setVisibility(View.VISIBLE);
+            profileContent.setVisibility(View.GONE);
+        }
+
         UserRepository.getUserByUid(userId, new UserRepository.UserCallback() {
             @Override
             public void onSuccess(User user) {
                 viewedUser = user;
-                showUserData();
-                showActiveItems(); // default tab
+                if (isAdded()) {
+                    showUserData();
+                    showActiveItems(); // default tab
+                    if (progressBar != null && profileContent != null) {
+                        progressBar.setVisibility(View.GONE);
+                        profileContent.setVisibility(View.VISIBLE);
+                    }
+                }
             }
 
             @Override
             public void onFailure(Exception e) {
-                Toast.makeText(requireContext(), "Failed to load user", Toast.LENGTH_SHORT).show();
+                if (isAdded()) {
+                    Toast.makeText(requireContext(), "Failed to load user", Toast.LENGTH_SHORT).show();
+                    if (progressBar != null)
+                        progressBar.setVisibility(View.GONE);
+                }
                 Log.e("MyProfile", "User fetch error", e);
             }
         });
     }
 
-    // -------------------------------
-    // VIEW BINDING
-    // -------------------------------
     private void bindViews(@NonNull View v) {
+        progressBar = v.findViewById(R.id.progressBar);
+        profileContent = v.findViewById(R.id.profileContent);
+
         imgProfile = v.findViewById(R.id.imgProfile);
         txtUserName = v.findViewById(R.id.txtUsername);
         txtFullName = v.findViewById(R.id.txtFullName);
@@ -129,23 +143,20 @@ public final class MyProfileFragment extends Fragment {
         btnEditProfile = v.findViewById(R.id.btnEditProfile);
         btnEditProfile.setOnClickListener(v1 -> openEditProfile());
 
-
         imgReviews.setOnClickListener(view -> {
             Intent intent = new Intent(requireContext(), RatingReviewsActivity.class);
             intent.putExtra("user_id", viewedUser.getId());
             startActivity(intent);
         });
 
-        imgShoppingCart.setOnClickListener(view -> startActivity(new Intent(requireContext(), ShoppingCartActivity.class)));
+        imgShoppingCart
+                .setOnClickListener(view -> startActivity(new Intent(requireContext(), ShoppingCartActivity.class)));
         imgHistory.setOnClickListener(view -> startActivity(new Intent(requireContext(), HistoryActivity.class)));
 
         tabActive.setOnClickListener(v1 -> showActiveItems());
         tabCompleted.setOnClickListener(v1 -> showCompletedItems());
     }
 
-    // -------------------------------
-    // SHOW USER DATA
-    // -------------------------------
     private void showUserData() {
         txtUserName.setText(viewedUser.getUsername());
         txtFullName.setText(viewedUser.getFullName());
@@ -158,7 +169,11 @@ public final class MyProfileFragment extends Fragment {
             txtAddress.setText("No address set");
         } else {
             Address defaultAddress = null;
-            for (Address a : addresses) if (a.isDefault()) { defaultAddress = a; break; }
+            for (Address a : addresses)
+                if (a.isDefault()) {
+                    defaultAddress = a;
+                    break;
+                }
             txtAddress.setText(defaultAddress != null ? defaultAddress.getAddress() : addresses.get(0).getAddress());
         }
 
@@ -169,9 +184,6 @@ public final class MyProfileFragment extends Fragment {
                 .into(imgProfile);
     }
 
-    // -------------------------------
-    // RECYCLER SETUP
-    // -------------------------------
     private void setupRecycler() {
         recyclerMyProducts.setLayoutManager(new GridLayoutManager(requireContext(), 2));
         productAdapter = new ProfileProductAdapter(requireContext(), userProducts);
@@ -179,15 +191,17 @@ public final class MyProfileFragment extends Fragment {
 
         productAdapter.setOnProductActionListener(new ProfileProductAdapter.OnProductActionListener() {
             @Override
-            public void onEdit(Product p) { openSellFragmentForEdit(p); }
+            public void onEdit(Product p) {
+                openSellFragmentForEdit(p);
+            }
+
             @Override
-            public void onDelete(Product p) { requestDelete(p); }
+            public void onDelete(Product p) {
+                requestDelete(p);
+            }
         });
     }
 
-    // -------------------------------
-    // TAB LOGIC
-    // -------------------------------
     private void showActiveItems() {
         isActiveTab = true;
         styleTabs(true);
@@ -207,9 +221,6 @@ public final class MyProfileFragment extends Fragment {
         tabCompleted.setTextColor(active ? Color.parseColor("#666666") : Color.parseColor("#009688"));
     }
 
-    // -------------------------------
-    // REAL-TIME PRODUCT LOADING
-    // -------------------------------
     private void loadProductsRealtime(String status) {
         if (viewedUser == null) {
             Log.e("MyProfile", "viewedUser is null! Cannot fetch products.");
@@ -245,13 +256,8 @@ public final class MyProfileFragment extends Fragment {
                     productAdapter.notifyDataSetChanged();
                     updateUI();
                 });
-
     }
 
-
-    // -------------------------------
-    // UI STATE
-    // -------------------------------
     private void updateUI() {
         if (userProducts.isEmpty()) {
             recyclerMyProducts.setVisibility(View.GONE);
@@ -270,9 +276,6 @@ public final class MyProfileFragment extends Fragment {
         btnManageListings.setText(manageMode ? "Done" : "Manage Listings");
     }
 
-    // -------------------------------
-    // SELL FRAGMENT NAVIGATION
-    // -------------------------------
     private void openSellFragmentForEdit(Product product) {
         Intent i = new Intent(requireActivity(), MainActivity.class);
         i.putExtra("editMode", true);
@@ -292,9 +295,6 @@ public final class MyProfileFragment extends Fragment {
         startActivity(i);
     }
 
-    // -------------------------------
-    // DELETE PRODUCT
-    // -------------------------------
     private void requestDelete(Product p) {
         ConfirmDialog.show(
                 requireContext(),
@@ -310,19 +310,29 @@ public final class MyProfileFragment extends Fragment {
                             productAdapter.notifyDataSetChanged();
                             updateUI();
                         })
-                        .addOnFailureListener(e -> Toast.makeText(getContext(), "Failed to delete listing", Toast.LENGTH_SHORT).show())
-        );
+                        .addOnFailureListener(e -> Toast
+                                .makeText(getContext(), "Failed to delete listing", Toast.LENGTH_SHORT).show()));
     }
 
-    // -------------------------------
-    // EDIT PROFILE NAVIGATION
-    // -------------------------------
+    private final androidx.activity.result.ActivityResultLauncher<Intent> editProfileLauncher = registerForActivityResult(
+            new androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == android.app.Activity.RESULT_OK && result.getData() != null) {
+                    User updatedUser = result.getData().getParcelableExtra("updated_user");
+                    if (updatedUser != null) {
+                        viewedUser = updatedUser;
+                        UserSession.set(updatedUser); // Ensure session is updated too
+                        showUserData();
+                    }
+                }
+            });
+
     private void openEditProfile() {
         FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (firebaseUser == null) return;
+        if (firebaseUser == null)
+            return;
 
         Intent i = new Intent(requireActivity(), EditProfileActivity.class);
-        i.putExtra("userId", firebaseUser.getUid()); // directly pass UID
-        startActivity(i);
+        i.putExtra("userId", firebaseUser.getUid());
+        editProfileLauncher.launch(i);
     }
 }

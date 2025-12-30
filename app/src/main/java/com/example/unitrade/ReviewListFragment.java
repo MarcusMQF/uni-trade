@@ -26,14 +26,14 @@ public class ReviewListFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+            @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_review_list, container, false);
     }
 
     @Override
     public void onViewCreated(@NonNull View view,
-                              @Nullable Bundle savedInstanceState) {
+            @Nullable Bundle savedInstanceState) {
 
         rvFilteredReviews = view.findViewById(R.id.rvFilteredReviews);
         rvFilteredReviews.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -45,12 +45,18 @@ public class ReviewListFragment extends Fragment {
         List<Review> filtered = new ArrayList<>();
 
         for (Review r : allReviews) {
+            String type = r.getType();
+            if (type == null)
+                type = "unknown"; // prevention
+
             switch (filterType) {
                 case "user":
-                    if (r.getType().equals("user")) filtered.add(r);
+                    if (type.equals("user"))
+                        filtered.add(r);
                     break;
                 case "seller":
-                    if (r.getType().equals("seller")) filtered.add(r);
+                    if (type.equals("seller"))
+                        filtered.add(r);
                     break;
                 default:
                     filtered.add(r);

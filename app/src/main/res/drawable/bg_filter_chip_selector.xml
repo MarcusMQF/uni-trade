@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- SELECTED (CHECKED) STATE -->
+    <item android:state_checked="true"
+        android:drawable="@drawable/bg_filter_chip_selected" />
+
+    <!-- DEFAULT STATE -->
+    <item android:drawable="@drawable/bg_filter_chip" />
+
+</selector>

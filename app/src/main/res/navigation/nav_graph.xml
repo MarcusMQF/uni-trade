@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/nav_home">
+
+    <fragment
+        android:id="@+id/nav_home"
+        android:name="com.example.unitrade.HomeFragment"
+        android:label="Home"
+        tools:layout="@layout/fragment_home">
+        <action
+            android:id="@+id/action_homeFragment_to_searchFragment"
+            app:destination="@id/nav_search"
+            app:enterAnim="@android:anim/fade_in"
+            app:exitAnim="@android:anim/fade_out"
+            app:popEnterAnim="@android:anim/fade_in"
+            app:popExitAnim="@android:anim/fade_out"
+
+        />
+
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_chat"
+        android:name="com.example.unitrade.ChatFragment"
+        android:label="Chat"
+        tools:layout="@layout/fragment_chat" />
+
+    <fragment
+        android:id="@+id/nav_search"
+        android:name="com.example.unitrade.SearchFragment"
+        android:label="Search">
+
+        <argument
+            android:name="query"
+            app:argType="string"
+            android:defaultValue="" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_sell"
+        android:name="com.example.unitrade.SellFragment"
+        android:label="Sell Item" />
+
+    <fragment
+        android:id="@+id/nav_transaction_stats"
+        android:name="com.example.unitrade.TransactionStatisticsFragment"
+        android:label="Transaction Statistics"
+        tools:layout="@layout/fragment_transaction_statistics" />
+
+    <fragment
+        android:id="@+id/nav_profile"
+        android:name="com.example.unitrade.MyProfileFragment"
+        android:label="Profile"
+        tools:layout="@layout/fragment_my_profile" />
+
+    <activity
+        android:id="@+id/nav_settings"
+        android:name="com.example.unitrade.SettingsActivity"
+        android:label="Settings"
+        tools:layout="@layout/activity_settings" />
+
+</navigation>

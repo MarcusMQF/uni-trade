@@ -36,11 +36,15 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.signature.ObjectKey;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.SetOptions;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.auth.oauth2.GoogleCredentials;
 
 import java.io.File;
 import java.io.IOException;
@@ -53,6 +57,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.io.InputStream;
+
+import org.json.JSONObject;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.Callback;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -75,9 +88,15 @@ public class ConversationActivity extends AppCompatActivity {
     private String userPhoneNumber;
 
     private FirebaseFirestore db;
+
+    private com.google.firebase.storage.FirebaseStorage storage;
+    private com.google.firebase.storage.StorageReference storageReference;
+
     private String currentUserId;
     private String receiverId;
     private String chatId;
+    private User receiverUser;
+    public static String activeChatId = null;
 
     private final ActivityResultLauncher<Intent> takePictureLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -137,6 +156,10 @@ public class ConversationActivity extends AppCompatActivity {
 
         db = FirebaseFirestore.getInstance();
         currentUserId = FirebaseAuth.getInstance().getUid();
+        storage = com.google.firebase.storage.FirebaseStorage.getInstance();
+        storageReference = storage.getReference();
+
+
 
         Chat chat = getIntent().getParcelableExtra("chat");
         if (chat != null) {
@@ -166,12 +189,14 @@ public class ConversationActivity extends AppCompatActivity {
         UserRepository.getUserByUid(receiverId, new UserRepository.UserCallback() {
             @Override
             public void onSuccess(User user) {
+                receiverUser = user;
                 userPhoneNumber = user.getPhoneNumber();
                 setupToolbar(chat, user);
             }
 
             @Override
             public void onFailure(Exception e) {
+                receiverUser = null;
                 userPhoneNumber = null;
                 setupToolbar(chat, null);
             }
@@ -196,6 +221,8 @@ public class ConversationActivity extends AppCompatActivity {
                                 messageList.add(message);
                                 adapter.notifyItemInserted(messageList.size() - 1);
                                 recyclerView.scrollToPosition(messageList.size() - 1);
+
+
                             }
                         }
                     }
@@ -207,6 +234,15 @@ public class ConversationActivity extends AppCompatActivity {
         backButton.setOnClickListener(v -> onBackPressed());
 
         ImageView callButton = findViewById(R.id.call_button);
+        TextView toolbarTitle = findViewById(R.id.toolbar_title);
+        CircleImageView profileImage = findViewById(R.id.profile_image);
+
+        if (user != null) {
+            toolbarTitle.setText(user.getUsername());
+        } else {
+            toolbarTitle.setText("Chat");
+        }
+
         callButton.setOnClickListener(v -> {
             if (userPhoneNumber != null && !userPhoneNumber.isEmpty()) {
                 if (ContextCompat.checkSelfPermission(this,
@@ -223,26 +259,26 @@ public class ConversationActivity extends AppCompatActivity {
             }
         });
 
-        TextView toolbarTitle = findViewById(R.id.toolbar_title);
-        toolbarTitle.setText(user != null ? user.getUsername() : "Chat");
 
-        CircleImageView profileImage = findViewById(R.id.profile_image);
 
-        if (user != null) {
+        if (user != null && user.getProfileImageUrl() != null) {
             Glide.with(this)
                     .load(user.getProfileImageUrl())
-                    .signature(new ObjectKey(user.getProfileImageVersion()))
+                    .signature(new ObjectKey(String.valueOf(user.getProfileImageVersion())))
                     .placeholder(R.drawable.profile_pic_2)
                     .into(profileImage);
         } else {
             profileImage.setImageResource(R.drawable.profile_pic_2);
         }
 
+
         profileImage.setOnClickListener(v -> {
-            if (user != null) {
+            if (receiverUser != null) {
                 Intent intent = new Intent(this, UserProfileActivity.class);
-                intent.putExtra("user_to_view", user);
+                intent.putExtra("user_to_view", receiverUser);
                 startActivity(intent);
+            } else {
+                showToast("User profile loading...");
             }
         });
     }
@@ -329,11 +365,8 @@ public class ConversationActivity extends AppCompatActivity {
         if (!hasText && !hasMedia)
             return;
 
-        // TODO: Implement Media Upload to Firebase Storage
-        // For now we only send text. If media is present, we acknowledge it but don't
-        // upload yet.
         if (hasMedia) {
-            showToast("Media sending not yet implemented (requires Storage). Sending text only.");
+            uploadMediaAndSendMessage(selectedMediaUris.get(0));
         }
 
         if (hasText) {
@@ -353,6 +386,7 @@ public class ConversationActivity extends AppCompatActivity {
 
             db.collection("chats").document(chatId).set(chatUpdates, SetOptions.merge());
         }
+        fetchReceiverTokenAndNotify(messageText != null ? messageText : "Sent an image");
 
         messageEditText.setText("");
         clearPreview();
@@ -496,4 +530,143 @@ public class ConversationActivity extends AppCompatActivity {
     private void showToast(String message) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
+
+    private void uploadMediaAndSendMessage(Uri fileUri) {
+        // 1. Determine file type
+        String type = isVideo(fileUri) ? "video" : "image";
+        String extension = isVideo(fileUri) ? ".mp4" : ".jpg";
+
+        // 2. Create a unique path in Firebase Storage
+        String fileName = "chat_media/" + chatId + "/" + System.currentTimeMillis() + extension;
+        com.google.firebase.storage.StorageReference fileRef =
+                com.google.firebase.storage.FirebaseStorage.getInstance().getReference().child(fileName);
+
+        // 3. Upload the file
+        fileRef.putFile(fileUri).addOnSuccessListener(taskSnapshot -> {
+            fileRef.getDownloadUrl().addOnSuccessListener(uri -> {
+                // 4. Once uploaded, create a media message
+                saveMediaMessageToFirestore(uri.toString(), type);
+            });
+        }).addOnFailureListener(e -> showToast("Failed to upload media: " + e.getMessage()));
+    }
+
+    private void saveMediaMessageToFirestore(String mediaUrl, String type) {
+        // Create a message where the "text" is the URL or a placeholder
+        String placeholderText = "[" + type + "]";
+        Message mediaMsg = new Message(placeholderText, currentUserId, System.currentTimeMillis());
+
+        // If you add a setMediaUrl to your Message.java later, you can call it here:
+        // mediaMsg.setMediaUrl(mediaUrl);
+        mediaMsg.setMediaUrl(mediaUrl);
+        mediaMsg.setMediaType(type);
+
+        // Add to the same Firestore collection
+        db.collection("chats").document(chatId).collection("messages").add(mediaMsg);
+
+        // Update the inbox preview
+        Map<String, Object> chatUpdates = new HashMap<>();
+        chatUpdates.put("lastMessage", "Sent an " + type);
+        chatUpdates.put("lastMessageTime", System.currentTimeMillis());
+        db.collection("chats").document(chatId).set(chatUpdates, com.google.firebase.firestore.SetOptions.merge());
+    }
+
+    private void fetchReceiverTokenAndNotify(String messageText) {
+        db.collection("users").document(receiverId).get().addOnSuccessListener(documentSnapshot -> {
+            String token = documentSnapshot.getString("fcmToken");
+            if (token != null && !token.isEmpty()) {
+                String preview = (messageText == null || messageText.isEmpty()) ? "Sent an image" : messageText;
+                String senderName = (receiverUser != null) ? receiverUser.getUsername() : "UniTrade User";
+
+                // This calls your OkHttp V1 method
+                sendPushNotificationV1(token, senderName, preview);
+            }
+        });
+    }
+
+    private void sendPushNotificationV1(String token, String title, String body) {
+        new Thread(() -> {
+            try {
+                // 1. Get OAuth 2.0 Access Token
+                InputStream stream = getAssets().open("service-account.json");
+                GoogleCredentials credentials = GoogleCredentials.fromStream(stream)
+                        .createScoped(Collections.singleton("https://www.googleapis.com/auth/firebase.messaging"));
+                credentials.refreshIfExpired();
+                String accessToken = credentials.getAccessToken().getTokenValue();
+
+                // 2. Prepare URL and JSON
+                String projectId = FirebaseApp.getInstance().getOptions().getProjectId();
+                String url = "https://fcm.googleapis.com/v1/projects/" + projectId + "/messages:send";
+
+                JSONObject notification = new JSONObject();
+                notification.put("title", title);
+                notification.put("body", body);
+
+                JSONObject data = new JSONObject();
+                data.put("chatId", chatId);
+
+                JSONObject messageObj = new JSONObject();
+                messageObj.put("token", token);
+                messageObj.put("notification", notification);
+                messageObj.put("data", data);
+
+                JSONObject rootPayload = new JSONObject();
+                rootPayload.put("message", messageObj);
+
+                // Inside your JSON building logic in ConversationActivity
+                JSONObject androidConfig = new JSONObject();
+                JSONObject androidNotification = new JSONObject();
+                androidNotification.put("priority", "high"); // Forces the phone to wake up
+                androidConfig.put("notification", androidNotification);
+
+                messageObj.put("android", androidConfig);
+
+                // 3. Execute Request
+                OkHttpClient client = new OkHttpClient();
+                RequestBody requestBody = RequestBody.create(
+                        MediaType.parse("application/json; charset=utf-8"),
+                        rootPayload.toString()
+                );
+
+                Request request = new Request.Builder()
+                        .url(url)
+                        .post(requestBody)
+                        .addHeader("Authorization", "Bearer " + accessToken)
+                        .build();
+
+                // This "try-with-resources" block fixes your .close() error and prevents memory leaks
+                Response response = null;
+                try {
+                    response = client.newCall(request).execute();
+                    if (response.isSuccessful()) {
+                        // Success
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    if (response != null) {
+                        response.close();
+                    }
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        }).start();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 2. When the user enters the chat, set the activeChatId
+        activeChatId = chatId;
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // 3. When the user leaves, clear it
+        activeChatId = null;
+    }
+
 }

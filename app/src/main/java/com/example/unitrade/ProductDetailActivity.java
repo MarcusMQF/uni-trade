@@ -65,6 +65,7 @@ public class ProductDetailActivity extends BaseActivity {
         productId = getIntent().getStringExtra("product_id");
 
         loadProduct();
+
     }
 
     private void loadProduct() {

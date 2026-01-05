@@ -1,8 +1,11 @@
 package com.example.unitrade;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -11,6 +14,8 @@ import android.view.MenuItem;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -21,6 +26,9 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class MainActivity extends BaseActivity {
 
@@ -36,6 +44,13 @@ public class MainActivity extends BaseActivity {
         // --------------------------------------------------
         // Ensure user session exists
         // --------------------------------------------------
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
+            }
+        }
+
         FirebaseUser firebaseUser = FirebaseAuth.getInstance().getCurrentUser();
 
         if (firebaseUser != null) {
@@ -96,6 +111,11 @@ public class MainActivity extends BaseActivity {
         // Handle intent navigation
         // --------------------------------------------------
         handleIntent(getIntent());
+
+
+
+        getAndSaveFCMToken();
+
     }
 
     // ==================================================
@@ -232,4 +252,36 @@ public class MainActivity extends BaseActivity {
 
         return super.onOptionsItemSelected(item);
     }
+
+    private void getAndSaveFCMToken() {
+        com.google.firebase.messaging.FirebaseMessaging.getInstance().getToken()
+                .addOnCompleteListener(task -> {
+                    if (!task.isSuccessful()) {
+                        Log.w("FCM", "Fetching FCM registration token failed", task.getException());
+                        return;
+                    }
+
+                    // Get new FCM registration token
+                    String token = task.getResult();
+                    String currentUserId = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+
+                    if (currentUserId != null) {
+                        // Save it to the user's document in Firestore
+                        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                                .collection("users")
+                                .document(currentUserId)
+                                .update("fcmToken", token)
+                                .addOnFailureListener(e -> {
+                                    // If update fails (e.g. document doesn't exist yet), use set with merge
+                                    Map<String, Object> data = new HashMap<>();
+                                    data.put("fcmToken", token);
+                                    com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                                            .collection("users")
+                                            .document(currentUserId)
+                                            .set(data, com.google.firebase.firestore.SetOptions.merge());
+                                });
+                    }
+                });
+    }
+
 }

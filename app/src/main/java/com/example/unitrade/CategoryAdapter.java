@@ -42,7 +42,7 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
         Category item = list.get(position);
         holder.img.setImageResource(item.getImageRes());
         holder.txt.setText(item.getName());
-        
+
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onCategoryClick(item);

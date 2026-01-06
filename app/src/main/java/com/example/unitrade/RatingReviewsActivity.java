@@ -64,7 +64,7 @@ public class RatingReviewsActivity extends AppCompatActivity {
 
         ImageView imgUserProfile = findViewById(R.id.imgUserProfile);
         TextView txtUsername = findViewById(R.id.txtUsername);
-        TextView txtLastSeen = findViewById(R.id.txtLastSeen);
+
         TextView txtUserDescription = findViewById(R.id.txtUserDescription);
         FloatingActionButton btnWriteReview = findViewById(R.id.btnWriteReview);
 
@@ -76,7 +76,7 @@ public class RatingReviewsActivity extends AppCompatActivity {
             return;
         }
 
-        loadUser(userId, imgUserProfile, txtUsername, txtLastSeen, txtUserDescription, btnWriteReview);
+        loadUser(userId, imgUserProfile, txtUsername, txtUserDescription, btnWriteReview);
 
         // ---------------- Handle New Review ----------------
         reviewLauncher = registerForActivityResult(
@@ -99,7 +99,7 @@ public class RatingReviewsActivity extends AppCompatActivity {
                 });
     }
 
-    private void loadUser(String userId, ImageView imgProfile, TextView txtUsername, TextView txtLastSeen,
+    private void loadUser(String userId, ImageView imgProfile, TextView txtUsername,
             TextView txtBio, FloatingActionButton btnWriteReview) {
 
         db.collection("users").document(userId)
@@ -130,8 +130,8 @@ public class RatingReviewsActivity extends AppCompatActivity {
                     user.setId(doc.getId());
 
                     // Set header UI
-                    txtUsername.setText(user.getUsername());
-                    txtLastSeen.setText(user.getLastSeenString());
+                    txtUsername.setText(user.getFullName());
+
                     txtBio.setText(user.getBio());
 
                     Glide.with(this)

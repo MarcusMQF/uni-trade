@@ -496,10 +496,22 @@ public class SellFragment extends Fragment {
         String location = edtLocation.getText().toString().trim();
         String usedStr = edtUsedDuration.getText().toString();
 
+
+
         if (name.isEmpty()) { toast("Enter item name"); return; }
         if (selectedCategory == null) { toast("Select category"); return; }
         if (selectedCondition == null) { toast("Select condition"); return; }
         if (priceStr.isEmpty()) { toast("Enter price"); return; }
+
+        String productStatus = "";
+        if(selectedCondition!=null){
+            if(selectedCondition.equals("Brand New")){
+                productStatus = "Unused";
+            }
+            else{
+                productStatus="Used";
+            }
+        }
 
         double price;
         try { price = Double.parseDouble(priceStr); }
@@ -526,7 +538,7 @@ public class SellFragment extends Fragment {
                 id, name, price, new ArrayList<>(), desc,
                 selectedCondition, usedDays,
                 "Available", selectedCategory, location,
-                sellerId, qrPaymentUri != null ? qrPaymentUri.toString() : null
+                sellerId, qrPaymentUri != null ? qrPaymentUri.toString() : null,productStatus
         );
 
         p.setImageVersion(System.currentTimeMillis());
@@ -611,6 +623,11 @@ public class SellFragment extends Fragment {
         productToEdit.setCategory(selectedCategory);
         productToEdit.setCondition(selectedCondition);
         productToEdit.setUsedDaysTotal(usedDays);
+        if ("Brand New".equals(selectedCondition)) {
+            productToEdit.setProductUsed("Unused");
+        } else {
+            productToEdit.setProductUsed("Used");
+        }
 
         if (imagesModified) {
             List<String> newImages = new ArrayList<>();

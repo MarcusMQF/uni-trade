@@ -22,6 +22,8 @@ public class Product implements Parcelable {
     private String productCondition;
     private int productUsedDaysTotal;
     private String productStatus;
+
+    private String productUsed;
     private String productCategory;
     private String location;
 
@@ -72,7 +74,8 @@ public class Product implements Parcelable {
             String category,
             String location,
             String sellerId,
-            String qrPaymentUrl
+            String qrPaymentUrl,
+            String productUsed
     ) {
         this.productId = id;
         this.productName = name;
@@ -86,7 +89,7 @@ public class Product implements Parcelable {
         this.location = location;
         this.sellerId = sellerId;
         this.qrPaymentUrl = qrPaymentUrl;
-
+        this.productUsed = productUsed;
         this.imageVersion = System.currentTimeMillis();
         this.listingDate = new Date();
     }
@@ -123,7 +126,15 @@ public class Product implements Parcelable {
     public boolean isDonationFlag() { return donation; }
     public int getStability() { return stability; }
 
+    public String getProductUsed() {
+        return productUsed;
+    }
+
+
     // ---------------- SETTERS ----------------
+    public void setProductUsed(String productUsed) {
+        this.productUsed = productUsed;
+    }
     public void setId(String id) { this.productId = id; }
     public void setName(String name) { this.productName = name; }
     public void setPrice(double price) { this.productPrice = price; }

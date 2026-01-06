@@ -41,101 +41,40 @@
 
         <ImageButton
             android:id="@+id/btnFilter"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="20dp"
+            android:layout_height="21dp"
             android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Filter"
             android:padding="6dp"
             android:src="@drawable/ic_filter"
-            android:contentDescription="Filter"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            app:layout_constraintTop_toTopOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 
-    <LinearLayout
-        android:id="@+id/filterButtonRow"
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/filterCard"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:gravity="center"
-        android:orientation="horizontal"
-        android:weightSum="3"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/searchBarContainer">
-
-        <!-- LATEST BUTTON -->
-
-        <!-- NEAREST BUTTON -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnLatest"
-            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_weight="1"
-            android:fontFamily="sans-serif-medium"
-            android:letterSpacing="0.01"
-            android:text="latest"
-            android:textAllCaps="false"
-            android:textColor="#000000"
-            app:cornerRadius="50dp"
-            app:strokeWidth="0dp"
-            app:backgroundTint="@null"
-            android:background="@drawable/bg_filter_chip" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnNearest"
-            style="@style/FilterButton"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="8dp"
-            android:layout_weight="1"
-            android:fontFamily="sans-serif-medium"
-            android:letterSpacing="0.01"
-            android:text="nearest"
-            android:textAllCaps="false"
-            android:textColor="#000000"
-            android:textStyle="normal"
-            app:cornerRadius="50dp"
-            app:strokeWidth="0dp"
-            app:backgroundTint="@null"
-            android:background="@drawable/bg_filter_chip" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnPrice"
-            style="@style/FilterButton"
-            android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="8dp"
-            android:layout_weight="1"
-            android:fontFamily="sans-serif-medium"
-            android:letterSpacing="0.01"
-            android:text="price ▼"
-            android:textAllCaps="false"
-            android:textColor="#000000"
-            android:textStyle="normal"
-            app:cornerRadius="50dp"
-            app:strokeWidth="0dp"
-            app:backgroundTint="@null"
-            android:background="@drawable/bg_filter_chip" />
-    </LinearLayout>
-
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/searchBarContainer"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="8dp"
+        android:backgroundTint="@color/white">
 
     <!-- FILTER PANEL (HIDDEN BY DEFAULT) -->
     <ScrollView
         android:id="@+id/filterPanel"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/white"
-        android:elevation="8dp"
         android:padding="16dp"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/filterButtonRow">
+        android:visibility="gone">
 
-        <LinearLayout
+
+    <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
@@ -151,6 +90,33 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnNearest"
+                    style="@style/FilterButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="0dp"
+                    android:layout_weight='1'
+                    android:layout_marginEnd="8dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.01"
+                    android:text="Nearest"
+                    android:textAllCaps="false"
+                    android:textColor="#000000"
+                    android:textStyle="normal"
+                    app:cornerRadius="50dp"
+                    app:strokeWidth="0dp"
+                    app:backgroundTint="@null"
+                    android:background="@drawable/bg_filter_chip" />
+
+
+                <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:orientation="horizontal">
 
                 <com.google.android.material.button.MaterialButton
@@ -185,6 +151,7 @@
                     app:strokeWidth="0dp"
                     app:backgroundTint="@null"
                     android:background="@drawable/bg_filter_chip" />
+            </LinearLayout>
             </LinearLayout>
 
             <!-- Condition -->
@@ -243,6 +210,30 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical">
+
+        <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPrice"
+                style="@style/FilterButton"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.01"
+                android:text="price ▼"
+                android:textAllCaps="false"
+                android:textColor="#000000"
+                android:textStyle="normal"
+                app:cornerRadius="50dp"
+                app:strokeWidth="0dp"
+                app:backgroundTint="@null"
+                android:background="@drawable/bg_filter_chip" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -275,13 +266,79 @@
                     android:hint="MAX" />
             </LinearLayout>
 
-            <!-- Date After -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnConfirmPrice"
+                style="@style/FilterButton"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.01"
+                android:text="Apply Price Range"
+                android:textAllCaps="false"
+                android:textColor="#000000"
+                android:textStyle="normal"
+                app:cornerRadius="50dp"
+                app:strokeWidth="0dp"
+                app:backgroundTint="@null"
+                android:background="@drawable/bg_spinner_chip" />
+
+        </LinearLayout>
+
+
+        <!-- Date After -->
             <TextView
                 android:layout_marginTop="12dp"
                 android:text="Date After"
                 android:textStyle="bold"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLatest"
+                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.01"
+                android:text="Latest"
+                android:textAllCaps="false"
+                android:textColor="#000000"
+                android:layout_marginStart='10dp'
+                android:layout_weight="1"
+                app:cornerRadius="50dp"
+                app:strokeWidth="0dp"
+                app:backgroundTint="@null"
+                android:background="@drawable/bg_filter_chip" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnOldest"
+                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:layout_marginStart='10dp'
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.01"
+                android:text="Oldest"
+                android:textAllCaps="false"
+                android:textColor="#000000"
+                app:cornerRadius="50dp"
+                app:strokeWidth="0dp"
+                app:backgroundTint="@null"
+                android:background="@drawable/bg_filter_chip" />
+        </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -319,8 +376,46 @@
                     android:hint="YYYY" />
             </LinearLayout>
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnConfirmDate"
+            style="@style/FilterButton"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.01"
+            android:text="Apply Date"
+            android:textAllCaps="false"
+            android:textColor="#000000"
+            android:textStyle="normal"
+            app:cornerRadius="50dp"
+            app:strokeWidth="0dp"
+            app:backgroundTint="@null"
+            android:background="@drawable/bg_spinner_chip" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnReset"
+                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.01"
+                android:text="Reset"
+                android:textAllCaps="false"
+                android:textColor="#000000"
+                app:cornerRadius="50dp"
+                app:strokeWidth="0dp"
+                app:backgroundTint="@null"
+                android:background="@drawable/bg_spinner_chip" />
+        </LinearLayout>
         </LinearLayout>
     </ScrollView>
+
+    </com.google.android.material.card.MaterialCardView>
 
 
     <!-- PRODUCT GRID -->
@@ -331,7 +426,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/filterPanel" />
+        app:layout_constraintTop_toBottomOf="@+id/searchBarContainer" />
 
 
     <!-- FLOATING CART BUTTON -->
@@ -340,6 +435,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="20dp"
+        android:layout_gravity='center'
         android:src="@drawable/ic_cart"
         app:backgroundTint="#3CB39B"
         app:fabCustomSize="64dp"

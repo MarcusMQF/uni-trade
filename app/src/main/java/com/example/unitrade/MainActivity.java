@@ -262,7 +262,8 @@ public class MainActivity extends BaseActivity {
                     }
 
                     // Get new FCM registration token
-                    String token = task.getResult();
+                    String token = task.getResult();    // MainActivity.java inside getAndSaveFCMToken()
+                    Log.d("FCM_DEBUG", "Current Token: " + token);
                     String currentUserId = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
 
                     if (currentUserId != null) {

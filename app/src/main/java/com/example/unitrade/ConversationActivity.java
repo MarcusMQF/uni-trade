@@ -12,6 +12,7 @@ import android.provider.MediaStore;
 import android.speech.RecognizerIntent;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -386,8 +387,8 @@ public class ConversationActivity extends AppCompatActivity {
             // for now, just simplified.
 
             db.collection("chats").document(chatId).set(chatUpdates, SetOptions.merge());
+            fetchReceiverTokenAndNotify(messageText);
         }
-        fetchReceiverTokenAndNotify(messageText != null ? messageText : "Sent an image");
 
         messageEditText.setText("");
         clearPreview();
@@ -570,6 +571,7 @@ public class ConversationActivity extends AppCompatActivity {
         chatUpdates.put("lastMessageTime", System.currentTimeMillis());
         chatUpdates.put("participants", new ArrayList<>(Arrays.asList(currentUserId, receiverId)));
         db.collection("chats").document(chatId).set(chatUpdates, com.google.firebase.firestore.SetOptions.merge());
+        fetchReceiverTokenAndNotify("Sent an " + type);
     }
 
     private void fetchReceiverTokenAndNotify(String messageText) {
@@ -577,8 +579,10 @@ public class ConversationActivity extends AppCompatActivity {
             String token = documentSnapshot.getString("fcmToken");
             if (token != null && !token.isEmpty()) {
                 String preview = (messageText == null || messageText.isEmpty()) ? "Sent an image" : messageText;
-                String senderName = (receiverUser != null) ? receiverUser.getUsername() : "UniTrade User";
-
+                String senderName = "New Message";
+                if (UserSession.get() != null) {
+                    senderName = UserSession.get().getUsername();
+                }
                 // This calls your OkHttp V1 method
                 sendPushNotificationV1(token, senderName, preview);
             }
@@ -599,34 +603,40 @@ public class ConversationActivity extends AppCompatActivity {
                 String projectId = FirebaseApp.getInstance().getOptions().getProjectId();
                 String url = "https://fcm.googleapis.com/v1/projects/" + projectId + "/messages:send";
 
+                Log.d("FCM_DEBUG", "Sending to URL: " + url);
+
                 JSONObject notification = new JSONObject();
+
+
                 notification.put("title", title);
                 notification.put("body", body);
 
                 JSONObject data = new JSONObject();
                 data.put("chatId", chatId);
 
+                // Inside your JSON building logic in ConversationActivity
+                JSONObject androidConfig = new JSONObject();
+                JSONObject androidNotification = new JSONObject();
+                androidNotification.put("sound", "default");
+                androidConfig.put("priority", "high"); // Forces the phone to wake up
+                androidConfig.put("notification", androidNotification);
+
                 JSONObject messageObj = new JSONObject();
                 messageObj.put("token", token);
                 messageObj.put("notification", notification);
                 messageObj.put("data", data);
+                messageObj.put("android", androidConfig);
 
                 JSONObject rootPayload = new JSONObject();
                 rootPayload.put("message", messageObj);
 
-                // Inside your JSON building logic in ConversationActivity
-                JSONObject androidConfig = new JSONObject();
-                JSONObject androidNotification = new JSONObject();
-                androidNotification.put("priority", "high"); // Forces the phone to wake up
-                androidConfig.put("notification", androidNotification);
-
-                messageObj.put("android", androidConfig);
 
                 // 3. Execute Request
                 OkHttpClient client = new OkHttpClient();
                 RequestBody requestBody = RequestBody.create(
-                        MediaType.parse("application/json; charset=utf-8"),
-                        rootPayload.toString());
+                        rootPayload.toString(),
+                        MediaType.parse("application/json; charset=utf-8"));
+
 
                 Request request = new Request.Builder()
                         .url(url)
@@ -638,12 +648,16 @@ public class ConversationActivity extends AppCompatActivity {
                 // leaks
                 Response response = null;
                 try {
-                    response = client.newCall(request).execute();
+                    response = client.newCall(request).execute();// ADD THIS LINE: Get the response body as a string
+                    String resultJson = response.body() != null ? response.body().string() : "No response body";
                     if (response.isSuccessful()) {
-                        // Success
+                        Log.d("FCM_RESULT", "SUCCESS! Notification sent: " + resultJson);
+                    } else {
+                        // THIS LOG IS THE KEY TO FIXING YOUR PROBLEM
+                        Log.e("FCM_RESULT", "FAILED! Code: " + response.code() + " Error: " + resultJson);
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Log.e("FCM_RESULT", "Network Error: " + e.getMessage());
                 } finally {
                     if (response != null) {
                         response.close();
@@ -651,7 +665,7 @@ public class ConversationActivity extends AppCompatActivity {
                 }
 
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.e("FCM_RESULT", "Fatal Error: ", e);
             }
 
         }).start();
@@ -668,6 +682,13 @@ public class ConversationActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         // 3. When the user leaves, clear it
+        activeChatId = null;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Final safety clear
         activeChatId = null;
     }
 

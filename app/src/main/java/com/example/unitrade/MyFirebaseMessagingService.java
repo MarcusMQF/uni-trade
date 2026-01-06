@@ -17,6 +17,9 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
 
+        // Add this log!
+        android.util.Log.d("FCM_SERVICE", "Message received! Title: " +
+                (remoteMessage.getNotification() != null ? remoteMessage.getNotification().getTitle() : "Data only"));
         // Get the chatId from the 'data' payload of the notification
         String incomingChatId = remoteMessage.getData().get("chatId");
 
@@ -26,11 +29,21 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
 
         // Otherwise, show the notification as usual
+        String title, body;
+
+        // If it's a "Notification" payload
         if (remoteMessage.getNotification() != null) {
-            showNotification(
-                    remoteMessage.getNotification().getTitle(),
-                    remoteMessage.getNotification().getBody()
-            );
+            title = remoteMessage.getNotification().getTitle();
+            body = remoteMessage.getNotification().getBody();
+        }
+        // If it's a "Data" payload (often used for background messages)
+        else {
+            title = remoteMessage.getData().get("title");
+            body = remoteMessage.getData().get("body");
+        }
+
+        if (title != null) {
+            showNotification(title, body);
         }
     }
 
@@ -41,6 +54,9 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         // Create Channel for Android 8.0+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(channelId, "Chat Notifications", NotificationManager.IMPORTANCE_HIGH);
+            channel.enableLights(true);
+            channel.setLightColor(android.graphics.Color.RED);
+            channel.enableVibration(true);
             notificationManager.createNotificationChannel(channel);
         }
 
@@ -48,17 +64,18 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         Intent intent = new Intent(this, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent,
-                PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE);
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
-                .setSmallIcon(R.drawable.ic_chat) // Ensure you have a chat icon in res/drawable
+                .setSmallIcon(android.R.drawable.stat_notify_chat) // Ensure you have a chat icon in res/drawable
                 .setContentTitle(title)
                 .setContentText(body)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setDefaults(NotificationCompat.DEFAULT_ALL) // Adds sound and vibration
                 .setContentIntent(pendingIntent);
 
-        notificationManager.notify(0, builder.build());
+        notificationManager.notify((int) System.currentTimeMillis(), builder.build());
     }
 
     @Override

@@ -10,17 +10,15 @@
     android:fitsSystemWindows="true">
 
 
-        <!-- TOP: Toolbar -->
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/appBarSettings"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
-            android:elevation="4dp"
-            app:title="@string/settings_title"
-            app:titleTextColor="@android:color/white" />
-
-
+    <!-- TOP: Toolbar -->
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/appBarSettings"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        android:elevation="4dp"
+        app:title="@string/settings_title"
+        app:titleTextColor="@android:color/white" />
 
 
     <ScrollView
@@ -72,7 +70,8 @@
                         app:tint="#9E9E9E" />
                 </LinearLayout>
 
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#F0F0F0" android:layout_marginStart="16dp"/>
+                <View android:layout_width="match_parent" android:layout_height="1dp"
+                    android:background="#F0F0F0" android:layout_marginStart="16dp" />
 
                 <LinearLayout
                     android:id="@+id/setting_login_security"
@@ -140,8 +139,9 @@
                         android:src="@drawable/ic_arrow_forward"
                         app:tint="#9E9E9E" />
                 </LinearLayout>
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#F0F0F0" android:layout_marginStart="16dp"/>
-                 <LinearLayout
+                <View android:layout_width="match_parent" android:layout_height="1dp"
+                    android:background="#F0F0F0" android:layout_marginStart="16dp" />
+                <LinearLayout
                     android:id="@+id/setting_privacy"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -165,8 +165,9 @@
                         android:src="@drawable/ic_arrow_forward"
                         app:tint="#9E9E9E" />
                 </LinearLayout>
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#F0F0F0" android:layout_marginStart="16dp"/>
-                 <LinearLayout
+                <View android:layout_width="match_parent" android:layout_height="1dp"
+                    android:background="#F0F0F0" android:layout_marginStart="16dp" />
+                <LinearLayout
                     android:id="@+id/setting_language"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -190,8 +191,9 @@
                         android:src="@drawable/ic_arrow_forward"
                         app:tint="#9E9E9E" />
                 </LinearLayout>
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#F0F0F0" android:layout_marginStart="16dp"/>
-                 <LinearLayout
+                <View android:layout_width="match_parent" android:layout_height="1dp"
+                    android:background="#F0F0F0" android:layout_marginStart="16dp" />
+                <LinearLayout
                     android:id="@+id/setting_currency"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -256,8 +258,9 @@
                         android:src="@drawable/ic_arrow_forward"
                         app:tint="#9E9E9E" />
                 </LinearLayout>
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#F0F0F0" android:layout_marginStart="16dp"/>
-                 <LinearLayout
+                <View android:layout_width="match_parent" android:layout_height="1dp"
+                    android:background="#F0F0F0" android:layout_marginStart="16dp" />
+                <LinearLayout
                     android:id="@+id/setting_report_problem"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -298,7 +301,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:background="@android:color/white">
-                 <LinearLayout
+                <LinearLayout
                     android:id="@+id/setting_terms_of_service"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

@@ -69,6 +69,9 @@ import okhttp3.Response;
 import okhttp3.Callback;
 
 import de.hdodenhof.circleimageview.CircleImageView;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.graphics.Insets;
 
 public class ConversationActivity extends AppCompatActivity {
 
@@ -202,6 +205,71 @@ public class ConversationActivity extends AppCompatActivity {
         });
 
         listenForMessages();
+
+        if (savedInstanceState == null) {
+            checkForProductInterest();
+        }
+    }
+
+    private void checkForProductInterest() {
+        Intent intent = getIntent();
+        if (intent.hasExtra("product_name")) { // Check for at minimum the product name
+            String imgUrl = intent.getStringExtra("product_image");
+            String name = intent.getStringExtra("product_name");
+            String price = intent.getStringExtra("product_price");
+            String productId = intent.getStringExtra("product_id");
+
+            sendProductCardMessage(name, price, imgUrl, productId);
+
+            // Clear extras to prevent duplicate sending
+            intent.removeExtra("product_image");
+            intent.removeExtra("product_name");
+            intent.removeExtra("product_price");
+            intent.removeExtra("product_id");
+        }
+    }
+
+    private void sendProductCardMessage(String name, String price, String imgUrl, String productId) {
+        Message msg = new Message();
+        msg.setText("I'm interested in this product."); // Default text
+        msg.setSenderId(currentUserId);
+        msg.setTimestamp(System.currentTimeMillis());
+
+        // set product card fields
+        msg.setProductName(name);
+        msg.setProductPrice(price);
+        msg.setProductImageUrl(imgUrl);
+        msg.setProductId(productId);
+
+        db.collection("chats").document(chatId).collection("messages").add(msg);
+
+        // Update last message preview
+        Map<String, Object> chatUpdates = new HashMap<>();
+        chatUpdates.put("lastMessage", "Sent product inquiry: " + name);
+        chatUpdates.put("lastMessageTime", System.currentTimeMillis());
+        chatUpdates.put("participants", new ArrayList<>(Arrays.asList(currentUserId, receiverId)));
+
+        db.collection("chats").document(chatId).set(chatUpdates, SetOptions.merge());
+
+        fetchReceiverTokenAndNotify("Sent product inquiry: " + name);
+    }
+
+    private void sendTextMessage(String text) {
+        if (text == null || text.trim().isEmpty())
+            return;
+
+        Message msg = new Message(text, currentUserId, System.currentTimeMillis());
+
+        db.collection("chats").document(chatId).collection("messages").add(msg);
+
+        Map<String, Object> chatUpdates = new HashMap<>();
+        chatUpdates.put("lastMessage", text);
+        chatUpdates.put("lastMessageTime", System.currentTimeMillis());
+        chatUpdates.put("participants", new ArrayList<>(Arrays.asList(currentUserId, receiverId)));
+
+        db.collection("chats").document(chatId).set(chatUpdates, SetOptions.merge());
+
+        fetchReceiverTokenAndNotify(text);
     }
 
     private void listenForMessages() {
@@ -325,6 +393,13 @@ public class ConversationActivity extends AppCompatActivity {
 
         sendButton.setOnClickListener(v -> sendMessage());
         galleryButton.setOnClickListener(v -> showMediaSourceDialog());
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.inputLayout), (v, windowInsets) -> {
+            Insets insets = windowInsets
+                    .getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.ime());
+            v.setPadding(v.getPaddingLeft(), v.getPaddingTop(), v.getPaddingRight(), insets.bottom + v.getPaddingTop());
+            return windowInsets;
+        });
     }
 
     private void setupQuickReplies() {

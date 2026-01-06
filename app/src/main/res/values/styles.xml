@@ -60,7 +60,8 @@
         <item name="android:stateListAnimator">@null</item>
     </style>
 
-    <style name="Widget.MaterialComponents.TextInputLayout.OutlinedBox" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
+    <style name="Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
         <item name="boxStrokeColor">#E0E0E0</item>
         <item name="boxStrokeWidth">1dp</item>
         <item name="hintTextColor">?attr/colorPrimary</item>
@@ -124,7 +125,9 @@
     </style>
 
 
-
-
+    <style name="TransparentIndicator"
+        parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@android:color/transparent</item>
+    </style>
 
 </resources>

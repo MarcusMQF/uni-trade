@@ -19,6 +19,7 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private static final int VIEW_TYPE_RECEIVED_TEXT = 2;
     private static final int VIEW_TYPE_SENT_IMAGE = 3;
     private static final int VIEW_TYPE_RECEIVED_IMAGE = 4;
+    private static final int VIEW_TYPE_SENT_PRODUCT = 5;
 
     private List<Message> messageList;
     private String currentUserId;
@@ -33,10 +34,16 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         Message msg = messageList.get(position);
         boolean isMe = msg.getSenderId() != null && msg.getSenderId().equals(currentUserId);
         boolean isImage = msg.getMediaUrl() != null && !msg.getMediaUrl().isEmpty();
+        boolean isProduct = msg.getProductName() != null; // Simple check for product card
 
         if (isMe) {
+            if (isProduct)
+                return VIEW_TYPE_SENT_PRODUCT;
             return isImage ? VIEW_TYPE_SENT_IMAGE : VIEW_TYPE_SENT_TEXT;
         } else {
+            // For now fall back to text/image for receiver if we don't implement received
+            // product card yet
+            // or implement VIEW_TYPE_RECEIVED_PRODUCT similarly
             return isImage ? VIEW_TYPE_RECEIVED_IMAGE : VIEW_TYPE_RECEIVED_TEXT;
         }
     }
@@ -51,6 +58,10 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         } else if (viewType == VIEW_TYPE_SENT_TEXT) {
             View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_message_sent, parent, false);
             return new MessageViewHolder(view);
+        } else if (viewType == VIEW_TYPE_SENT_PRODUCT) {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_message_sent_product, parent,
+                    false);
+            return new ProductViewHolder(view);
         }
         // Add logic for RECEIVED_IMAGE and RECEIVED_TEXT similarly...
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_message_received, parent, false);
@@ -67,6 +78,8 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         } else if (holder instanceof ImageViewHolder) {
             // If it's the image holder, cast it and bind
             ((ImageViewHolder) holder).bind(message);
+        } else if (holder instanceof ProductViewHolder) {
+            ((ProductViewHolder) holder).bind(message);
         }
     }
 
@@ -136,8 +149,12 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             }
 
             if (message.getText() != null && !message.getText().isEmpty()) {
-                messageTextView.setVisibility(View.VISIBLE);
-                messageTextView.setText(message.getText());
+                if (message.getText().equals("[video]") || message.getText().equals("[image]")) {
+                    messageTextView.setVisibility(View.GONE);
+                } else {
+                    messageTextView.setVisibility(View.VISIBLE);
+                    messageTextView.setText(message.getText());
+                }
             } else {
                 messageTextView.setVisibility(View.GONE);
             }
@@ -183,6 +200,40 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 }
 
                 itemView.getContext().startActivity(intent);
+            });
+        }
+    }
+
+    static class ProductViewHolder extends RecyclerView.ViewHolder {
+        ImageView productImageView;
+        TextView productNameTextView;
+        TextView productPriceTextView;
+
+        public ProductViewHolder(@NonNull View itemView) {
+            super(itemView);
+            productImageView = itemView.findViewById(R.id.productImageView);
+            productNameTextView = itemView.findViewById(R.id.productNameTextView);
+            productPriceTextView = itemView.findViewById(R.id.productPriceTextView);
+        }
+
+        public void bind(Message message) {
+            productNameTextView.setText(message.getProductName());
+            productPriceTextView.setText(message.getProductPrice());
+
+            Glide.with(itemView.getContext())
+                    .load(message.getProductImageUrl())
+                    .centerCrop()
+                    .into(productImageView);
+
+            // Optional: Handle click to navigate back to product details
+            itemView.setOnClickListener(v -> {
+                if (message.getProductId() != null) {
+                    // Navigate to product detail
+                    android.content.Intent intent = new android.content.Intent(itemView.getContext(),
+                            ProductDetailActivity.class);
+                    intent.putExtra("product_id", message.getProductId());
+                    itemView.getContext().startActivity(intent);
+                }
             });
         }
     }

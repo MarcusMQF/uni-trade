@@ -1,5 +1,4 @@
 
-
 package com.example.unitrade;
 
 import android.content.Context;
@@ -21,10 +20,13 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
 
     private Context context;
     private List<Review> list;
+    private OnReportClickListener reportListener;
 
-    public ReviewAdapter(Context context, List<Review> list) {
+    // ✅ Constructor with listener
+    public ReviewAdapter(Context context, List<Review> list, OnReportClickListener listener) {
         this.context = context;
         this.list = list;
+        this.reportListener = listener;
     }
 
     @Override
@@ -38,14 +40,10 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
     public void onBindViewHolder(ReviewViewHolder holder, int position) {
         Review r = list.get(position);
 
-        holder.txtName.setText(r.getReviewer().getUsername());
+        holder.txtName.setText(r.getReviewer().getFullName());
         holder.txtDate.setText(r.getDate());
         holder.txtComment.setText(r.getComment());
         holder.ratingBar.setRating((float) r.getRating());
-
-
-
-        // profile image
 
         Glide.with(context)
                 .load(r.getReviewer().getProfileImageUrl())
@@ -54,6 +52,12 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
                 .placeholder(R.drawable.circle_profile)
                 .into(holder.imgProfile);
 
+        // ✅ REPORT CLICK — CORRECT PLACE
+        holder.txtReport.setOnClickListener(v -> {
+            if (reportListener != null) {
+                reportListener.onReportClick(r);
+            }
+        });
     }
 
     @Override
@@ -61,9 +65,10 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
         return list.size();
     }
 
+    // ================= ViewHolder =================
     public static class ReviewViewHolder extends RecyclerView.ViewHolder {
         ImageView imgProfile;
-        TextView txtName, txtDate, txtComment;
+        TextView txtName, txtDate, txtComment, txtReport;
         RatingBar ratingBar;
 
         public ReviewViewHolder(View itemView) {
@@ -74,6 +79,14 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
             txtDate = itemView.findViewById(R.id.txtReviewDate);
             txtComment = itemView.findViewById(R.id.txtReviewComment);
             ratingBar = itemView.findViewById(R.id.ratingBarReview);
+
+            // ✅ MUST EXIST IN item_review.xml
+            txtReport = itemView.findViewById(R.id.btnReport);
         }
+    }
+
+    // ================= Interface =================
+    public interface OnReportClickListener {
+        void onReportClick(Review review);
     }
 }

@@ -12,14 +12,17 @@ public class Review implements Parcelable {
     private String date;
     private String type; // "user" or "seller" or "all"
 
+    private String targetUserId;
+
     // Required by Firestore
     public Review() {
     }
 
-    public Review(String id, User reviewer, String comment,
+    public Review(String id, User reviewer, String targetUserId, String comment,
             double rating, String date, String type) {
         this.id = id;
         this.reviewer = reviewer;
+        this.targetUserId = targetUserId;
         this.comment = comment;
         this.rating = rating;
         this.date = date;
@@ -29,6 +32,7 @@ public class Review implements Parcelable {
     protected Review(Parcel in) {
         id = in.readString();
         reviewer = in.readParcelable(User.class.getClassLoader());
+        targetUserId = in.readString();
         comment = in.readString();
         rating = in.readDouble();
         date = in.readString();
@@ -72,6 +76,11 @@ public class Review implements Parcelable {
         return type;
     }
 
+    public String getTargetUserId() {
+        return targetUserId;
+    }
+
+
     // Setters (Required for Firestore)
     public void setId(String id) {
         this.id = id;
@@ -97,6 +106,10 @@ public class Review implements Parcelable {
         this.type = type;
     }
 
+    public void setTargetUserId(String targetUserId) {
+        this.targetUserId = targetUserId;
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -106,6 +119,7 @@ public class Review implements Parcelable {
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(id);
         dest.writeParcelable(reviewer, flags);
+        dest.writeString(targetUserId);
         dest.writeString(comment);
         dest.writeDouble(rating);
         dest.writeString(date);

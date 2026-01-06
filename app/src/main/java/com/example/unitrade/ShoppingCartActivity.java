@@ -18,6 +18,8 @@ public class ShoppingCartActivity extends BaseActivity {
 
     private RecyclerView rvCart;
     private Button btnEdit;
+    private TextView tvTotalPrice;
+    private Button btnCheckout;
     private ShoppingCartAdapter adapter;
     private boolean isEditMode = false;
 
@@ -39,17 +41,24 @@ public class ShoppingCartActivity extends BaseActivity {
         // Views
         rvCart = findViewById(R.id.rvCart);
         btnEdit = findViewById(R.id.btnEditCart);
+        tvTotalPrice = findViewById(R.id.tvTotalPrice);
+        btnCheckout = findViewById(R.id.btnCheckout);
+
         rvCart.setLayoutManager(new LinearLayoutManager(this));
 
         // Adapter (empty for now)
         adapter = new ShoppingCartAdapter(this, new ArrayList<>());
         rvCart.setAdapter(adapter);
         adapter.setOnCartChangedListener(this::updateEmptyState);
+        adapter.setOnSelectionChangedListener(() -> {
+            double total = adapter.getSelectedTotal();
+            tvTotalPrice.setText(AppSettings.formatPrice(this, total));
+        });
 
         // Load products async from Firestore
         CartManager.getCartProducts(this, products -> {
-            adapter.rebuild(products);       // same as your old adapter setList
-            updateEmptyState();              // show/hide empty state
+            adapter.rebuild(products); // same as your old adapter setList
+            updateEmptyState(); // show/hide empty state
         });
 
         // Edit mode
@@ -59,15 +68,26 @@ public class ShoppingCartActivity extends BaseActivity {
             btnEdit.setText(isEditMode ? "Done" : "Edit Shopping Cart");
         });
 
+        // Checkout button
+        btnCheckout.setOnClickListener(v -> {
+            ArrayList<String> ids = adapter.getSelectedIds();
+            if (ids.isEmpty()) {
+                android.widget.Toast
+                        .makeText(this, "Please select items to checkout", android.widget.Toast.LENGTH_SHORT).show();
+                return;
+            }
+            Intent i = new Intent(this, CheckoutActivity.class);
+            i.putStringArrayListExtra("checkout_ids", ids);
+            startActivity(i);
+        });
+
         // Initial empty state (based on cart IDs)
         updateEmptyState();
     }
 
-
     // =====================================================
     private void updateEmptyState() {
 
-        LinearLayout header = findViewById(R.id.layoutCartHeader);
         View emptyState = findViewById(R.id.emptyStateView);
         Button btnShopNow = emptyState.findViewById(R.id.btnShopNow);
 
@@ -75,7 +95,6 @@ public class ShoppingCartActivity extends BaseActivity {
 
         if (isEmpty) {
             rvCart.setVisibility(View.GONE);
-            header.setVisibility(View.GONE);
             emptyState.setVisibility(View.VISIBLE);
 
             TextView title = emptyState.findViewById(R.id.txtEmptyTitle);
@@ -93,7 +112,6 @@ public class ShoppingCartActivity extends BaseActivity {
             });
         } else {
             rvCart.setVisibility(View.VISIBLE);
-            header.setVisibility(View.VISIBLE);
             emptyState.setVisibility(View.GONE);
         }
     }

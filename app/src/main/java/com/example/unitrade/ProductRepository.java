@@ -10,14 +10,15 @@ public class ProductRepository {
 
     public interface ProductListCallback {
         void onSuccess(List<Product> products);
+
         void onFailure(Exception e);
     }
 
     public static void getActiveProductsByUser(String userId, ProductListCallback callback) {
         FirebaseFirestore.getInstance()
                 .collection("products")
+
                 .whereEqualTo("sellerId", userId)
-                .whereEqualTo("isActive", true)
                 .get()
                 .addOnSuccessListener(snapshot -> {
                     List<Product> products = new ArrayList<>();
@@ -29,4 +30,3 @@ public class ProductRepository {
                 .addOnFailureListener(callback::onFailure);
     }
 }
-

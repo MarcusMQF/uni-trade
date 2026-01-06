@@ -26,6 +26,7 @@ public class HistoryActivity extends BaseActivity {
     // ---------------- UI ----------------
     private RecyclerView rvHistory;
     private LinearLayout emptyState;
+    private android.widget.ProgressBar loadingSpinner;
     private MaterialButton btnEdit;
     private TabLayout tabHistory;
 
@@ -39,6 +40,7 @@ public class HistoryActivity extends BaseActivity {
     // ---------------- State ----------------
     private boolean isEditMode = false;
     private boolean isPurchasedTab = true;
+    private boolean isLoading = false;
 
     // ============================================================
     @Override
@@ -56,6 +58,7 @@ public class HistoryActivity extends BaseActivity {
         // Views
         rvHistory = findViewById(R.id.rvHistory);
         emptyState = findViewById(R.id.emptyStateView);
+        loadingSpinner = findViewById(R.id.loadingSpinner);
         btnEdit = findViewById(R.id.btnEditHistory);
         tabHistory = findViewById(R.id.tabHistory);
 
@@ -65,8 +68,9 @@ public class HistoryActivity extends BaseActivity {
         setupTabs();
         setupEditButton();
 
+        setupEditButton();
+
         reloadData();
-        showPurchased(); // default
     }
 
     // ============================================================
@@ -76,9 +80,9 @@ public class HistoryActivity extends BaseActivity {
         reloadData();
 
         if (isPurchasedTab) {
-            showPurchased();
+            // showPurchased(); // handled by reloadData callback
         } else {
-            showSold();
+            // showSold();
         }
     }
 
@@ -86,11 +90,17 @@ public class HistoryActivity extends BaseActivity {
     // DATA RELOAD (NO SAMPLE DATA)
     // ============================================================
     private void reloadData() {
-        purchasedList.clear();
-        soldList.clear();
+        // Use temp lists so we don't clear UI immediately
+        List<Product> tempPurchased = new ArrayList<>();
+        List<Product> tempSold = new ArrayList<>();
 
         String currentUserId = UserSession.get().getId();
         FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        // Show loading state
+        isLoading = true;
+        loadingSpinner.setVisibility(View.VISIBLE);
+        emptyState.setVisibility(View.GONE);
 
         // Purchased
         db.collection("products")
@@ -101,7 +111,7 @@ public class HistoryActivity extends BaseActivity {
                         for (DocumentSnapshot doc : task.getResult()) {
                             Product p = doc.toObject(Product.class);
                             if (p != null && p.getTransactionDate() > 0 && p.getPrice() > 0) {
-                                purchasedList.add(p);
+                                tempPurchased.add(p);
                             }
                         }
                     }
@@ -116,24 +126,36 @@ public class HistoryActivity extends BaseActivity {
                                         Product p = doc.toObject(Product.class);
                                         if (p != null &&
                                                 (p.getStatus().equalsIgnoreCase("Sold") ||
-                                                        p.getStatus().equalsIgnoreCase("Donated")) &&
+                                                        p.getStatus().equalsIgnoreCase("Donated"))
+                                                &&
                                                 p.getTransactionDate() > 0) {
-                                            soldList.add(p);
+                                            tempSold.add(p);
                                         }
                                     }
                                 }
 
-                                // Sort and update UI
-                                Collections.sort(purchasedList, (p1, p2) -> Long.compare(p2.getTransactionDate(), p1.getTransactionDate()));
-                                Collections.sort(soldList, (p1, p2) -> Long.compare(p2.getTransactionDate(), p1.getTransactionDate()));
+                                // Update Member Lists
+                                purchasedList.clear();
+                                purchasedList.addAll(tempPurchased);
+                                soldList.clear();
+                                soldList.addAll(tempSold);
 
-                                if (isPurchasedTab) showPurchased();
-                                else showSold();
+                                // Sort
+                                Collections.sort(purchasedList,
+                                        (p1, p2) -> Long.compare(p2.getTransactionDate(), p1.getTransactionDate()));
+                                Collections.sort(soldList,
+                                        (p1, p2) -> Long.compare(p2.getTransactionDate(), p1.getTransactionDate()));
+
+                                isLoading = false;
+                                loadingSpinner.setVisibility(View.GONE);
+
+                                if (isPurchasedTab)
+                                    showPurchased();
+                                else
+                                    showSold();
                             });
                 });
     }
-
-
 
     // ============================================================
     // TABS
@@ -154,8 +176,13 @@ public class HistoryActivity extends BaseActivity {
                 }
             }
 
-            @Override public void onTabUnselected(TabLayout.Tab tab) {}
-            @Override public void onTabReselected(TabLayout.Tab tab) {}
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+            }
         });
     }
 
@@ -176,7 +203,7 @@ public class HistoryActivity extends BaseActivity {
         TextView txtEmptySubtitle = emptyState.findViewById(R.id.txtEmptySubtitle);
         MaterialButton btnAction = emptyState.findViewById(R.id.btnShopNow);
 
-        if (list.isEmpty()) {
+        if (list.isEmpty() && !isLoading) {
 
             rvHistory.setVisibility(View.GONE);
             emptyState.setVisibility(View.VISIBLE);
@@ -216,8 +243,6 @@ public class HistoryActivity extends BaseActivity {
         adapter.updateList(list);
         adapter.setEditMode(isEditMode);
     }
-
-
 
     // ============================================================
     // EDIT MODE
@@ -282,9 +307,7 @@ public class HistoryActivity extends BaseActivity {
                             .addOnFailureListener(e -> {
                                 Toast.makeText(this, "Failed to delete listing", Toast.LENGTH_SHORT).show();
                             });
-                }
-        );
+                });
     }
-
 
 }

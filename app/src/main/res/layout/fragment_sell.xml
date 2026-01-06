@@ -11,7 +11,9 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:paddingBottom="100dp"
+        android:clipToPadding="false">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -62,10 +64,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="0.6"
                     android:background="@drawable/bg_filter_chip_selector"
-
                     android:checkable="true"
                     android:letterSpacing="0.02"
-
                     android:text="Stationery"
                     android:textAllCaps="false"
                     android:textColor="@color/filter_chip_text_selector"
@@ -80,10 +80,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:layout_weight="0.6"
-
                     android:background="@drawable/bg_filter_chip_selector"
                     android:checkable="true"
-
                     android:letterSpacing="0.02"
                     android:text="Electronics"
                     android:textAllCaps="false"
@@ -99,10 +97,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:layout_weight="0.8"
-
                     android:background="@drawable/bg_filter_chip_selector"
                     android:checkable="true"
-
                     android:letterSpacing="0.02"
                     android:text="Personal Care"
                     android:textAllCaps="false"
@@ -127,10 +123,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:background="@drawable/bg_filter_chip_selector"
-
                     android:checkable="true"
                     android:letterSpacing="0.02"
-
                     android:text="Room Essentials"
                     android:textAllCaps="false"
                     android:textColor="@color/filter_chip_text_selector"
@@ -145,10 +139,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:layout_weight="0.7"
-
                     android:background="@drawable/bg_filter_chip_selector"
                     android:checkable="true"
-
                     android:letterSpacing="0.02"
                     android:text="Fashion"
                     android:textAllCaps="false"
@@ -164,10 +156,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:layout_weight="0.7"
-
                     android:background="@drawable/bg_filter_chip_selector"
                     android:checkable="true"
-
                     android:letterSpacing="0.02"
                     android:text="Textbook"
                     android:textAllCaps="false"
@@ -195,10 +185,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="0dp"
                     android:layout_weight="0.7"
-
                     android:background="@drawable/bg_filter_chip_selector"
                     android:checkable="true"
-
                     android:letterSpacing="0.02"
                     android:text="Sports"
                     android:textAllCaps="false"
@@ -214,10 +202,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:layout_weight="1"
-
                     android:background="@drawable/bg_filter_chip_selector"
                     android:checkable="true"
-
                     android:letterSpacing="0.02"
                     android:text="Hobbies"
                     android:textAllCaps="false"
@@ -233,10 +219,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:layout_weight="0.7"
-
                     android:background="@drawable/bg_filter_chip_selector"
                     android:checkable="true"
-
                     android:letterSpacing="0.02"
                     android:text="Food"
                     android:textAllCaps="false"
@@ -262,7 +246,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="0dp"
-
                     android:layout_weight="1"
                     android:background="@drawable/bg_filter_chip_selector"
                     android:checkable="true"
@@ -383,14 +366,12 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCondGood"
                     style="@style/FilterButton"
-
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="0dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_filter_chip_selector"
                     android:checkable="true"
-
                     android:letterSpacing="0.02"
                     android:text="Good"
                     android:textAllCaps="false"
@@ -402,16 +383,12 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCondFair"
                     style="@style/FilterButton"
-
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:layout_weight="1"
-
-
                     android:background="@drawable/bg_filter_chip_selector"
                     android:checkable="true"
-
                     android:letterSpacing="0.02"
                     android:text="Fair"
                     android:textAllCaps="false"
@@ -423,15 +400,12 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCondLikeNew"
                     style="@style/FilterButton"
-
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:layout_weight="1"
-
                     android:background="@drawable/bg_filter_chip_selector"
                     android:checkable="true"
-
                     android:letterSpacing="0.02"
                     android:text="Like New"
                     android:textAllCaps="false"
@@ -452,15 +426,12 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCondBrandNew"
                     style="@style/FilterButton"
-
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="0dp"
                     android:layout_weight="0.6"
-
                     android:background="@drawable/bg_filter_chip_selector"
                     android:checkable="true"
-
                     android:letterSpacing="0.02"
                     android:text="Brand New"
                     android:textAllCaps="false"
@@ -472,15 +443,12 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCondNotWorking"
                     style="@style/FilterButton"
-
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:layout_weight="1"
-
                     android:background="@drawable/bg_filter_chip_selector"
                     android:checkable="true"
-
                     android:letterSpacing="0.02"
                     android:text="For Parts/ Not Working"
                     android:textAllCaps="false"
@@ -502,15 +470,12 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCondExcellent"
                     style="@style/FilterButton"
-
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="0dp"
                     android:layout_weight="0.7"
-
                     android:background="@drawable/bg_filter_chip_selector"
                     android:checkable="true"
-
                     android:letterSpacing="0.02"
                     android:text="Excellent"
                     android:textAllCaps="false"
@@ -522,15 +487,12 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCondOldButWorking"
                     style="@style/FilterButton"
-
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:layout_weight="1"
-
                     android:background="@drawable/bg_filter_chip_selector"
                     android:checkable="true"
-
                     android:letterSpacing="0.02"
                     android:text="Old But Working"
                     android:textAllCaps="false"
@@ -542,15 +504,12 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCondRefurbished"
                     style="@style/FilterButton"
-
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:layout_weight="0.8"
-
                     android:background="@drawable/bg_filter_chip_selector"
                     android:checkable="true"
-
                     android:letterSpacing="0.02"
                     android:text="Refurbished"
                     android:textAllCaps="false"

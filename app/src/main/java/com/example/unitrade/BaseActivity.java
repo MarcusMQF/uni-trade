@@ -92,7 +92,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         if (id == android.R.id.home) {
-            onBackPressed();   // ← BACK BUTTON
+            onBackPressed(); // ← BACK BUTTON
             return true;
         }
 

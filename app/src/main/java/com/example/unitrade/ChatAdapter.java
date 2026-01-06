@@ -75,8 +75,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             timestampTextView.setText(DateUtils.getRelativeTimeSpanString(
                     chat.getLastMessageTime(),
                     System.currentTimeMillis(),
-                    DateUtils.MINUTE_IN_MILLIS
-            ));
+                    DateUtils.MINUTE_IN_MILLIS));
 
             // 🔹 Click to open chat
             itemView.setOnClickListener(v -> listener.onItemClick(chat));
@@ -90,16 +89,28 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                 Toast.makeText(
                         itemView.getContext(),
                         chat.isBookmarked() ? "Chat bookmarked!" : "Chat un-bookmarked!",
-                        Toast.LENGTH_SHORT
-                ).show();
+                        Toast.LENGTH_SHORT).show();
             });
+
+            // 🔹 Initial State (Loading)
+            nameTextView.setText("...");
+            avatarImageView.setImageResource(R.drawable.profile_pic_2);
 
             // 🔹 Async user fetch
             UserRepository.getUserByUid(chat.getUserId(), new UserRepository.UserCallback() {
                 @Override
                 public void onSuccess(User user) {
                     if (user != null) {
-                        nameTextView.setText(user.getUsername());
+                        // Check if username is valid, otherwise use full name
+                        String name = user.getUsername();
+                        if (name == null || name.isEmpty()) {
+                            name = user.getFullName();
+                        }
+                        if (name == null || name.isEmpty()) {
+                            name = "Unknown User";
+                        }
+                        nameTextView.setText(name);
+
                         Glide.with(itemView.getContext())
                                 .load(user.getProfileImageUrl())
                                 .signature(new ObjectKey(user.getProfileImageVersion()))
@@ -125,9 +136,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
         private void updateBookmarkIcon(boolean isBookmarked) {
             saveButton.setImageResource(
-                    isBookmarked ? R.drawable.ic_bookmark : R.drawable.ic_bookmark_border
-            );
+                    isBookmarked ? R.drawable.ic_bookmark : R.drawable.ic_bookmark_border);
         }
     }
 }
-

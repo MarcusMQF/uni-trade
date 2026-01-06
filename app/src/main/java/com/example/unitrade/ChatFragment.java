@@ -73,11 +73,25 @@ public class ChatFragment extends Fragment {
         return view;
     }
 
+    private com.google.firebase.firestore.ListenerRegistration chatListener;
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (chatListener != null) {
+            chatListener.remove();
+            chatListener = null;
+        }
+    }
+
     private void loadChats() {
         if (currentUserId == null)
             return;
 
-        db.collection("chats")
+        if (chatListener != null)
+            chatListener.remove();
+
+        chatListener = db.collection("chats")
                 .whereArrayContains("participants", currentUserId)
                 .addSnapshotListener((snapshots, e) -> {
                     if (e != null)

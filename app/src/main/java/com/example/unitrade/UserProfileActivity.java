@@ -178,12 +178,13 @@ public class UserProfileActivity extends BaseActivity {
         txtUserRating.setText(String.format("%.1f", viewedUser.getUserRating()));
         txtSellerRating.setText(String.format("%.1f", viewedUser.getSellerRating()));
 
-        // Note: Counts might need to be fetched or stored in User object.
-        // For now, setting to "0 ratings" or hiding if logic not present.
-        // Assuming we want to show 0 if real data is missing, rather than fake 23.
-        txtOverallCount.setText("0 ratings"); // TODO: Implement count logic
-        txtUserRatingCount.setText("0 ratings");
-        txtSellerRatingCount.setText("0 ratings");
+
+        int userCount = viewedUser.getUserRatingCount();
+        int sellerCount = viewedUser.getSellerRatingCount();
+        int overallCount = viewedUser.getOverallRatingCount();
+        txtUserRatingCount.setText(userCount + " rating" + (userCount == 1 ? "" : "s"));
+        txtSellerRatingCount.setText(sellerCount + " rating" + (sellerCount == 1 ? "" : "s"));
+        txtOverallCount.setText(overallCount + " rating" + (overallCount == 1 ? "" : "s"));
 
         Glide.with(this)
                 .load(viewedUser.getProfileImageUrl())

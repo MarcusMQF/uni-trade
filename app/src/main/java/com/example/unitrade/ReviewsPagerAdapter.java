@@ -17,12 +17,18 @@ public class ReviewsPagerAdapter extends FragmentStateAdapter {
     private final User user;
     private final List<Review> allReviews;
 
-    public ReviewsPagerAdapter(@NonNull FragmentActivity activity,
-                               User user,
-                               List<Review> allReviews) {
+    private OnReportClickListener reportListener;
+
+    public ReviewsPagerAdapter(
+            @NonNull FragmentActivity activity,
+            User user,
+            List<Review> allReviews,
+            OnReportClickListener listener
+    ) {
         super(activity);
         this.user = user;
         this.allReviews = allReviews;
+        this.reportListener = listener;
     }
 
     @NonNull
@@ -37,6 +43,7 @@ public class ReviewsPagerAdapter extends FragmentStateAdapter {
         }
 
         ReviewListFragment fragment = new ReviewListFragment();
+        fragment.setReportListener(reportListener);
         Bundle bundle = new Bundle();
         bundle.putParcelable("user", user);
         bundle.putParcelableArrayList("reviews", new ArrayList<>(allReviews));
@@ -62,5 +69,9 @@ public class ReviewsPagerAdapter extends FragmentStateAdapter {
     public boolean containsItem(long itemId) {
         // Always return false so ViewPager2 recreates fragments
         return false;
+    }
+
+    public interface OnReportClickListener {
+        void onReportClick(Review review);
     }
 }

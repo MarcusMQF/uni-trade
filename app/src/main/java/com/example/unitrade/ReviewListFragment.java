@@ -15,6 +15,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ReviewListFragment extends Fragment {
+    private ReviewsPagerAdapter.OnReportClickListener reportListener;
+
+
 
     private RecyclerView rvFilteredReviews;
     private ReviewAdapter adapter;
@@ -63,7 +66,21 @@ public class ReviewListFragment extends Fragment {
             }
         }
 
-        adapter = new ReviewAdapter(requireContext(), filtered);
+        adapter = new ReviewAdapter(
+                requireContext(),
+                filtered,
+                review -> {
+                    // Pass event to parent activity
+                    if (getActivity() instanceof RatingReviewsActivity) {
+                        ((RatingReviewsActivity) getActivity()).onReportClick(review);
+                    }
+                }
+        );
+
         rvFilteredReviews.setAdapter(adapter);
+    }
+
+    public void setReportListener(ReviewsPagerAdapter.OnReportClickListener listener) {
+        this.reportListener = listener;
     }
 }

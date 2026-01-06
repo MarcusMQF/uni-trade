@@ -69,6 +69,14 @@ public class RateUserActivity extends BaseActivity {
 
         targetUser = doc.toObject(User.class);
 
+        if (targetUser == null) {
+            Toast.makeText(this, "Failed to parse user", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
+        targetUser.setId(doc.getId());
+
         bindViews();
         setupStarListeners();
         setupRoleButtons();
@@ -148,13 +156,14 @@ public class RateUserActivity extends BaseActivity {
             User loggedInUser = UserSession.get(); // current logged-in user
 
             Review review = new Review(
-                    "rev_" + System.currentTimeMillis(),
+                    null,
                     loggedInUser,
+                    targetUser.getId(),
                     reviewText,
                     rating,
                     "Today",
-                    ratingRole.equals("buyer") ? "user" : "seller");
-
+                    ratingRole.equals("buyer") ? "user" : "seller"
+            );
             // Send back result
             Intent data = new Intent();
             data.putExtra("new_review", review);

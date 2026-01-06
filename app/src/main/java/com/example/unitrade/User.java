@@ -23,6 +23,12 @@ public class User implements Parcelable {
     private String profileImageUrl;
     private double sellerRating;
     private double userRating;
+
+    private int userRatingCount;
+    private int sellerRatingCount;
+
+    private int overallRatingCount;
+
     private double overallRating;
     private long lastSeen;
     private String bio;
@@ -137,6 +143,18 @@ public class User implements Parcelable {
         return lastEdited;
     }
 
+    public int getOverallRatingCount() {
+        return userRatingCount + sellerRatingCount;
+    }
+
+    public int getSellerRatingCount() {
+        return sellerRatingCount;
+    }
+
+    public int getUserRatingCount() {
+        return userRatingCount;
+    }
+
     @Exclude
     public List<Address> getAddresses() {
         return addresses;
@@ -181,6 +199,18 @@ public class User implements Parcelable {
         updateOverallRating();
     }
 
+    public void setOverallRatingCount(int overallRatingCount) {
+        this.overallRatingCount = overallRatingCount;
+    }
+
+    public void setUserRatingCount(int userRatingCount) {
+        this.userRatingCount = userRatingCount;
+    }
+
+    public void setSellerRatingCount(int sellerRatingCount) {
+        this.sellerRatingCount = sellerRatingCount;
+    }
+
     public void setLastSeen(long lastSeen) {
         this.lastSeen = lastSeen;
     }
@@ -217,10 +247,21 @@ public class User implements Parcelable {
         this.profileImageVersion = version;
     }
 
-    private void updateOverallRating() {
-        this.overallRating = (sellerRating + userRating) / 2.0;
-    }
 
+    private void updateOverallRating() {
+        int totalCount = userRatingCount + sellerRatingCount;
+
+        if (totalCount == 0) {
+            overallRating = 0.0;
+            return;
+        }
+
+        double totalStars =
+                (userRating * userRatingCount) +
+                        (sellerRating * sellerRatingCount);
+
+        overallRating = totalStars / totalCount;
+    }
     // Parcelable implementation
     protected User(Parcel in) {
         id = in.readString();

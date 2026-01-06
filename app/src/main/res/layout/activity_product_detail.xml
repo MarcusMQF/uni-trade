@@ -3,15 +3,17 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
-    android:fitsSystemWindows="true">
+    android:background="@color/white">
 
     <!-- ==================== TOOLBAR ==================== -->
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/appBarProductDetail"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
+        android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
+        android:minHeight="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        android:fitsSystemWindows="true"
         app:title="Product Details" />
 
     <!-- ==================== IMAGE SLIDER ==================== -->
@@ -31,13 +33,16 @@
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/tabDots"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="20dp"
             android:layout_gravity="center"
-            android:paddingTop="6dp"
-            app:tabIndicator="@null"
+            android:layout_marginTop="8dp"
+            android:background="@android:color/transparent"
+            app:tabBackground="@drawable/selector_tab_dot"
+            app:tabGravity="center"
             app:tabIndicatorHeight="0dp"
-            app:tabSelectedTextColor="@android:color/transparent"
-            app:tabTextColor="@android:color/transparent" />
+            app:tabPaddingStart="8dp"
+            app:tabPaddingEnd="8dp"
+            app:tabRippleColor="@null" />
     </LinearLayout>
 
 
@@ -48,7 +53,7 @@
         android:layout_height="match_parent"
         android:layout_below="@id/topSection"
         android:layout_above="@id/bottomBar"
-        android:paddingBottom="120dp"
+        android:paddingBottom="24dp"
         android:clipToPadding="false">
 
         <LinearLayout
@@ -222,99 +227,94 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:background="@color/white"
-        android:elevation="4dp"
-        android:orientation="vertical">
+        android:elevation="16dp"
+        android:outlineProvider="bounds"
+        android:orientation="vertical"
+        android:padding="16dp">
 
         <!-- BUYER BUTTONS ROW -->
         <LinearLayout
             android:id="@+id/layoutBuyerButtons"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
 
             <!-- ADD TO CART -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAddToCart"
                 android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="0.8"
-                android:backgroundTint="#F5F5F5"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp"
+                android:backgroundTint="#EFFBF9"
                 android:text="Add to Cart"
                 android:textAllCaps="false"
                 android:textColor="#008C6F"
                 android:textSize="14sp"
                 android:textStyle="bold"
-                app:cornerRadius="0dp"
-                app:icon="@drawable/ic_cart_large"
-                app:iconGravity="top"
-                app:iconTint="#008C6F"
-                app:rippleColor="@android:color/transparent" />
+                android:padding="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:cornerRadius="12dp"
+                app:strokeColor="#008C6F"
+                app:strokeWidth="1dp" />
 
             <!-- CHAT WITH SELLER -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnChatSeller"
                 android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:backgroundTint="#F5F5F5"
+                android:layout_height="50dp"
+                android:layout_weight="1.2"
+                android:layout_marginEnd="4dp"
+                android:backgroundTint="#EFFBF9"
                 android:text="Chat with seller"
                 android:textAllCaps="false"
                 android:textColor="#008C6F"
                 android:textSize="14sp"
                 android:textStyle="bold"
-                app:cornerRadius="0dp"
-                app:icon="@drawable/ic_chat"
-                app:iconGravity="top"
-                app:iconTint="#008C6F"
-                app:rippleColor="@android:color/transparent" />
+                android:padding="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:cornerRadius="12dp"
+                app:strokeColor="#008C6F"
+                app:strokeWidth="1dp" />
 
 
             <!-- BUY NOW -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnBuyNow"
                 android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="0.9"
+                android:layout_height="50dp"
+                android:layout_weight="1"
                 android:backgroundTint="#00996E"
                 android:text="Buy Now"
                 android:textAllCaps="false"
                 android:textColor="@android:color/white"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 android:textStyle="bold"
-                app:cornerRadius="0dp"
-                app:rippleColor="@android:color/white" />
+                android:padding="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:cornerRadius="12dp" />
         </LinearLayout>
 
         <!-- SELLER-ONLY BUTTON -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnManageListing"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="50dp"
             android:text="Manage Listing"
             android:textAllCaps="false"
             android:textColor="@android:color/white"
-            android:textSize="18sp"
+            android:textSize="16sp"
             android:textStyle="bold"
             android:backgroundTint="#00996E"
-            android:padding="10dp"
-            app:cornerRadius="0dp"
-            app:rippleColor="@android:color/white"
+            app:cornerRadius="12dp"
             android:visibility="gone" />
 
     </LinearLayout>
 
-    <!-- FLOATING CART BUTTON -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/btnCart"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentBottom="true"
-        android:layout_marginEnd="20dp"
-        android:layout_marginBottom="70dp"
-        android:src="@drawable/ic_cart"
-        app:backgroundTint="#3CB39B"
-        app:fabCustomSize="64dp"
-        app:maxImageSize="36dp"
-        app:tint="@android:color/white" />
+
 </RelativeLayout>

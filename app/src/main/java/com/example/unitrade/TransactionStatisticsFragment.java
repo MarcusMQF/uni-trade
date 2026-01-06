@@ -31,7 +31,9 @@ import java.util.Locale;
 
 public class TransactionStatisticsFragment extends Fragment {
 
-    enum TimeMode { DAY, MONTH, YEAR }
+    enum TimeMode {
+        DAY, MONTH, YEAR
+    }
 
     private TextView selectedDate;
     private PieChart pieChart;
@@ -47,7 +49,8 @@ public class TransactionStatisticsFragment extends Fragment {
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_transaction_statistics, container, false);
     }
 
@@ -58,6 +61,7 @@ public class TransactionStatisticsFragment extends Fragment {
         // Bind views
         selectedDate = view.findViewById(R.id.selectedDate);
         pieChart = view.findViewById(R.id.pieChart);
+        pieChart.setNoDataText("No transaction available for this month");
         buyItemsText = view.findViewById(R.id.buyItemsText);
         buyAmountText = view.findViewById(R.id.buyAmountText);
         sellItemsText = view.findViewById(R.id.sellItemsText);
@@ -82,7 +86,8 @@ public class TransactionStatisticsFragment extends Fragment {
 
         MaterialButtonToggleGroup toggle = view.findViewById(R.id.toggleTimeRange);
         toggle.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
-            if (!isChecked) return;
+            if (!isChecked)
+                return;
 
             if (checkedId == R.id.btnDay) {
                 currentMode = TimeMode.DAY;
@@ -137,15 +142,15 @@ public class TransactionStatisticsFragment extends Fragment {
                     }
                     updateDataForDate(currentSelectedDate, allProducts);
                 },
-                year, month, day
-        );
+                year, month, day);
 
         dialog.getDatePicker().setMaxDate(System.currentTimeMillis());
         dialog.show();
     }
 
     private void updateDataForDate(Calendar selectedCalendar, List<Product> products) {
-        if (products == null) return;
+        if (products == null)
+            return;
 
         SimpleDateFormat sdf;
         if (currentMode == TimeMode.DAY) {
@@ -161,11 +166,6 @@ public class TransactionStatisticsFragment extends Fragment {
         List<Transaction> dailyTransactions = fetchTransactionsForDate(selectedCalendar, products);
 
         if (dailyTransactions.isEmpty()) {
-            new AlertDialog.Builder(getContext())
-                    .setTitle("No Transactions")
-                    .setMessage("No Buy or Sell transactions for this date.")
-                    .setPositiveButton("OK", null)
-                    .show();
             clearAllData();
             return;
         }
@@ -177,12 +177,14 @@ public class TransactionStatisticsFragment extends Fragment {
     private List<Transaction> fetchTransactionsForDate(Calendar selectedCalendar, List<Product> products) {
         List<Transaction> transactions = new ArrayList<>();
         String me = UserSession.get() != null ? UserSession.get().getId() : null;
-        if (me == null || products == null) return transactions;
+        if (me == null || products == null)
+            return transactions;
 
         SimpleDateFormat sdf = new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
 
         for (Product product : products) {
-            if (product.getTransactionDate() <= 0) continue;
+            if (product.getTransactionDate() <= 0)
+                continue;
 
             Calendar productCal = Calendar.getInstance();
             productCal.setTimeInMillis(product.getTransactionDate());
@@ -198,14 +200,17 @@ public class TransactionStatisticsFragment extends Fragment {
                 match = selectedCalendar.get(Calendar.YEAR) == productCal.get(Calendar.YEAR);
             }
 
-            if (!match) continue;
+            if (!match)
+                continue;
 
             boolean iBought = me.equals(product.getBuyerId());
             boolean iSold = me.equals(product.getSellerId());
 
-            if (!iBought && !iSold) continue;
+            if (!iBought && !iSold)
+                continue;
 
-            if ("Donated".equalsIgnoreCase(product.getStatus()) || product.getPrice() <= 0) continue;
+            if ("Donated".equalsIgnoreCase(product.getStatus()) || product.getPrice() <= 0)
+                continue;
 
             boolean isBuy = iBought;
             String imageUrl = product.getImageUrls().isEmpty() ? null : product.getImageUrls().get(0);
@@ -217,8 +222,7 @@ public class TransactionStatisticsFragment extends Fragment {
                     isBuy,
                     imageUrl,
                     product.getTransactionDate(),
-                    product.getImageVersion()
-            ));
+                    product.getImageVersion()));
         }
 
         return transactions;
@@ -258,7 +262,7 @@ public class TransactionStatisticsFragment extends Fragment {
         pieEntries.add(new PieEntry(sellItems, "Sell"));
 
         PieDataSet pieDataSet = new PieDataSet(pieEntries, "");
-        pieDataSet.setColors(new int[]{Color.parseColor("#E57373"), Color.parseColor("#81C784")});
+        pieDataSet.setColors(new int[] { Color.parseColor("#E57373"), Color.parseColor("#81C784") });
         pieDataSet.setValueTextColor(Color.WHITE);
         pieDataSet.setValueTextSize(12f);
 

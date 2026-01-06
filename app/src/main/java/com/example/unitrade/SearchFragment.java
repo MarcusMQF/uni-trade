@@ -217,7 +217,8 @@ public class SearchFragment extends Fragment {
         }
 
         if (!query.isEmpty()) {
-            searchProducts(query);
+            edtSearch.setText(query);
+            edtSearch.setSelection(query.length());
         }
     }
 

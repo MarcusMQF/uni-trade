@@ -23,11 +23,8 @@ import java.util.Map;
 
 public class ShoppingCartAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private static final int VIEW_TYPE_HEADER = 0;
-    private static final int VIEW_TYPE_ITEM = 1;
-
     private final Context context;
-    private final List<Object> flatList = new ArrayList<>();
+    private final List<Product> flatList = new ArrayList<>();
     private final Map<String, List<Product>> groupedMap = new LinkedHashMap<>();
     private boolean isEditMode = false;
 
@@ -39,6 +36,35 @@ public class ShoppingCartAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
 
     public void setOnCartChangedListener(OnCartChangedListener listener) {
         this.cartListener = listener;
+    }
+
+    // Selection tracking
+    private final java.util.Set<String> selectedIds = new java.util.HashSet<>();
+
+    public interface OnSelectionChangedListener {
+        void onSelectionChanged();
+    }
+
+    private OnSelectionChangedListener selectionListener;
+
+    public void setOnSelectionChangedListener(OnSelectionChangedListener listener) {
+        this.selectionListener = listener;
+    }
+
+    public double getSelectedTotal() {
+        double total = 0;
+        for (List<Product> list : groupedMap.values()) {
+            for (Product p : list) {
+                if (selectedIds.contains(p.getId())) {
+                    total += p.getPrice();
+                }
+            }
+        }
+        return total;
+    }
+
+    public ArrayList<String> getSelectedIds() {
+        return new ArrayList<>(selectedIds);
     }
 
     public ShoppingCartAdapter(Context ctx, List<Product> cartProducts) {
@@ -57,7 +83,6 @@ public class ShoppingCartAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         }
 
         for (String sellerId : groupedMap.keySet()) {
-            flatList.add("HEADER_" + sellerId);
             flatList.addAll(groupedMap.get(sellerId));
         }
 
@@ -70,11 +95,6 @@ public class ShoppingCartAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
     }
 
     @Override
-    public int getItemViewType(int position) {
-        return (flatList.get(position) instanceof String) ? VIEW_TYPE_HEADER : VIEW_TYPE_ITEM;
-    }
-
-    @Override
     public int getItemCount() {
         return flatList.size();
     }
@@ -83,58 +103,13 @@ public class ShoppingCartAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(context);
-        if (viewType == VIEW_TYPE_HEADER) {
-            View v = inflater.inflate(R.layout.header_cart_seller, parent, false);
-            return new HeaderHolder(v);
-        } else {
-            View v = inflater.inflate(R.layout.item_shopping_cart, parent, false);
-            return new ItemHolder(v);
-        }
+        View v = inflater.inflate(R.layout.item_shopping_cart, parent, false);
+        return new ItemHolder(v);
     }
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (getItemViewType(position) == VIEW_TYPE_HEADER) {
-            bindHeader((HeaderHolder) holder, (String) flatList.get(position));
-        } else {
-            bindItem((ItemHolder) holder, (Product) flatList.get(position));
-        }
-    }
-
-    private void bindHeader(HeaderHolder h, String headerKey) {
-        String sellerId = headerKey.replace("HEADER_", "");
-        List<Product> sellerItems = groupedMap.get(sellerId);
-
-        // Placeholder while loading
-        h.txtSellerName.setText("Loading...");
-        h.imgSeller.setImageResource(R.drawable.ic_profile_small);
-
-        // Fetch seller asynchronously
-        UserRepository.getUserByUid(sellerId, new UserRepository.UserCallback() {
-            @Override
-            public void onSuccess(User user) {
-                h.txtSellerName.setText(user.getUsername());
-                Glide.with(context)
-                        .load(user.getProfileImageUrl())
-                        .signature(new ObjectKey(user.getProfileImageVersion()))
-                        .circleCrop()
-                        .into(h.imgSeller);
-            }
-
-            @Override
-            public void onFailure(Exception e) {
-                h.txtSellerName.setText("Unknown Seller");
-            }
-        });
-
-        h.btnCheckout.setOnClickListener(v -> {
-            ArrayList<String> ids = new ArrayList<>();
-            for (Product p : sellerItems) ids.add(p.getId());
-
-            Intent i = new Intent(context, CheckoutActivity.class);
-            i.putStringArrayListExtra("checkout_ids", ids);
-            context.startActivity(i);
-        });
+        bindItem((ItemHolder) holder, flatList.get(position));
     }
 
     private void bindItem(ItemHolder h, Product p) {
@@ -146,32 +121,43 @@ public class ShoppingCartAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         h.txtItemName.setText(p.getName());
         h.txtPrice.setText(AppSettings.formatPrice(context, p.getPrice()));
         h.txtStatus.setText(p.getStatus());
+
+        // Checkbox logic
+        h.cbSelect.setOnCheckedChangeListener(null);
+        h.cbSelect.setChecked(selectedIds.contains(p.getId()));
+        h.cbSelect.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                selectedIds.add(p.getId());
+            } else {
+                selectedIds.remove(p.getId());
+            }
+            if (selectionListener != null) {
+                selectionListener.onSelectionChanged();
+            }
+        });
+
         h.btnDelete.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
 
-        h.btnDelete.setOnClickListener(v ->
-                ConfirmDialog.show(
-                        context,
-                        "Remove item?",
-                        "Do you want to remove this item from cart?",
-                        "Remove",
-                        () -> {
-                            // 1️⃣ Remove from cart storage
-                            CartManager.removeItem(context, p.getId());
+        h.btnDelete.setOnClickListener(v -> ConfirmDialog.show(
+                context,
+                "Remove item?",
+                "Do you want to remove this item from cart?",
+                "Remove",
+                () -> {
+                    // 1️⃣ Remove from cart storage
+                    CartManager.removeItem(context, p.getId());
 
-                            // 2️⃣ Reload products from Firestore
-                            CartManager.getCartProducts(context, products -> {
-                                // 3️⃣ Rebuild THIS adapter
-                                rebuild(products);
+                    // 2️⃣ Reload products from Firestore
+                    CartManager.getCartProducts(context, products -> {
+                        // 3️⃣ Rebuild THIS adapter
+                        rebuild(products);
 
-                                // 4️⃣ Notify fragment/activity
-                                if (cartListener != null) {
-                                    cartListener.onCartUpdated();
-                                }
-                            });
+                        // 4️⃣ Notify fragment/activity
+                        if (cartListener != null) {
+                            cartListener.onCartUpdated();
                         }
-                )
-        );
-
+                    });
+                }));
 
         h.itemView.setOnClickListener(v -> {
             Intent i = new Intent(context, ProductDetailActivity.class);
@@ -180,23 +166,11 @@ public class ShoppingCartAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         });
     }
 
-    static class HeaderHolder extends RecyclerView.ViewHolder {
-        ImageView imgSeller;
-        TextView txtSellerName;
-        Button btnCheckout;
-
-        HeaderHolder(View v) {
-            super(v);
-            imgSeller = v.findViewById(R.id.imgSeller);
-            txtSellerName = v.findViewById(R.id.txtSellerName);
-            btnCheckout = v.findViewById(R.id.btnCheckout);
-        }
-    }
-
     static class ItemHolder extends RecyclerView.ViewHolder {
         ImageView imgItem;
         TextView txtItemName, txtPrice, txtStatus;
         Button btnDelete;
+        android.widget.CheckBox cbSelect;
 
         ItemHolder(View v) {
             super(v);
@@ -205,6 +179,7 @@ public class ShoppingCartAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
             txtPrice = v.findViewById(R.id.txtPrice);
             txtStatus = v.findViewById(R.id.txtStatus);
             btnDelete = v.findViewById(R.id.btnConfirm);
+            cbSelect = v.findViewById(R.id.cbSelect);
         }
     }
 }

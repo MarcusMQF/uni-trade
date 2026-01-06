@@ -793,21 +793,22 @@
                 android:textColor="#333030" />
 
 
+            <!-- Bottom submit button -->
+            <Button
+                android:id="@+id/btnPostItem"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="20dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:backgroundTint="#00996E"
+                android:text="Sell Item"
+                android:textAllCaps="false"
+                android:textColor="@android:color/white"
+                android:textSize="16sp" />
+
         </LinearLayout>
-
-
     </ScrollView>
-
-    <!-- Bottom submit button -->
-    <Button
-        android:id="@+id/btnPostItem"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_margin="10dp"
-        android:backgroundTint="#00996E"
-        android:text="Post Item"
-        android:textAllCaps="false"
-        android:textColor="@android:color/white"
-        android:textSize="16sp" />
 
 </LinearLayout>

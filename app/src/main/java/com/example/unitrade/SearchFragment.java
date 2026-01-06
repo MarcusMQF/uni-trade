@@ -45,7 +45,7 @@ import java.util.Locale;
 
 public class SearchFragment extends Fragment {
 
-    private EditText edtSearch,minPrice,maxPrice,dateDay,dateMonth,dateYear;
+    private EditText edtSearch, minPrice, maxPrice, dateDay, dateMonth, dateYear;
     private ImageView btnFilter;
     private RecyclerView rvProducts;
     private List<Product> filteredProducts = new ArrayList<>();
@@ -53,7 +53,7 @@ public class SearchFragment extends Fragment {
     });
     private ScrollView filterPanel;
 
-    private Button btnLatest,btnOldest, btnNearest, btnPrice,btnCampusOn,btnCampusOff,btnUsed,btnUnused,btnConfirmPrice,btnConfirmDate;
+    private Button btnLatest, btnOldest, btnNearest, btnPrice, btnCampusOn, btnCampusOff, btnUsed, btnUnused, btnConfirmPrice, btnConfirmDate;
     private Button currentSelected = null;
     private String selectedPriceMode = null;
 
@@ -79,7 +79,7 @@ public class SearchFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
-            Bundle savedInstanceState) {
+                             Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_search, container, false);
 
         // Views
@@ -253,7 +253,6 @@ public class SearchFragment extends Fragment {
         });
 
 
-
         // Nearest button logic
         btnNearest.setOnClickListener(v -> {
 
@@ -261,7 +260,7 @@ public class SearchFragment extends Fragment {
             if (ActivityCompat.checkSelfPermission(requireContext(),
                     Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(
-                        new String[] { Manifest.permission.ACCESS_FINE_LOCATION },
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                         LOCATION_PERMISSION_REQUEST_CODE);
                 return;
             }
@@ -314,22 +313,21 @@ public class SearchFragment extends Fragment {
         String monthStr = dateDay.getText().toString().trim();
         String yearStr = dateYear.getText().toString().trim();
 
-        btnConfirmDate.setOnClickListener( v -> {
-                    if (!dayStr.isEmpty() && !monthStr.isEmpty() && !yearStr.isEmpty()) {
-                        Filter filter = new Filter();
-                        filter.dateAfter(dayStr, monthStr, yearStr, products -> {
+        btnConfirmDate.setOnClickListener(v -> {
+            if (!dayStr.isEmpty() && !monthStr.isEmpty() && !yearStr.isEmpty()) {
+                Filter filter = new Filter();
+                filter.dateAfter(dayStr, monthStr, yearStr, products -> {
 
-                            filteredProducts.clear();
-                            filteredProducts.addAll(products);
+                    filteredProducts.clear();
+                    filteredProducts.addAll(products);
 
-                            adapter.notifyDataSetChanged();
-                            resetButtonStyle(btnUnused);
-                            applySelectedStyle(btnUnused);
-                        });
-                    }
-                    ;
+                    adapter.notifyDataSetChanged();
+                    resetButtonStyle(btnUnused);
+                    applySelectedStyle(btnUnused);
+                });
+            }
+            ;
         });
-
 
 
         // Search when typing or pressing enter
@@ -360,19 +358,7 @@ public class SearchFragment extends Fragment {
         return view;
     }
 
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
 
-        String query = "";
-        if (getArguments() != null) {
-            query = getArguments().getString("query", "");
-        }
-
-        if (!query.isEmpty()) {
-            searchProducts(query);
-        }
-    }
 
     // ----- Helper methods -----
 
@@ -465,6 +451,59 @@ public class SearchFragment extends Fragment {
             }
         });
     }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        // --- 1️⃣ Initialize RecyclerView, Adapter, Buttons, etc ---
+        rvProducts.setLayoutManager(new GridLayoutManager(getContext(), 2));
+        adapter = new ItemAdapter(filteredProducts, product -> {
+            Intent intent = new Intent(getContext(), ProductDetailActivity.class);
+            intent.putExtra("product_id", product.getId());
+            startActivity(intent);
+        });
+        rvProducts.setAdapter(adapter);
+
+        // --- 2️⃣ Setup all buttons, filters, etc ---
+        btnFilter.setOnClickListener(v -> {
+            filterPanel.setVisibility(filterPanel.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
+        });
+        // ... setup other buttons like btnPrice, btnUsed, btnUnused, btnNearest, btnConfirmPrice ...
+
+        // --- 3️⃣ Setup search listeners ---
+        edtSearch.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                searchProducts(s.toString().trim());
+            }
+            @Override public void afterTextChanged(Editable s) { }
+        });
+
+        edtSearch.setOnEditorActionListener((v, actionId, event) -> {
+            boolean isEnter = actionId == EditorInfo.IME_ACTION_SEARCH
+                    || actionId == EditorInfo.IME_ACTION_DONE
+                    || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
+                    && event.getAction() == KeyEvent.ACTION_DOWN);
+
+            if (isEnter) {
+                searchProducts(edtSearch.getText().toString().trim());
+                return true;
+            }
+            return false;
+        });
+
+        // --- 4️⃣ Handle query from HomeFragment ---
+        String query = "";
+        if (getArguments() != null) {
+            query = getArguments().getString("query", "");
+        }
+        if (!query.isEmpty()) {
+            edtSearch.setText(query);   // show in EditText
+            searchProducts(query);      // immediately fetch products
+        }
+    }
+
 
     private double distanceInKm(double lat1, double lng1, double lat2, double lng2) {
         final int R = 6371; // Earth radius in km

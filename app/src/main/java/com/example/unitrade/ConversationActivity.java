@@ -159,8 +159,6 @@ public class ConversationActivity extends AppCompatActivity {
         storage = com.google.firebase.storage.FirebaseStorage.getInstance();
         storageReference = storage.getReference();
 
-
-
         Chat chat = getIntent().getParcelableExtra("chat");
         if (chat != null) {
             receiverId = chat.getUserId();
@@ -222,7 +220,6 @@ public class ConversationActivity extends AppCompatActivity {
                                 adapter.notifyItemInserted(messageList.size() - 1);
                                 recyclerView.scrollToPosition(messageList.size() - 1);
 
-
                             }
                         }
                     }
@@ -238,7 +235,14 @@ public class ConversationActivity extends AppCompatActivity {
         CircleImageView profileImage = findViewById(R.id.profile_image);
 
         if (user != null) {
-            toolbarTitle.setText(user.getUsername());
+            String name = user.getUsername();
+            if (name == null || name.isEmpty()) {
+                name = user.getFullName();
+            }
+            if (name == null || name.isEmpty()) {
+                name = "Chat";
+            }
+            toolbarTitle.setText(name);
         } else {
             toolbarTitle.setText("Chat");
         }
@@ -259,8 +263,6 @@ public class ConversationActivity extends AppCompatActivity {
             }
         });
 
-
-
         if (user != null && user.getProfileImageUrl() != null) {
             Glide.with(this)
                     .load(user.getProfileImageUrl())
@@ -270,7 +272,6 @@ public class ConversationActivity extends AppCompatActivity {
         } else {
             profileImage.setImageResource(R.drawable.profile_pic_2);
         }
-
 
         profileImage.setOnClickListener(v -> {
             if (receiverUser != null) {
@@ -379,7 +380,7 @@ public class ConversationActivity extends AppCompatActivity {
             Map<String, Object> chatUpdates = new HashMap<>();
             chatUpdates.put("lastMessage", messageText);
             chatUpdates.put("lastMessageTime", System.currentTimeMillis());
-            chatUpdates.put("participants", Arrays.asList(currentUserId, receiverId));
+            chatUpdates.put("participants", new ArrayList<>(Arrays.asList(currentUserId, receiverId)));
 
             // Check if it's referenced by a product (optional, if we passed product ID)
             // for now, just simplified.
@@ -429,7 +430,7 @@ public class ConversationActivity extends AppCompatActivity {
 
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        params.setMargins(20, 0, 20, 4);
+        params.setMargins(20, 8, 20, 8);
 
         button.setLayoutParams(params);
         button.setOnClickListener(v -> messageEditText.setText(text));
@@ -538,8 +539,8 @@ public class ConversationActivity extends AppCompatActivity {
 
         // 2. Create a unique path in Firebase Storage
         String fileName = "chat_media/" + chatId + "/" + System.currentTimeMillis() + extension;
-        com.google.firebase.storage.StorageReference fileRef =
-                com.google.firebase.storage.FirebaseStorage.getInstance().getReference().child(fileName);
+        com.google.firebase.storage.StorageReference fileRef = com.google.firebase.storage.FirebaseStorage.getInstance()
+                .getReference().child(fileName);
 
         // 3. Upload the file
         fileRef.putFile(fileUri).addOnSuccessListener(taskSnapshot -> {
@@ -567,6 +568,7 @@ public class ConversationActivity extends AppCompatActivity {
         Map<String, Object> chatUpdates = new HashMap<>();
         chatUpdates.put("lastMessage", "Sent an " + type);
         chatUpdates.put("lastMessageTime", System.currentTimeMillis());
+        chatUpdates.put("participants", new ArrayList<>(Arrays.asList(currentUserId, receiverId)));
         db.collection("chats").document(chatId).set(chatUpdates, com.google.firebase.firestore.SetOptions.merge());
     }
 
@@ -624,8 +626,7 @@ public class ConversationActivity extends AppCompatActivity {
                 OkHttpClient client = new OkHttpClient();
                 RequestBody requestBody = RequestBody.create(
                         MediaType.parse("application/json; charset=utf-8"),
-                        rootPayload.toString()
-                );
+                        rootPayload.toString());
 
                 Request request = new Request.Builder()
                         .url(url)
@@ -633,7 +634,8 @@ public class ConversationActivity extends AppCompatActivity {
                         .addHeader("Authorization", "Bearer " + accessToken)
                         .build();
 
-                // This "try-with-resources" block fixes your .close() error and prevents memory leaks
+                // This "try-with-resources" block fixes your .close() error and prevents memory
+                // leaks
                 Response response = null;
                 try {
                     response = client.newCall(request).execute();

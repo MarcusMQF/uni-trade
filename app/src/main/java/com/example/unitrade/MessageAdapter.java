@@ -41,12 +41,12 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
-
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         if (viewType == VIEW_TYPE_SENT_IMAGE) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_message_image_sent, parent, false);
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_message_image_sent, parent,
+                    false);
             return new ImageViewHolder(view);
         } else if (viewType == VIEW_TYPE_SENT_TEXT) {
             View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_message_sent, parent, false);
@@ -57,7 +57,6 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return new MessageViewHolder(view);
     }
 
-
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         Message message = messageList.get(position);
@@ -65,13 +64,11 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (holder instanceof MessageViewHolder) {
             // If it's the text holder, cast it and bind
             ((MessageViewHolder) holder).bind(message);
-        }
-        else if (holder instanceof ImageViewHolder) {
+        } else if (holder instanceof ImageViewHolder) {
             // If it's the image holder, cast it and bind
             ((ImageViewHolder) holder).bind(message);
         }
     }
-
 
     @Override
     public int getItemCount() {
@@ -79,23 +76,63 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     static class MessageViewHolder extends RecyclerView.ViewHolder {
-        private ImageView messageImageView;
-        private TextView messageTextView;
+        private android.widget.ImageView messageImageView;
+        private android.widget.TextView messageTextView;
+        private android.view.View imageContainer;
+        private android.widget.ImageView playIcon;
 
         public MessageViewHolder(@NonNull View itemView) {
             super(itemView);
             messageImageView = itemView.findViewById(R.id.messageImageView);
             messageTextView = itemView.findViewById(R.id.messageTextView);
+            imageContainer = itemView.findViewById(R.id.imageContainer);
+            playIcon = itemView.findViewById(R.id.playIcon);
         }
 
         public void bind(Message message) {
             if (message.getMediaUrl() != null && !message.getMediaUrl().isEmpty()) {
-                messageImageView.setVisibility(View.VISIBLE);
+                // Show container if it exists, otherwise show image directly
+                if (imageContainer != null) {
+                    imageContainer.setVisibility(View.VISIBLE);
+                } else {
+                    messageImageView.setVisibility(View.VISIBLE);
+                }
+
                 Glide.with(itemView.getContext())
                         .load(message.getMediaUrl())
                         .into(messageImageView);
+
+                String mediaUrl = message.getMediaUrl();
+                boolean isVideo = mediaUrl != null && (mediaUrl.contains(".mp4")
+                        || (message.getText() != null && message.getText().contains("[video]")));
+
+                if (playIcon != null) {
+                    playIcon.setVisibility(isVideo ? View.VISIBLE : View.GONE);
+                }
+
+                messageImageView.setOnClickListener(v -> {
+                    if (mediaUrl == null || mediaUrl.isEmpty())
+                        return;
+
+                    android.content.Intent intent = new android.content.Intent(itemView.getContext(),
+                            MediaViewerActivity.class);
+                    intent.putExtra(MediaViewerActivity.EXTRA_MEDIA_URL, mediaUrl);
+
+                    if (isVideo) {
+                        intent.putExtra(MediaViewerActivity.EXTRA_MEDIA_TYPE, "video");
+                    } else {
+                        intent.putExtra(MediaViewerActivity.EXTRA_MEDIA_TYPE, "image");
+                    }
+
+                    itemView.getContext().startActivity(intent);
+                });
+
             } else {
-                messageImageView.setVisibility(View.GONE);
+                if (imageContainer != null) {
+                    imageContainer.setVisibility(View.GONE);
+                } else {
+                    messageImageView.setVisibility(View.GONE);
+                }
             }
 
             if (message.getText() != null && !message.getText().isEmpty()) {
@@ -109,10 +146,12 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     static class ImageViewHolder extends RecyclerView.ViewHolder {
         ImageView messageImageView;
+        ImageView playIcon;
 
         public ImageViewHolder(@NonNull View itemView) {
             super(itemView);
             messageImageView = itemView.findViewById(R.id.messageImageView);
+            playIcon = itemView.findViewById(R.id.playIcon);
         }
 
         public void bind(Message message) {
@@ -120,24 +159,30 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     .load(message.getMediaUrl())
                     .into(messageImageView);
 
-            messageImageView.setOnClickListener(v -> {
-                String mediaUrl = message.getMediaUrl();
-                if (mediaUrl == null || mediaUrl.isEmpty()) return;
+            String mediaUrl = message.getMediaUrl();
+            boolean isVideo = mediaUrl != null && (mediaUrl.contains(".mp4")
+                    || (message.getText() != null && message.getText().contains("[video]")));
 
-                // Check if the message is a video based on your Message object's type
-                // or by checking the URL extension/content
-                if (mediaUrl.contains(".mp4") || (message.getText() != null && message.getText().contains("[video]"))) {
-                    // ACTION: Play Video
-                    android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
-                    intent.setDataAndType(android.net.Uri.parse(mediaUrl), "video/*");
-                    itemView.getContext().startActivity(intent);
+            // Show play icon if it's a video and the view exists
+            if (playIcon != null) {
+                playIcon.setVisibility(isVideo ? View.VISIBLE : View.GONE);
+            }
+
+            messageImageView.setOnClickListener(v -> {
+                if (mediaUrl == null || mediaUrl.isEmpty())
+                    return;
+
+                android.content.Intent intent = new android.content.Intent(itemView.getContext(),
+                        MediaViewerActivity.class);
+                intent.putExtra(MediaViewerActivity.EXTRA_MEDIA_URL, mediaUrl);
+
+                if (isVideo) {
+                    intent.putExtra(MediaViewerActivity.EXTRA_MEDIA_TYPE, "video");
                 } else {
-                    // ACTION: Zoom/View Image
-                    // You can create a simple FullScreenImageActivity or use a system intent
-                    android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW);
-                    intent.setDataAndType(android.net.Uri.parse(mediaUrl), "image/*");
-                    itemView.getContext().startActivity(intent);
+                    intent.putExtra(MediaViewerActivity.EXTRA_MEDIA_TYPE, "image");
                 }
+
+                itemView.getContext().startActivity(intent);
             });
         }
     }

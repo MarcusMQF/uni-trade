@@ -5,9 +5,9 @@ import android.os.Parcelable;
 
 public class Chat implements Parcelable {
 
-    private String userId;          // Seller / receiver ID
+    private String userId; // Seller / receiver ID
     private String lastMessage;
-    private long lastMessageTime;   // Timestamp in millis
+    private long lastMessageTime; // Timestamp in millis
     private boolean isBookmarked;
 
     // ---------- Constructor ----------

@@ -1,5 +1,4 @@
 
-
 package com.example.unitrade;
 
 import android.content.Context;
@@ -41,7 +40,7 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
     public void onBindViewHolder(ReviewViewHolder holder, int position) {
         Review r = list.get(position);
 
-        holder.txtName.setText(r.getReviewer().getUsername());
+        holder.txtName.setText(r.getReviewer().getFullName());
         holder.txtDate.setText(r.getDate());
         holder.txtComment.setText(r.getComment());
         holder.ratingBar.setRating((float) r.getRating());

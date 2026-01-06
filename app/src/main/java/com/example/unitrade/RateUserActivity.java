@@ -101,11 +101,16 @@ public class RateUserActivity extends BaseActivity {
     private void setupStarListeners() {
         View.OnClickListener listener = v -> {
             int id = v.getId();
-            if (id == R.id.star1) rating = 1;
-            else if (id == R.id.star2) rating = 2;
-            else if (id == R.id.star3) rating = 3;
-            else if (id == R.id.star4) rating = 4;
-            else if (id == R.id.star5) rating = 5;
+            if (id == R.id.star1)
+                rating = 1;
+            else if (id == R.id.star2)
+                rating = 2;
+            else if (id == R.id.star3)
+                rating = 3;
+            else if (id == R.id.star4)
+                rating = 4;
+            else if (id == R.id.star5)
+                rating = 5;
             updateStarUI();
         };
         star1.setOnClickListener(listener);
@@ -116,7 +121,7 @@ public class RateUserActivity extends BaseActivity {
     }
 
     private void updateStarUI() {
-        ImageView[] stars = {star1, star2, star3, star4, star5};
+        ImageView[] stars = { star1, star2, star3, star4, star5 };
         for (int i = 0; i < 5; i++) {
             stars[i].setImageResource(i < rating ? R.drawable.ic_star_filled : R.drawable.ic_star_outline);
         }

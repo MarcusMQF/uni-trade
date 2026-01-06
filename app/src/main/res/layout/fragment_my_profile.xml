@@ -20,6 +20,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fillViewport="true"
+        android:paddingBottom="100dp"
+        android:clipToPadding="false"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
@@ -66,7 +68,6 @@
                             android:layout_alignEnd="@+id/imgProfile"
                             android:layout_alignBottom="@+id/imgProfile"
                             android:background="@drawable/bg_circle_white"
-                            android:elevation="4dp"
                             android:src="@android:drawable/ic_menu_edit"
                             app:tint="#009688" />
                     </RelativeLayout>

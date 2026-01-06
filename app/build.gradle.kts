@@ -18,6 +18,16 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    packaging {
+        resources {
+            excludes += "/META-INF/DEPENDENCIES"
+            excludes += "/META-INF/NOTICE"
+            excludes += "/META-INF/LICENSE"
+            excludes += "/META-INF/LICENSE.txt"
+            excludes += "/META-INF/NOTICE.txt"
+            excludes += "/META-INF/ASL2.0"
+        }
+    }
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -50,6 +60,7 @@ dependencies {
 
     // Glide
     implementation("com.github.bumptech.glide:glide:4.16.0")
+    implementation("com.google.firebase:firebase-messaging")
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
     // MPAndroidChart
@@ -65,4 +76,9 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
+
+    //FCM
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
 }

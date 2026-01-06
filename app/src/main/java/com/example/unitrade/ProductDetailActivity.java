@@ -38,7 +38,6 @@ public class ProductDetailActivity extends BaseActivity {
     private TextView txtSellerName, txtRating, txtDescription;
     private ImageView imgSeller;
 
-    private FloatingActionButton btnCart;
     private MaterialButton btnAddToCart, btnChatSeller, btnBuyNow, btnVisitProfile;
     private MaterialButton btnManageListing;
 
@@ -65,6 +64,7 @@ public class ProductDetailActivity extends BaseActivity {
         productId = getIntent().getStringExtra("product_id");
 
         loadProduct();
+
     }
 
     private void loadProduct() {
@@ -96,7 +96,6 @@ public class ProductDetailActivity extends BaseActivity {
                 });
     }
 
-
     private void loadSeller(String sellerId) {
         if (sellerId == null) {
             seller = null;
@@ -113,7 +112,8 @@ public class ProductDetailActivity extends BaseActivity {
                         seller = doc.toObject(User.class);
 
                         // 🔥 Make sure the seller ID is set
-                        if (seller != null) seller.setId(doc.getId());
+                        if (seller != null)
+                            seller.setId(doc.getId());
 
                         setupSellerInfo(); // update UI AFTER seller is loaded
                     } else {
@@ -176,12 +176,6 @@ public class ProductDetailActivity extends BaseActivity {
         bottomBar = findViewById(R.id.bottomBar);
         layoutBuyerButtons = findViewById(R.id.layoutBuyerButtons);
 
-        btnCart = findViewById(R.id.btnCart);
-
-        MovableFabHelper mover = new MovableFabHelper();
-        mover.enable(btnCart, getWindow().getDecorView(), findViewById(R.id.appBarProductDetail), bottomBar);
-
-        btnCart.setOnClickListener(v -> startActivity(new Intent(this, ShoppingCartActivity.class)));
     }
 
     private void showProductInfo() {
@@ -219,11 +213,11 @@ public class ProductDetailActivity extends BaseActivity {
         });
     }
 
-
     private void setupImageSlider() {
         imageSliderAdapter = new ImageSliderAdapter(this, product.getImageUrls(), product.getImageVersion());
         viewPagerImages.setAdapter(imageSliderAdapter);
-        new TabLayoutMediator(tabDots, viewPagerImages, (tab, pos) -> {}).attach();
+        new TabLayoutMediator(tabDots, viewPagerImages, (tab, pos) -> {
+        }).attach();
     }
 
     private void showBuyerBottomBar() {
@@ -243,9 +237,11 @@ public class ProductDetailActivity extends BaseActivity {
     private void showEditDialog() {
         new AlertDialog.Builder(this)
                 .setTitle("Manage Listing")
-                .setItems(new String[]{"Edit Listing", "Delete Listing", "Cancel"}, (d, which) -> {
-                    if (which == 0) openEditScreen();
-                    else if (which == 1) deleteProduct();
+                .setItems(new String[] { "Edit Listing", "Delete Listing", "Cancel" }, (d, which) -> {
+                    if (which == 0)
+                        openEditScreen();
+                    else if (which == 1)
+                        deleteProduct();
                 }).show();
     }
 
@@ -266,7 +262,8 @@ public class ProductDetailActivity extends BaseActivity {
                         Toast.makeText(this, "Listing deleted", Toast.LENGTH_SHORT).show();
                         finish();
                     })
-                    .addOnFailureListener(e -> Toast.makeText(this, "Failed to delete listing", Toast.LENGTH_SHORT).show());
+                    .addOnFailureListener(
+                            e -> Toast.makeText(this, "Failed to delete listing", Toast.LENGTH_SHORT).show());
         }
     }
 
@@ -303,9 +300,20 @@ public class ProductDetailActivity extends BaseActivity {
         });
 
         btnChatSeller.setOnClickListener(v -> {
-            if (seller == null) return;
+            if (seller == null)
+                return;
             Chat chat = new Chat(seller.getId(), "Start conversation", System.currentTimeMillis(), false);
-            startActivity(new Intent(this, ConversationActivity.class).putExtra("chat", chat));
+            Intent intent = new Intent(this, ConversationActivity.class);
+            intent.putExtra("chat", chat);
+            if (product != null) {
+                if (product.getImageUrls() != null && !product.getImageUrls().isEmpty()) {
+                    intent.putExtra("product_image", product.getImageUrls().get(0));
+                }
+                intent.putExtra("product_name", product.getName());
+                intent.putExtra("product_price", AppSettings.formatPrice(this, product.getPrice()));
+                intent.putExtra("product_id", product.getId());
+            }
+            startActivity(intent);
         });
     }
 
@@ -331,36 +339,69 @@ public class ProductDetailActivity extends BaseActivity {
         }
     }
 
-
     private String formatUsage(int totalDays) {
-        if (totalDays <= 0) return "Unused";
+        if (totalDays <= 0)
+            return "Unused";
         int years = totalDays / 365;
         int months = (totalDays % 365) / 30;
         int days = totalDays % 30;
-        if (years > 0) return "Used (" + years + " years)";
-        if (months > 0) return "Used (" + months + " months)";
+        if (years > 0)
+            return "Used (" + years + " years)";
+        if (months > 0)
+            return "Used (" + months + " months)";
         return "Used (" + days + " days)";
     }
 
     private void applyConditionStyle(TextView tag, String cond) {
         int bg, text;
         switch (cond) {
-            case "Good": bg = Color.parseColor("#C8E6C9"); text = Color.parseColor("#1B5E20"); break;
-            case "Fair": bg = Color.parseColor("#FFE0B2"); text = Color.parseColor("#E65100"); break;
-            case "Like New": bg = Color.parseColor("#B2EBF2"); text = Color.parseColor("#006064"); break;
-            case "Brand New": bg = Color.parseColor("#D1C4E9"); text = Color.parseColor("#4A148C"); break;
-            default: bg = Color.parseColor("#E0E0E0"); text = Color.parseColor("#424242");
+            case "Good":
+                bg = Color.parseColor("#C8E6C9");
+                text = Color.parseColor("#1B5E20");
+                break;
+            case "Fair":
+                bg = Color.parseColor("#FFE0B2");
+                text = Color.parseColor("#E65100");
+                break;
+            case "Like New":
+                bg = Color.parseColor("#B2EBF2");
+                text = Color.parseColor("#006064");
+                break;
+            case "Brand New":
+                bg = Color.parseColor("#D1C4E9");
+                text = Color.parseColor("#4A148C");
+                break;
+            default:
+                bg = Color.parseColor("#E0E0E0");
+                text = Color.parseColor("#424242");
         }
         tag.setBackgroundTintList(ColorStateList.valueOf(bg));
         tag.setTextColor(text);
     }
 
     private void applyUsageColor(TextView txt, int totalDays) {
-        if (totalDays <= 0) { txt.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#E0E7FF"))); txt.setTextColor(Color.parseColor("#3949AB")); return; }
-        if (totalDays <= 30) { txt.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#C8E6C9"))); txt.setTextColor(Color.parseColor("#1B5E20")); return; }
-        if (totalDays <= 180) { txt.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#FFF9C4"))); txt.setTextColor(Color.parseColor("#F9A825")); return; }
-        if (totalDays <= 365) { txt.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#FFE0B2"))); txt.setTextColor(Color.parseColor("#EF6C00")); return; }
-        txt.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#FFCDD2"))); txt.setTextColor(Color.parseColor("#C62828"));
+        if (totalDays <= 0) {
+            txt.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#E0E7FF")));
+            txt.setTextColor(Color.parseColor("#3949AB"));
+            return;
+        }
+        if (totalDays <= 30) {
+            txt.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#C8E6C9")));
+            txt.setTextColor(Color.parseColor("#1B5E20"));
+            return;
+        }
+        if (totalDays <= 180) {
+            txt.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#FFF9C4")));
+            txt.setTextColor(Color.parseColor("#F9A825"));
+            return;
+        }
+        if (totalDays <= 365) {
+            txt.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#FFE0B2")));
+            txt.setTextColor(Color.parseColor("#EF6C00"));
+            return;
+        }
+        txt.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#FFCDD2")));
+        txt.setTextColor(Color.parseColor("#C62828"));
     }
 
     @Override

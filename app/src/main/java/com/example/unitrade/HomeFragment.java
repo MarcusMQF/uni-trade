@@ -26,6 +26,26 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
 import java.util.List;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.location.Address;
+import android.location.Geocoder;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.PopupMenu;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.core.app.ActivityCompat;
+import com.example.unitrade.backend.Sorting;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+
+import java.io.IOException;
+import java.util.Locale;
 
 public class HomeFragment extends Fragment {
 
@@ -41,20 +61,37 @@ public class HomeFragment extends Fragment {
     private View rootView;
     private MovableFabHelper mover = new MovableFabHelper();
 
+    // Search & Filter Views
+    private EditText edtSearch;
+    private ImageButton btnFilter;
+    private View filterPanel;
+    private View filterButtonRow;
+    private Button btnLatest, btnNearest, btnPrice;
+    private TextView txtCategory, txtRecommended;
+
+    // Filter State
+    private String selectedPriceMode = null;
+    private FusedLocationProviderClient fusedLocationClient;
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
+    }
+
     @Override
     public View onCreateView(
             LayoutInflater inflater,
             ViewGroup container,
-            Bundle savedInstanceState
-    ) {
+            Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_home, container, false);
     }
 
     @Override
     public void onViewCreated(
             @NonNull View view,
-            @Nullable Bundle savedInstanceState
-    ) {
+            @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
         rootView = view;
@@ -65,9 +102,7 @@ public class HomeFragment extends Fragment {
 
         mover.enable(btnCart, rootView, topView, bottomNav);
 
-        btnCart.setOnClickListener(v ->
-                startActivity(new Intent(requireContext(), ShoppingCartActivity.class))
-        );
+        btnCart.setOnClickListener(v -> startActivity(new Intent(requireContext(), ShoppingCartActivity.class)));
 
         rvCategory = view.findViewById(R.id.rvCategory);
         rvRecommended = view.findViewById(R.id.rvRecommended);
@@ -86,15 +121,13 @@ public class HomeFragment extends Fragment {
         categoryList.add(new Category("Personal Care", R.drawable.sample_personal_care));
         categoryList.add(new Category("Others", R.drawable.ic_others));
 
-        categoryAdapter =
-                new CategoryAdapter(categoryList,
-                        category -> filterProductsByCategory(category.getName()));
+        categoryAdapter = new CategoryAdapter(categoryList,
+                category -> filterProductsByCategory(category.getName()));
 
         rvCategory.setLayoutManager(
                 new LinearLayoutManager(getContext(),
                         LinearLayoutManager.HORIZONTAL,
-                        false)
-        );
+                        false));
         rvCategory.setAdapter(categoryAdapter);
 
         // -------- PRODUCT LISTS --------
@@ -127,43 +160,159 @@ public class HomeFragment extends Fragment {
                     public void onFailure(Exception e) {
                         Log.e("HomeFragment", "Failed to load products", e);
                     }
-                }
-        );
+                });
 
-        // -------- SEARCH --------
-        EditText edtSearch = view.findViewById(R.id.edtSearch);
+        // Initialize Search & Filter Views
+        edtSearch = view.findViewById(R.id.edtSearch);
+        btnFilter = view.findViewById(R.id.btnFilter);
+        filterPanel = view.findViewById(R.id.filterPanel);
+        filterButtonRow = view.findViewById(R.id.filterButtonRow);
+        btnLatest = view.findViewById(R.id.btnLatest);
+        btnNearest = view.findViewById(R.id.btnNearest);
+        btnPrice = view.findViewById(R.id.btnPrice);
+        txtCategory = view.findViewById(R.id.txtCategory);
+        txtRecommended = view.findViewById(R.id.txtRecommended);
 
-        edtSearch.setOnEditorActionListener((v, actionId, event) -> {
-            boolean isEnter = actionId == EditorInfo.IME_ACTION_SEARCH
-                    || actionId == EditorInfo.IME_ACTION_DONE
-                    || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
-                    && event.getAction() == KeyEvent.ACTION_DOWN);
-
-            // Inside your edtSearch.setOnEditorActionListener
-            if (isEnter) {
-                String query = edtSearch.getText().toString().trim();
-
-                Bundle bundle = new Bundle();
-                bundle.putString("query", query);
-                Log.d("SearchDebug", "User pressed Enter. Query: " + query);
-
-                try {
-                    // Use the action ID you defined in nav_graph.xml
-                    NavController navController = Navigation.findNavController(requireView());
-                    navController.navigate(
-                            R.id.action_homeFragment_to_searchFragment,
-                            bundle);
-                    Log.d("SearchDebug", "Navigation successful");
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    Log.e("SearchDebug", "Navigation failed: " + e.getMessage());
-                }
-
-                return true; // handled Enter
+        // -------- SEARCH LOGIC --------
+        edtSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
             }
 
-            return false;
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                performSearch(s.toString().trim());
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
         });
+
+        // Toggle Filter Panel
+        btnFilter.setOnClickListener(v -> {
+            boolean isVisible = filterPanel.getVisibility() == View.VISIBLE;
+            filterPanel.setVisibility(isVisible ? View.GONE : View.VISIBLE);
+        });
+
+        // -------- SORTING BUTTONS --------
+        btnLatest.setOnClickListener(v -> {
+            Sorting.sortByLatest(productList);
+            itemAdapter.notifyDataSetChanged();
+            resetButtonStyle(btnLatest);
+            resetButtonStyle(btnNearest);
+            resetButtonStyle(btnPrice);
+            selectedPriceMode = null;
+            btnPrice.setText("price ▼");
+        });
+
+        btnNearest.setOnClickListener(v -> {
+            if (ActivityCompat.checkSelfPermission(requireContext(),
+                    Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[] { Manifest.permission.ACCESS_FINE_LOCATION },
+                        LOCATION_PERMISSION_REQUEST_CODE);
+                return;
+            }
+
+            fusedLocationClient.getLastLocation().addOnSuccessListener(location -> {
+                if (location == null) {
+                    Toast.makeText(getContext(), "Unable to get your location", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                double userLat = location.getLatitude();
+                double userLng = location.getLongitude();
+                Geocoder geocoder = new Geocoder(getContext(), Locale.getDefault());
+                List<Product> nearby = new ArrayList<>();
+
+                for (Product p : productList) { // Filter current list
+                    try {
+                        List<Address> addresses = geocoder.getFromLocationName(p.getLocation(), 1);
+                        if (!addresses.isEmpty()) {
+                            double sellerLat = addresses.get(0).getLatitude();
+                            double sellerLng = addresses.get(0).getLongitude();
+                            if (distanceInKm(userLat, userLng, sellerLat, sellerLng) <= 5) {
+                                nearby.add(p);
+                            }
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                productList.clear();
+                productList.addAll(nearby);
+                itemAdapter.notifyDataSetChanged();
+
+                resetButtonStyle(btnNearest);
+                applySelectedStyle(btnNearest);
+            });
+        });
+
+        btnPrice.setOnClickListener(v -> showPriceDropdown());
+    }
+
+    private void performSearch(String query) {
+        if (query.isEmpty()) {
+            // Home Mode
+            rvCategory.setVisibility(View.VISIBLE);
+            txtCategory.setVisibility(View.VISIBLE);
+            txtRecommended.setText("Recommended For You");
+            updateRecommendations();
+        } else {
+            // Search Mode
+            rvCategory.setVisibility(View.GONE);
+            txtCategory.setVisibility(View.GONE);
+            txtRecommended.setText("Search Results");
+
+            productList.clear();
+            for (Product p : allProducts) {
+                if (p.getName().toLowerCase().contains(query.toLowerCase())) {
+                    productList.add(p);
+                }
+            }
+            itemAdapter.notifyDataSetChanged();
+        }
+    }
+
+    private void showPriceDropdown() {
+        PopupMenu menu = new PopupMenu(getContext(), btnPrice);
+        menu.getMenu().add("Lowest");
+        menu.getMenu().add("Highest");
+        menu.setOnMenuItemClickListener(item -> {
+            selectedPriceMode = item.getTitle().toString();
+            btnPrice.setText(selectedPriceMode);
+
+            boolean ascending = selectedPriceMode.equalsIgnoreCase("Lowest");
+            Sorting.sortByPrice(productList, ascending);
+            itemAdapter.notifyDataSetChanged();
+
+            resetButtonStyle(btnPrice);
+            applySelectedStyle(btnPrice);
+            return true;
+        });
+        menu.show();
+    }
+
+    private void resetButtonStyle(Button b) {
+        b.setBackgroundResource(R.drawable.bg_filter_chip);
+        b.setTextColor(Color.BLACK);
+    }
+
+    private void applySelectedStyle(Button b) {
+        b.setBackgroundResource(R.drawable.bg_filter_chip_selected);
+        b.setTextColor(Color.WHITE);
+    }
+
+    private double distanceInKm(double lat1, double lng1, double lat2, double lng2) {
+        final int R = 6371;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 
     // -------- FILTER BY CATEGORY --------
@@ -193,7 +342,6 @@ public class HomeFragment extends Fragment {
 
         itemAdapter.notifyDataSetChanged();
     }
-
 
     @Override
     public void onResume() {

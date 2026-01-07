@@ -28,6 +28,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.unitrade.backend.FetchProductId;
+import com.example.unitrade.backend.Filter;
 import com.example.unitrade.backend.RecommendationManager;
 import com.example.unitrade.backend.Sorting;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -44,7 +45,7 @@ import java.util.Locale;
 
 public class SearchFragment extends Fragment {
 
-    private EditText edtSearch;
+    private EditText edtSearch, minPrice, maxPrice, dateDay, dateMonth, dateYear;
     private ImageView btnFilter;
     private RecyclerView rvProducts;
     private List<Product> filteredProducts = new ArrayList<>();
@@ -52,7 +53,7 @@ public class SearchFragment extends Fragment {
     });
     private ScrollView filterPanel;
 
-    private Button btnLatest, btnNearest, btnPrice;
+    private Button btnLatest, btnOldest, btnNearest, btnPrice, btnCampusOn, btnCampusOff, btnUsed, btnUnused, btnConfirmPrice, btnConfirmDate;
     private Button currentSelected = null;
     private String selectedPriceMode = null;
 
@@ -78,7 +79,7 @@ public class SearchFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
-            Bundle savedInstanceState) {
+                             Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_search, container, false);
 
         // Views
@@ -87,9 +88,25 @@ public class SearchFragment extends Fragment {
         rvProducts = view.findViewById(R.id.rvSearchProducts);
         filterPanel = view.findViewById(R.id.filterPanel);
 
+        // filter
         btnLatest = view.findViewById(R.id.btnLatest);
+        btnOldest = view.findViewById(R.id.btnOldest);
         btnNearest = view.findViewById(R.id.btnNearest);
+        btnUsed = view.findViewById(R.id.btnUsed);
+        btnUnused = view.findViewById(R.id.btnUnused);
+        btnConfirmPrice = view.findViewById(R.id.btnConfirmPrice);
+        btnConfirmDate = view.findViewById(R.id.btnConfirmDate);
+        // offcampus
+        // oncampus
         btnPrice = view.findViewById(R.id.btnPrice);
+        btnCampusOff = view.findViewById(R.id.btnCampusOff);
+        btnCampusOn = view.findViewById(R.id.btnCampusOn);
+        btnUsed = view.findViewById(R.id.btnUsed);
+        minPrice = view.findViewById(R.id.minPrice);
+        maxPrice = view.findViewById(R.id.maxPrice);
+        dateDay = view.findViewById(R.id.dateDay);
+        dateMonth = view.findViewById(R.id.dateMonth);
+        dateYear = view.findViewById(R.id.dateYear);
 
         // RecyclerView setup
         filteredProducts = new ArrayList<>();
@@ -106,6 +123,7 @@ public class SearchFragment extends Fragment {
             filterPanel.setVisibility(filterPanel.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
         });
 
+        // filter price
         // Price dropdown
         btnPrice.setOnClickListener(v -> {
             if (selectedPriceMode != null) {
@@ -117,20 +135,132 @@ public class SearchFragment extends Fragment {
             showPriceDropdown();
         });
 
+        minPrice.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH ||
+                    (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                searchProducts(minPrice.getText().toString().trim());
+                return true;
+            }
+            return false;
+        });
+
+        minPrice.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                searchProducts(s.toString().trim());
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
+
+        maxPrice.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH ||
+                    (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                searchProducts(maxPrice.getText().toString().trim());
+                return true;
+            }
+            return false;
+        });
+
+        maxPrice.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                searchProducts(s.toString().trim());
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
+
+        btnConfirmPrice.setOnClickListener(v -> {
+            String searchText = edtSearch.getText().toString().trim().toLowerCase();
+
+            String minText = minPrice.getText().toString().trim();
+            String maxText = maxPrice.getText().toString().trim();
+
+            double min = minText.isEmpty() ? 0 : Double.parseDouble(minText);
+            double max = maxText.isEmpty() ? Double.MAX_VALUE : Double.parseDouble(maxText);
+
+            // Filter products by search text AND price
+            List<Product> filtered = new ArrayList<>();
+            for (Product p : allProducts) {
+                boolean matchesSearch = p.getName().toLowerCase().contains(searchText);
+                boolean matchesPrice = p.getPrice() >= min && p.getPrice() <= max;
+
+                if (matchesSearch && matchesPrice) {
+                    filtered.add(p);
+                }
+            }
+
+            filteredProducts.clear();
+            filteredProducts.addAll(filtered);
+            adapter.notifyDataSetChanged();
+        });
+
+
         // Latest button sorting
         btnLatest.setOnClickListener(v -> {
             Sorting.sortByLatest(filteredProducts);
             adapter.notifyDataSetChanged();
-            resetButtonStyle(btnLatest);
+            resetButtonStyle(btnOldest);
+            applySelectedStyle(btnLatest);
         });
 
+        // Oldest button sorting
+        btnOldest.setOnClickListener(v -> {
+            Sorting.sortByOldest(filteredProducts);
+            adapter.notifyDataSetChanged();
+            resetButtonStyle(btnLatest);
+            applySelectedStyle(btnOldest);
+        });
+
+        // used button logic
+        // Used
+        btnUsed.setOnClickListener(v -> {
+            filteredProducts.clear();
+            for (Product p : allProducts) {
+                if ("Used".equalsIgnoreCase(p.getProductUsed())) {
+                    filteredProducts.add(p);
+                }
+            }
+            adapter.notifyDataSetChanged();
+            resetButtonStyle(btnUnused);
+            applySelectedStyle(btnUsed);
+        });
+
+// Unused
+        btnUnused.setOnClickListener(v -> {
+            filteredProducts.clear();
+            for (Product p : allProducts) {
+                if ("Unused".equalsIgnoreCase(p.getProductUsed())) {
+                    filteredProducts.add(p);
+                }
+            }
+            adapter.notifyDataSetChanged();
+            resetButtonStyle(btnUsed);
+            applySelectedStyle(btnUnused);
+        });
+
+
+        // Nearest button logic
         btnNearest.setOnClickListener(v -> {
 
             // 1. Check permission
             if (ActivityCompat.checkSelfPermission(requireContext(),
                     Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(
-                        new String[] { Manifest.permission.ACCESS_FINE_LOCATION },
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                         LOCATION_PERMISSION_REQUEST_CODE);
                 return;
             }
@@ -178,6 +308,27 @@ public class SearchFragment extends Fragment {
                         applySelectedStyle(btnNearest);
                     });
         });
+
+        String dayStr = dateDay.getText().toString().trim();
+        String monthStr = dateDay.getText().toString().trim();
+        String yearStr = dateYear.getText().toString().trim();
+
+        btnConfirmDate.setOnClickListener(v -> {
+            if (!dayStr.isEmpty() && !monthStr.isEmpty() && !yearStr.isEmpty()) {
+                Filter filter = new Filter();
+                filter.dateAfter(dayStr, monthStr, yearStr, products -> {
+
+                    filteredProducts.clear();
+                    filteredProducts.addAll(products);
+
+                    adapter.notifyDataSetChanged();
+                    resetButtonStyle(btnUnused);
+                    applySelectedStyle(btnUnused);
+                });
+            }
+            ;
+        });
+
 
         // Search when typing or pressing enter
         edtSearch.setOnEditorActionListener((v, actionId, event) -> {
@@ -287,30 +438,85 @@ public class SearchFragment extends Fragment {
         FetchProductId.searchProductsByKeyword(query, new FetchProductId.OnResultListener() {
             @Override
             public void onSuccess(List<Product> products) {
-                if (!isAdded())
-                    return; // Check again in async callback
+                if (!isAdded()) return;
 
-                filteredProducts.clear();
+                // Save the full search results for filtering
+                allProducts.clear();
                 if (products != null) {
-                    filteredProducts.addAll(products);
+                    allProducts.addAll(products);
                 }
 
-                adapter.notifyDataSetChanged();
+                // Display search results in RecyclerView
+                filteredProducts.clear();
+                filteredProducts.addAll(allProducts);
 
+                adapter.notifyDataSetChanged();
             }
 
             @Override
             public void onFailure(Exception e) {
-                if (!isAdded())
-                    return;
+                if (!isAdded()) return;
 
                 e.printStackTrace();
+                allProducts.clear();
                 filteredProducts.clear();
                 adapter.notifyDataSetChanged();
-
             }
         });
     }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        // --- 1️⃣ Initialize RecyclerView, Adapter, Buttons, etc ---
+        rvProducts.setLayoutManager(new GridLayoutManager(getContext(), 2));
+        adapter = new ItemAdapter(filteredProducts, product -> {
+            Intent intent = new Intent(getContext(), ProductDetailActivity.class);
+            intent.putExtra("product_id", product.getId());
+            startActivity(intent);
+        });
+        rvProducts.setAdapter(adapter);
+
+        // --- 2️⃣ Setup all buttons, filters, etc ---
+        btnFilter.setOnClickListener(v -> {
+            filterPanel.setVisibility(filterPanel.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
+        });
+        // ... setup other buttons like btnPrice, btnUsed, btnUnused, btnNearest, btnConfirmPrice ...
+
+        // --- 3️⃣ Setup search listeners ---
+        edtSearch.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                searchProducts(s.toString().trim());
+            }
+            @Override public void afterTextChanged(Editable s) { }
+        });
+
+        edtSearch.setOnEditorActionListener((v, actionId, event) -> {
+            boolean isEnter = actionId == EditorInfo.IME_ACTION_SEARCH
+                    || actionId == EditorInfo.IME_ACTION_DONE
+                    || (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER
+                    && event.getAction() == KeyEvent.ACTION_DOWN);
+
+            if (isEnter) {
+                searchProducts(edtSearch.getText().toString().trim());
+                return true;
+            }
+            return false;
+        });
+
+        // --- 4️⃣ Handle query from HomeFragment ---
+        String query = "";
+        if (getArguments() != null) {
+            query = getArguments().getString("query", "");
+        }
+        if (!query.isEmpty()) {
+            edtSearch.setText(query);   // show in EditText
+            searchProducts(query);      // immediately fetch products
+        }
+    }
+
 
     private double distanceInKm(double lat1, double lng1, double lat2, double lng2) {
         final int R = 6371; // Earth radius in km

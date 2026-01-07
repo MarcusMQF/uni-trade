@@ -22,22 +22,47 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 (remoteMessage.getNotification() != null ? remoteMessage.getNotification().getTitle() : "Data only"));
         // Get the chatId from the 'data' payload of the notification
         String incomingChatId = remoteMessage.getData().get("chatId");
+        String senderId = remoteMessage.getData().get("senderId");
+        String currentUserId = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
 
         // CHECK: If the user is already looking at THIS specific chat, do not show notification
         if (incomingChatId != null && incomingChatId.equals(ConversationActivity.activeChatId)) {
             return; // Exit without showing notification
         }
 
-        // Otherwise, show the notification as usual
+        // 3. Block Check: Did I block this person?
+        if (currentUserId != null && senderId != null) {
+            String blockId = currentUserId + "_" + senderId;
+
+            com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    .collection("blocks")
+                    .document(blockId)
+                    .get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists()) {
+                            // SILENT EXIT: The sender is blocked by the current user
+                            android.util.Log.d("FCM_SERVICE", "Blocked message suppressed.");
+                        } else {
+                            // Not blocked, proceed to show
+                            processNotification(remoteMessage);
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        // If DB check fails, default to showing the notification to be safe
+                        processNotification(remoteMessage);
+                    });
+        } else {
+            processNotification(remoteMessage);
+        }
+    }
+
+    private void processNotification(RemoteMessage remoteMessage) {
         String title, body;
 
-        // If it's a "Notification" payload
         if (remoteMessage.getNotification() != null) {
             title = remoteMessage.getNotification().getTitle();
             body = remoteMessage.getNotification().getBody();
-        }
-        // If it's a "Data" payload (often used for background messages)
-        else {
+        } else {
             title = remoteMessage.getData().get("title");
             body = remoteMessage.getData().get("body");
         }

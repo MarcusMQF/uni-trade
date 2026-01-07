@@ -15,12 +15,17 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.signature.ObjectKey;
+import com.google.android.material.chip.Chip;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.List;
 
 public class UserProfileActivity extends BaseActivity {
 
     private User viewedUser;
+    private Chip chipBlockUser;
+    private boolean isBlocked = false;
+    private String currentUserId;
 
     private ImageView imgProfile;
     private TextView txtUsername, txtUserDescription, txtShowMore, txtViewMoreListings, txtUserAddress;
@@ -156,6 +161,10 @@ public class UserProfileActivity extends BaseActivity {
         txtUserRatingCount = findViewById(R.id.txtUserRatingCount);
         txtSellerRating = findViewById(R.id.txtSellerRating);
         txtSellerRatingCount = findViewById(R.id.txtSellerRatingCount);
+
+        //block button
+        chipBlockUser = findViewById(R.id.chipBlockUser);
+        currentUserId = FirebaseAuth.getInstance().getUid();
     }
 
     private void showUserData() {
@@ -183,6 +192,10 @@ public class UserProfileActivity extends BaseActivity {
         txtUserRatingCount.setText(userCount + " rating" + (userCount == 1 ? "" : "s"));
         txtSellerRatingCount.setText(sellerCount + " rating" + (sellerCount == 1 ? "" : "s"));
         txtOverallCount.setText(overallCount + " rating" + (overallCount == 1 ? "" : "s"));
+
+        //block button setup
+        checkBlockStatus();
+        setupBlockButton();
 
         Glide.with(this)
                 .load(viewedUser.getProfileImageUrl())
@@ -258,4 +271,64 @@ public class UserProfileActivity extends BaseActivity {
                     }
                 });
     }
+
+    //block button
+    private void checkBlockStatus() {
+        if (currentUserId == null || viewedUser == null) return;
+
+        String blockId = currentUserId + "_" + viewedUser.getId();
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("blocks").document(blockId)
+                .get().addOnSuccessListener(doc -> {
+                    isBlocked = doc.exists();
+                    updateBlockChipUI();
+                });
+    }
+
+    private void updateBlockChipUI() {
+        if (isBlocked) {
+            chipBlockUser.setText("Blocked");
+            // Using ColorStateList to ensure the color applies to the Material Chip correctly
+            chipBlockUser.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(
+                    getResources().getColor(android.R.color.holo_red_dark)));
+        } else {
+            chipBlockUser.setText("Block");
+            chipBlockUser.setChipBackgroundColor(android.content.res.ColorStateList.valueOf(
+                    getResources().getColor(android.R.color.holo_green_dark)));
+        }
+    }
+
+    private void setupBlockButton() {
+        chipBlockUser.setOnClickListener(v -> {
+            if (currentUserId == null || viewedUser == null) return;
+
+            String blockId = currentUserId + "_" + viewedUser.getId();
+            if (!isBlocked) {
+                // Perform Block
+                java.util.Map<String, Object> blockData = new java.util.HashMap<>();
+                blockData.put("blockerId", currentUserId);
+                blockData.put("blockedId", viewedUser.getId());
+                blockData.put("timestamp", System.currentTimeMillis());
+
+                com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                        .collection("blocks").document(blockId)
+                        .set(blockData).addOnSuccessListener(aVoid -> {
+                            isBlocked = true;
+                            updateBlockChipUI();
+                            Toast.makeText(this, "User blocked", Toast.LENGTH_SHORT).show();
+                        });
+            } else {
+                // Unblock logic
+                com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                        .collection("blocks").document(blockId)
+                        .delete().addOnSuccessListener(aVoid -> {
+                            isBlocked = false;
+                            updateBlockChipUI();
+                            Toast.makeText(this, "User unblocked", Toast.LENGTH_SHORT).show();
+                        });
+            }
+        });
+    }
+
+
 }

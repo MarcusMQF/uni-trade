@@ -214,12 +214,15 @@ public class ConversationActivity extends AppCompatActivity {
     private void checkForProductInterest() {
         Intent intent = getIntent();
         if (intent.hasExtra("product_name")) { // Check for at minimum the product name
+
+            checkBlockStatusAndExecute(() -> {
             String imgUrl = intent.getStringExtra("product_image");
             String name = intent.getStringExtra("product_name");
             String price = intent.getStringExtra("product_price");
             String productId = intent.getStringExtra("product_id");
 
             sendProductCardMessage(name, price, imgUrl, productId);
+            });
 
             // Clear extras to prevent duplicate sending
             intent.removeExtra("product_image");
@@ -345,7 +348,7 @@ public class ConversationActivity extends AppCompatActivity {
         profileImage.setOnClickListener(v -> {
             if (receiverUser != null) {
                 Intent intent = new Intent(this, UserProfileActivity.class);
-                intent.putExtra("user_to_view", receiverUser);
+                intent.putExtra("user_id", receiverUser.getId());
                 startActivity(intent);
             } else {
                 showToast("User profile loading...");
@@ -435,38 +438,40 @@ public class ConversationActivity extends AppCompatActivity {
     }
 
     private void sendMessage() {
-        String messageText = messageEditText.getText().toString().trim();
-        boolean hasText = !messageText.isEmpty();
-        boolean hasMedia = !selectedMediaUris.isEmpty();
+        checkBlockStatusAndExecute(() -> {
+            String messageText = messageEditText.getText().toString().trim();
+            boolean hasText = !messageText.isEmpty();
+            boolean hasMedia = !selectedMediaUris.isEmpty();
 
-        if (!hasText && !hasMedia)
-            return;
+            if (!hasText && !hasMedia)
+                return;
 
-        if (hasMedia) {
-            uploadMediaAndSendMessage(selectedMediaUris.get(0));
-        }
+            if (hasMedia) {
+                uploadMediaAndSendMessage(selectedMediaUris.get(0));
+            }
 
-        if (hasText) {
-            Message msg = new Message(messageText, currentUserId, System.currentTimeMillis());
+            if (hasText) {
+                Message msg = new Message(messageText, currentUserId, System.currentTimeMillis());
 
-            // Add to Firestore
-            db.collection("chats").document(chatId).collection("messages").add(msg);
+                // Add to Firestore
+                db.collection("chats").document(chatId).collection("messages").add(msg);
 
-            // Update Parent Chat Document
-            Map<String, Object> chatUpdates = new HashMap<>();
-            chatUpdates.put("lastMessage", messageText);
-            chatUpdates.put("lastMessageTime", System.currentTimeMillis());
-            chatUpdates.put("participants", new ArrayList<>(Arrays.asList(currentUserId, receiverId)));
+                // Update Parent Chat Document
+                Map<String, Object> chatUpdates = new HashMap<>();
+                chatUpdates.put("lastMessage", messageText);
+                chatUpdates.put("lastMessageTime", System.currentTimeMillis());
+                chatUpdates.put("participants", new ArrayList<>(Arrays.asList(currentUserId, receiverId)));
 
-            // Check if it's referenced by a product (optional, if we passed product ID)
-            // for now, just simplified.
+                // Check if it's referenced by a product (optional, if we passed product ID)
+                // for now, just simplified.
 
-            db.collection("chats").document(chatId).set(chatUpdates, SetOptions.merge());
-            fetchReceiverTokenAndNotify(messageText);
-        }
+                db.collection("chats").document(chatId).set(chatUpdates, SetOptions.merge());
+                fetchReceiverTokenAndNotify(messageText);
+            }
 
-        messageEditText.setText("");
-        clearPreview();
+            messageEditText.setText("");
+            clearPreview();
+        });
     }
 
     private void showPreview(Uri mediaUri) {
@@ -509,8 +514,12 @@ public class ConversationActivity extends AppCompatActivity {
         params.setMargins(20, 8, 20, 8);
 
         button.setLayoutParams(params);
-        button.setOnClickListener(v -> messageEditText.setText(text));
-
+        button.setOnClickListener(v -> {
+            checkBlockStatusAndExecute(() -> {
+                messageEditText.setText(text);
+                sendMessage(); // This will trigger the sendMessage check again
+            });
+        });
         quickReplyLayout.addView(button);
     }
 
@@ -688,6 +697,7 @@ public class ConversationActivity extends AppCompatActivity {
 
                 JSONObject data = new JSONObject();
                 data.put("chatId", chatId);
+                data.put("senderId", currentUserId);
 
                 // Inside your JSON building logic in ConversationActivity
                 JSONObject androidConfig = new JSONObject();
@@ -766,5 +776,27 @@ public class ConversationActivity extends AppCompatActivity {
         // Final safety clear
         activeChatId = null;
     }
+
+    //block user
+
+    private void checkBlockStatusAndExecute(Runnable action) {
+        String iBlockedThem = currentUserId + "_" + receiverId;
+        String theyBlockedMe = receiverId + "_" + currentUserId;
+
+        db.collection("blocks").document(iBlockedThem).get().addOnSuccessListener(doc1 -> {
+            if (doc1.exists()) {
+                Toast.makeText(this, "This user is blocked by you", Toast.LENGTH_SHORT).show();
+            } else {
+                db.collection("blocks").document(theyBlockedMe).get().addOnSuccessListener(doc2 -> {
+                    if (doc2.exists()) {
+                        Toast.makeText(this, "You have been blocked by this user", Toast.LENGTH_SHORT).show();
+                    } else {
+                        action.run(); // No blocks, proceed!
+                    }
+                });
+            }
+        });
+    }
+
 
 }

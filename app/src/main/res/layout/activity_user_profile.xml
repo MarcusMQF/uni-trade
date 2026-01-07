@@ -120,11 +120,23 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="20dp" />
 
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipBlockUser"
+                    app:chipCornerRadius="16dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:layout_marginTop="8dp"
+                    android:textAlignment="center"
+                    android:text="Block"
+                    android:textColor="@android:color/white"
+                    android:checkable="true" />
+
                 <Button
                     android:id="@+id/btnViewReviews"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="8dp"
                     android:backgroundTint="#206652"
                     android:text="View Ratings &amp; Reviews"
                     android:textColor="@android:color/white" />
@@ -159,6 +171,7 @@
                     android:clickable="true"
                     android:focusable="true"
                     android:visibility="gone" />
+
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

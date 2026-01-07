@@ -37,6 +37,7 @@
                     android:id="@+id/profile_image"
                     android:layout_width="45dp"
                     android:layout_height="45dp"
+                    android:clickable="true"
                     android:layout_centerVertical="true"
                     android:layout_toEndOf="@id/backButton"
                     android:src="@drawable/profile_pic_2" />

@@ -20,7 +20,14 @@ public class Sorting {
 
     public static void sortByLatest(List<Product> products) {
         Collections.sort(products, (p1, p2) ->
-                Long.compare(p2.getCreatedAt(), p1.getCreatedAt())
+                p2.getListingDate().compareTo(p1.getListingDate())
         );
     }
+
+    public static void sortByOldest(List<Product> products) {
+        Collections.sort(products, (p1, p2) ->
+                p1.getListingDate().compareTo(p2.getListingDate())
+        );
+    }
+
 }

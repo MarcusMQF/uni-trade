@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -49,7 +50,7 @@
             android:src="@drawable/ic_filter"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintBottom_toBottomOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 
@@ -59,11 +60,64 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/searchBarContainer"
-        app:cardCornerRadius="24dp"
-        app:cardElevation="8dp"
-        android:backgroundTint="@color/white">
+        app:layout_constraintTop_toBottomOf="@id/searchBarContainer">
+
+        <!-- LATEST BUTTON -->
+
+        <!-- NEAREST BUTTON -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnLatest"
+            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.01"
+            android:text="Latest"
+            android:textAllCaps="false"
+            android:textColor="#000000"
+            app:cornerRadius="50dp"
+            app:strokeWidth="0dp"
+            app:backgroundTint="@null"
+            android:background="@drawable/bg_filter_chip" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnNearest"
+            style="@style/FilterButton"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.01"
+            android:text="Nearest"
+            android:textAllCaps="false"
+            android:textColor="#000000"
+            android:textStyle="normal"
+            app:cornerRadius="50dp"
+            app:strokeWidth="0dp"
+            app:backgroundTint="@null"
+            android:background="@drawable/bg_filter_chip" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPrice"
+            style="@style/FilterButton"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.01"
+            android:text="Price ▼"
+            android:textAllCaps="false"
+            android:textColor="#000000"
+            android:textStyle="normal"
+            app:cornerRadius="50dp"
+            app:strokeWidth="0dp"
+            app:backgroundTint="@null"
+            android:background="@drawable/bg_filter_chip" />
+    </LinearLayout>
+
 
     <!-- FILTER PANEL (HIDDEN BY DEFAULT) -->
     <ScrollView
@@ -85,7 +139,7 @@
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -160,7 +214,7 @@
                 android:text="Condition"
                 android:textStyle="bold"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -182,7 +236,7 @@
                     app:strokeWidth="0dp"
                     app:backgroundTint="@null"
                     android:background="@drawable/bg_filter_chip"
-                    />
+                />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnUnused"
@@ -208,7 +262,7 @@
                 android:text="Price Range"
                 android:textStyle="bold"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -293,7 +347,7 @@
                 android:text="Date After"
                 android:textStyle="bold"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content" />
 
         <LinearLayout
             android:layout_width="match_parent"

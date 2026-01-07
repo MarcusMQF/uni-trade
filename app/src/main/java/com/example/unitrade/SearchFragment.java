@@ -358,7 +358,20 @@ public class SearchFragment extends Fragment {
         return view;
     }
 
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
+        String query = "";
+        if (getArguments() != null) {
+            query = getArguments().getString("query", "");
+        }
+
+        if (!query.isEmpty()) {
+            edtSearch.setText(query);
+            edtSearch.setSelection(query.length());
+        }
+    }
 
     // ----- Helper methods -----
 

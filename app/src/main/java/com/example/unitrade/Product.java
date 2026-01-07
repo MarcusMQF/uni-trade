@@ -44,9 +44,9 @@ public class Product implements Parcelable {
     private long transactionDate;
 
     // ---------------- TRANSACTION INFO ----------------
-    private String soldTo;  // buyer's user ID
-    private Timestamp soldAt;  // when it was sold
-    private String purchaseId;  // reference to purchase document
+    private String soldTo; // buyer's user ID
+    private Timestamp soldAt; // when it was sold
+    private String purchaseId; // reference to purchase document
 
     private boolean buyTransaction;
     private boolean sellTransaction;
@@ -95,36 +95,107 @@ public class Product implements Parcelable {
     }
 
     // ---------------- GETTERS ----------------
-    public String getId() { return productId; }
-    public String getName() { return productName; }
-    public double getPrice() { return productPrice; }
-    public List<String> getImageUrls() { return imageUrls == null ? new ArrayList<>() : new ArrayList<>(imageUrls); }
-    public String getDescription() { return productDescription; }
-    public String getCondition() { return productCondition; }
-    public int getUsedDaysTotal() { return productUsedDaysTotal; }
-    public String getStatus() { return productStatus; }
-    public String getCategory() { return productCategory; }
-    public String getLocation() { return location; }
-    public String getSellerId() { return sellerId; }
-    public String getBuyerId() { return buyerId; }
-    public String getQrPaymentUrl() { return qrPaymentUrl; }
-    public boolean isHeader() { return isHeader; }
-    public Date getListingDate() { if (listingDate == null) listingDate = new Date(); return listingDate; }
-    public long getTransactionDate() { return transactionDate; }
-    public long getImageVersion() { return imageVersion; }
+    public String getId() {
+        return productId;
+    }
 
-    public long getCreatedAt(){
+    public String getName() {
+        return productName;
+    }
+
+    public double getPrice() {
+        return productPrice;
+    }
+
+    public List<String> getImageUrls() {
+        return imageUrls == null ? new ArrayList<>() : new ArrayList<>(imageUrls);
+    }
+
+    public String getDescription() {
+        return productDescription;
+    }
+
+    public String getCondition() {
+        return productCondition;
+    }
+
+    public int getUsedDaysTotal() {
+        return productUsedDaysTotal;
+    }
+
+    public String getStatus() {
+        return productStatus;
+    }
+
+    public String getCategory() {
+        return productCategory;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public String getSellerId() {
+        return sellerId;
+    }
+
+    public String getBuyerId() {
+        return buyerId;
+    }
+
+    public String getQrPaymentUrl() {
+        return qrPaymentUrl;
+    }
+
+    public boolean isHeader() {
+        return isHeader;
+    }
+
+    public Date getListingDate() {
+        if (listingDate == null)
+            listingDate = new Date();
+        return listingDate;
+    }
+
+    public long getTransactionDate() {
+        return transactionDate;
+    }
+
+    public long getImageVersion() {
+        return imageVersion;
+    }
+
+    public long getCreatedAt() {
         return createdAt;
     }
 
-    public String getSoldTo() { return soldTo; }
-    public Timestamp getSoldAt() { return soldAt; }
-    public String getPurchaseId() { return purchaseId; }
+    public String getSoldTo() {
+        return soldTo;
+    }
 
-    public boolean isBuyTransactionFlag() { return buyTransaction; }
-    public boolean isSellTransactionFlag() { return sellTransaction; }
-    public boolean isDonationFlag() { return donation; }
-    public int getStability() { return stability; }
+    public Timestamp getSoldAt() {
+        return soldAt;
+    }
+
+    public String getPurchaseId() {
+        return purchaseId;
+    }
+
+    public boolean isBuyTransactionFlag() {
+        return buyTransaction;
+    }
+
+    public boolean isSellTransactionFlag() {
+        return sellTransaction;
+    }
+
+    public boolean isDonationFlag() {
+        return donation;
+    }
+
+    public int getStability() {
+        return stability;
+    }
 
     public String getProductUsed() {
         return productUsed;
@@ -196,7 +267,7 @@ public class Product implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(productStatus);
+        dest.writeString(productId); // Fixed: was writing productStatus instead of productId
         dest.writeString(productName);
         dest.writeDouble(productPrice);
         dest.writeStringList(imageUrls);
@@ -225,20 +296,29 @@ public class Product implements Parcelable {
     }
 
     @Override
-    public int describeContents() { return 0; }
+    public int describeContents() {
+        return 0;
+    }
 
     public static final Creator<Product> CREATOR = new Creator<>() {
         @Override
-        public Product createFromParcel(Parcel in) { return new Product(in); }
+        public Product createFromParcel(Parcel in) {
+            return new Product(in);
+        }
+
         @Override
-        public Product[] newArray(int size) { return new Product[size]; }
+        public Product[] newArray(int size) {
+            return new Product[size];
+        }
     };
 
     // ---------------- EQUALITY ----------------
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Product)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof Product))
+            return false;
         Product p = (Product) o;
         return productId != null && productId.equals(p.productId);
     }
@@ -248,15 +328,26 @@ public class Product implements Parcelable {
         return productId == null ? 0 : productId.hashCode();
     }
 
-    public boolean isBuyTransaction() { return STATUS_BOUGHT.equals(productStatus); }
-    public boolean isSellTransaction() { return STATUS_SOLD.equals(productStatus); }
-    public boolean isDonation() { return STATUS_DONATED.equals(productStatus); }
+    public boolean isBuyTransaction() {
+        return STATUS_BOUGHT.equals(productStatus);
+    }
+
+    public boolean isSellTransaction() {
+        return STATUS_SOLD.equals(productStatus);
+    }
+
+    public boolean isDonation() {
+        return STATUS_DONATED.equals(productStatus);
+    }
 
     // ---------------- UTIL ----------------
     public static List<Product> filterBySeller(List<Product> allProducts, String sellerId) {
         List<Product> result = new ArrayList<>();
-        if (allProducts == null || sellerId == null) return result;
-        for (Product p : allProducts) if (sellerId.equals(p.getSellerId())) result.add(p);
+        if (allProducts == null || sellerId == null)
+            return result;
+        for (Product p : allProducts)
+            if (sellerId.equals(p.getSellerId()))
+                result.add(p);
         return result;
     }
 }

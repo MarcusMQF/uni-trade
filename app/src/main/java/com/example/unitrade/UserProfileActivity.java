@@ -23,7 +23,7 @@ public class UserProfileActivity extends BaseActivity {
     private User viewedUser;
 
     private ImageView imgProfile;
-    private TextView txtUsername, txtLastSeen, txtUserDescription, txtShowMore, txtViewMoreListings, txtUserAddress;
+    private TextView txtUsername, txtUserDescription, txtShowMore, txtViewMoreListings, txtUserAddress;
     private TextView txtOverallRating, txtOverallCount, txtUserRating, txtUserRatingCount, txtSellerRating,
             txtSellerRatingCount;
 
@@ -142,7 +142,6 @@ public class UserProfileActivity extends BaseActivity {
     private void bindViews() {
         imgProfile = findViewById(R.id.imgProfile);
         txtUsername = findViewById(R.id.txtUsername);
-        txtLastSeen = findViewById(R.id.txtLastSeen);
         txtUserDescription = findViewById(R.id.txtUserDescription);
         txtUserAddress = findViewById(R.id.txtUserAddress);
         txtViewMoreListings = findViewById(R.id.txtViewMoreListings);
@@ -160,8 +159,7 @@ public class UserProfileActivity extends BaseActivity {
     }
 
     private void showUserData() {
-        txtUsername.setText(viewedUser.getUsername());
-        txtLastSeen.setText("Last seen: " + viewedUser.getLastSeenString());
+        txtUsername.setText(viewedUser.getFullName());
         txtUserDescription.setText(viewedUser.getBio());
 
         // Fix Address Display
@@ -178,12 +176,13 @@ public class UserProfileActivity extends BaseActivity {
         txtUserRating.setText(String.format("%.1f", viewedUser.getUserRating()));
         txtSellerRating.setText(String.format("%.1f", viewedUser.getSellerRating()));
 
-        // Note: Counts might need to be fetched or stored in User object.
-        // For now, setting to "0 ratings" or hiding if logic not present.
-        // Assuming we want to show 0 if real data is missing, rather than fake 23.
-        txtOverallCount.setText("0 ratings"); // TODO: Implement count logic
-        txtUserRatingCount.setText("0 ratings");
-        txtSellerRatingCount.setText("0 ratings");
+
+        int userCount = viewedUser.getUserRatingCount();
+        int sellerCount = viewedUser.getSellerRatingCount();
+        int overallCount = viewedUser.getOverallRatingCount();
+        txtUserRatingCount.setText(userCount + " rating" + (userCount == 1 ? "" : "s"));
+        txtSellerRatingCount.setText(sellerCount + " rating" + (sellerCount == 1 ? "" : "s"));
+        txtOverallCount.setText(overallCount + " rating" + (overallCount == 1 ? "" : "s"));
 
         Glide.with(this)
                 .load(viewedUser.getProfileImageUrl())
@@ -202,33 +201,10 @@ public class UserProfileActivity extends BaseActivity {
 
                     @Override
                     public void onSuccess(List<Product> userProducts) {
-
-                        if (userProducts.size() > MAX_PREVIEW_ITEMS) {
-
-                            txtViewMoreListings.setText("show more ▼");
-
-                            List<Product> previewList = userProducts.subList(0, MAX_PREVIEW_ITEMS);
-
-                            productAdapter = new UserProductsAdapter(UserProfileActivity.this, previewList);
-                            rvListings.setAdapter(productAdapter);
-
-                            txtViewMoreListings.setVisibility(View.VISIBLE);
-
-                            txtViewMoreListings.setOnClickListener(v -> {
-                                productAdapter = new UserProductsAdapter(
-                                        UserProfileActivity.this,
-                                        userProducts);
-                                rvListings.setAdapter(productAdapter);
-
-                                txtViewMoreListings.setText("show less ▲");
-                                txtViewMoreListings.setOnClickListener(x -> loadUserListings());
-                            });
-
-                        } else {
-                            productAdapter = new UserProductsAdapter(UserProfileActivity.this, userProducts);
-                            rvListings.setAdapter(productAdapter);
-                            txtViewMoreListings.setVisibility(View.GONE);
-                        }
+                        // Show all products directly
+                        productAdapter = new UserProductsAdapter(UserProfileActivity.this, userProducts);
+                        rvListings.setAdapter(productAdapter);
+                        txtViewMoreListings.setVisibility(View.GONE);
                     }
 
                     @Override

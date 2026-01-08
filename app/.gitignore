@@ -1,1 +1,25 @@
-/build
+# IDE
+.idea/
+*.iml
+
+# Gradle
+.gradle/
+build/
+
+# Android
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Crash logs
+hs_err_pid*.log
+replay_pid*.log
+
+# macOS
+.DS_Store
+
+# Google Services & Secrets
+google-services.json
+service-account.json
+**/assets/service-account.json

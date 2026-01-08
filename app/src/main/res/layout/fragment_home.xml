@@ -14,15 +14,14 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:fillViewport="true"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:foregroundTint="#00FF5722"
-            android:paddingBottom="100dp"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingBottom="100dp">
 
             <!-- SEARCH ROW -->
             <LinearLayout
@@ -72,318 +71,337 @@
                     app:tint="#000000" />
             </LinearLayout>
 
-            <!-- FILTER BUTTON ROW (Latest, Nearest, Price) -->
-            <LinearLayout
-                android:id="@+id/filterButtonRow"
+            <!-- FILTER CARD -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/filterCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="0dp"
-                android:layout_marginBottom="8dp"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:gravity="center"
-                android:orientation="horizontal"
-                android:weightSum="3"
-                android:visibility="visible">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnLatest"
-                    style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:fontFamily="sans-serif-medium"
-                    android:letterSpacing="0.01"
-                    android:text="latest"
-                    android:textAllCaps="false"
-                    android:textColor="#000000"
-                    app:cornerRadius="50dp"
-                    app:strokeWidth="0dp"
-                    app:backgroundTint="@null"
-                    android:background="@drawable/bg_filter_chip" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnNearest"
-                    style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    android:fontFamily="sans-serif-medium"
-                    android:letterSpacing="0.01"
-                    android:text="nearest"
-                    android:textAllCaps="false"
-                    android:textColor="#000000"
-                    android:textStyle="normal"
-                    app:cornerRadius="50dp"
-                    app:strokeWidth="0dp"
-                    app:backgroundTint="@null"
-                    android:background="@drawable/bg_filter_chip" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnPrice"
-                    style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    android:fontFamily="sans-serif-medium"
-                    android:letterSpacing="0.01"
-                    android:text="price ▼"
-                    android:textAllCaps="false"
-                    android:textColor="#000000"
-                    android:textStyle="normal"
-                    app:cornerRadius="50dp"
-                    app:strokeWidth="0dp"
-                    app:backgroundTint="@null"
-                    android:background="@drawable/bg_filter_chip" />
-            </LinearLayout>
-
-            <!-- FILTER PANEL (Detailed) -->
-            <LinearLayout
-                android:id="@+id/filterPanel"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@color/white"
-                android:elevation="0dp"
-                android:padding="16dp"
-                android:visibility="gone"
-                android:orientation="vertical">
-
-                <!-- Location -->
-                <TextView
-                    android:text="Location"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
+                android:layout_marginTop="8dp">
 
                 <LinearLayout
+                    android:id="@+id/filterPanel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:visibility="gone">
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnCampusOn"
-                        style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:fontFamily="sans-serif-medium"
-                        android:letterSpacing="0.01"
-                        android:text="On Campus"
-                        android:textAllCaps="false"
-                        android:textColor="#000000"
-                        app:cornerRadius="50dp"
-                        app:strokeWidth="0dp"
-                        app:backgroundTint="@null"
-                        android:background="@drawable/bg_filter_chip" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnCampusOff"
-                        style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:layout_weight="1"
-                        android:fontFamily="sans-serif-medium"
-                        android:letterSpacing="0.01"
-                        android:text="Off Campus"
-                        android:textAllCaps="false"
-                        android:textColor="#000000"
-                        app:cornerRadius="50dp"
-                        app:strokeWidth="0dp"
-                        app:backgroundTint="@null"
-                        android:background="@drawable/bg_filter_chip" />
-                </LinearLayout>
-
-                <!-- Condition -->
-                <TextView
-                    android:layout_marginTop="12dp"
-                    android:text="Condition"
-                    android:textStyle="bold"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnUsed"
-                        style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:fontFamily="sans-serif-medium"
-                        android:letterSpacing="0.01"
-                        android:text="Used"
-                        android:textAllCaps="false"
-                        android:textColor="#000000"
-                        app:cornerRadius="50dp"
-                        app:strokeWidth="0dp"
-                        app:backgroundTint="@null"
-                        android:background="@drawable/bg_filter_chip"
-                    />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnUnused"
-                        style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="10dp"
-                        android:fontFamily="sans-serif-medium"
-                        android:letterSpacing="0.01"
-                        android:text="Unused"
-                        android:textAllCaps="false"
-                        android:textColor="#000000"
-                        app:cornerRadius="50dp"
-                        app:strokeWidth="0dp"
-                        app:backgroundTint="@null"
-                        android:background="@drawable/bg_filter_chip" />
-                </LinearLayout>
-
-                <!-- Price Range -->
-                <TextView
-                    android:layout_marginTop="12dp"
-                    android:text="Price Range"
-                    android:textStyle="bold"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <EditText
-                        android:id="@+id/minPrice"
-                        android:layout_height="wrap_content"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_margin="6dp"
-                        android:textSize="12sp"
-                        android:background="@drawable/bg_input"
-                        android:inputType="numberDecimal"
-                        android:hint="MIN" />
-
+                    <!-- Location -->
                     <TextView
+                        android:text="Location"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginTop="8dp">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnNearest"
+                            style="@style/FilterButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="40dp"
+                            android:text="Nearest"
+                            android:textAllCaps="false"
+                            android:textColor="#000000"
+                            android:background="@drawable/bg_filter_chip"
+                            app:backgroundTint="@null" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_marginTop="8dp">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnCampusOn"
+                                style="@style/FilterButton"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="On Campus"
+                                android:textAllCaps="false"
+                                android:textColor="#000000"
+                                android:background="@drawable/bg_filter_chip"
+                                app:backgroundTint="@null" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnCampusOff"
+                                style="@style/FilterButton"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:layout_marginStart="10dp"
+                                android:text="Off Campus"
+                                android:textAllCaps="false"
+                                android:textColor="#000000"
+                                android:background="@drawable/bg_filter_chip"
+                                app:backgroundTint="@null" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Condition -->
+                    <TextView
+                        android:text="Condition"
+                        android:textStyle="bold"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:gravity="center"
-                        android:text=" - " />
+                        android:layout_marginTop="12dp" />
 
-                    <EditText
-                        android:id="@+id/maxPrice"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_margin="6dp"
-                        android:textSize="12sp"
-                        android:background="@drawable/bg_input"
-                        android:inputType="numberDecimal"
-                        android:hint="MAX" />
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnUsed"
+                            style="@style/FilterButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Used"
+                            android:textAllCaps="false"
+                            android:textColor="#000000"
+                            android:background="@drawable/bg_filter_chip"
+                            app:backgroundTint="@null" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnUnused"
+                            style="@style/FilterButton"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="10dp"
+                            android:text="Unused"
+                            android:textAllCaps="false"
+                            android:textColor="#000000"
+                            android:background="@drawable/bg_filter_chip"
+                            app:backgroundTint="@null" />
+                    </LinearLayout>
+
+                    <!-- Price Range -->
+                    <TextView
+                        android:text="Price Range"
+                        android:textStyle="bold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginTop="8dp">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnPrice"
+                            style="@style/FilterButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="40dp"
+                            android:text="Price ▼"
+                            android:textAllCaps="false"
+                            android:textColor="#000000"
+                            android:background="@drawable/bg_filter_chip"
+                            app:backgroundTint="@null" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <EditText
+                                android:id="@+id/minPrice"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:hint="MIN"
+                                android:background="@drawable/bg_input"
+                                android:textSize="12sp"
+                                android:layout_margin="6dp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text=" - "
+                                android:gravity="center" />
+
+                            <EditText
+                                android:id="@+id/maxPrice"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:hint="MAX"
+                                android:background="@drawable/bg_input"
+                                android:textSize="12sp"
+                                android:layout_margin="6dp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnConfirmPrice"
+                            style="@style/FilterButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="40dp"
+                            android:text="Apply Price Range"
+                            android:textAllCaps="false"
+                            android:textColor="#000000"
+                            android:background="@drawable/bg_spinner_chip"
+                            android:layout_marginTop="4dp" />
+                    </LinearLayout>
+
+                    <!-- Date After -->
+                    <TextView
+                        android:text="Date After"
+                        android:textStyle="bold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnLatest"
+                                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="40dp"
+                                android:layout_weight="1"
+                                android:text="Latest"
+                                android:textAllCaps="false"
+                                android:textColor="#000000"
+                                android:background="@drawable/bg_filter_chip"
+                                app:backgroundTint="@null"
+                                android:layout_marginStart="10dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnOldest"
+                                style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="40dp"
+                                android:layout_weight="1"
+                                android:text="Oldest"
+                                android:textAllCaps="false"
+                                android:textColor="#000000"
+                                android:background="@drawable/bg_filter_chip"
+                                app:backgroundTint="@null"
+                                android:layout_marginStart="10dp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <EditText
+                                android:id="@+id/dateDay"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:hint="DD"
+                                android:textSize="12sp"
+                                android:background="@drawable/bg_input"
+                                android:layout_margin="6dp" />
+
+                            <EditText
+                                android:id="@+id/dateMonth"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:hint="MM"
+                                android:textSize="12sp"
+                                android:background="@drawable/bg_input"
+                                android:layout_margin="6dp" />
+
+                            <EditText
+                                android:id="@+id/dateYear"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:hint="YYYY"
+                                android:textSize="12sp"
+                                android:background="@drawable/bg_input"
+                                android:layout_margin="6dp" />
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnConfirmDate"
+                            style="@style/FilterButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="40dp"
+                            android:text="Apply Date"
+                            android:textAllCaps="false"
+                            android:textColor="#000000"
+                            android:background="@drawable/bg_spinner_chip"
+                            android:layout_marginTop="4dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnReset"
+                            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="40dp"
+                            android:text="Reset"
+                            android:textAllCaps="false"
+                            android:textColor="#000000"
+                            android:background="@drawable/bg_spinner_chip"
+                            android:layout_marginTop="8dp" />
+                    </LinearLayout>
+
                 </LinearLayout>
-
-                <!-- Date After -->
-                <TextView
-                    android:layout_marginTop="12dp"
-                    android:text="Date After"
-                    android:textStyle="bold"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <EditText
-                        android:id="@+id/dateDay"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_margin="6dp"
-                        android:textSize="12sp"
-                        android:background="@drawable/bg_input"
-                        android:inputType="number"
-                        android:hint="DD" />
-
-                    <EditText
-                        android:id="@+id/dateMonth"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_margin="6dp"
-                        android:textSize="12sp"
-                        android:background="@drawable/bg_input"
-                        android:inputType="number"
-                        android:hint="MM" />
-
-                    <EditText
-                        android:id="@+id/dateYear"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_margin="6dp"
-                        android:textSize="12sp"
-                        android:background="@drawable/bg_input"
-                        android:inputType="number"
-                        android:hint="YYYY" />
-                </LinearLayout>
-
-            </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- CATEGORY TITLE -->
             <TextView
                 android:id="@+id/txtCategory"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="8dp"
                 android:text="Category"
                 android:textSize="20sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="8dp" />
 
             <!-- CATEGORY LIST (Horizontal Scroll) -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvCategory"
                 android:layout_width="match_parent"
                 android:layout_height="105dp"
-                android:nestedScrollingEnabled="false"
-                android:orientation="horizontal"
                 android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+                android:paddingEnd="8dp" />
 
             <!-- RECOMMENDED TITLE -->
             <TextView
                 android:id="@+id/txtRecommended"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginTop="16dp"
                 android:text="Recommended For You"
                 android:textSize="20sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="16dp" />
 
             <!-- RECOMMENDED GRID -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvRecommended"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false"
                 android:padding="8dp"
-                app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-                app:spanCount="2" />
+                app:spanCount="2"
+                app:layoutManager="androidx.recyclerview.widget.GridLayoutManager" />
 
         </LinearLayout>
-
     </androidx.core.widget.NestedScrollView>
 
-    <!-- ✅ ADDED: LOADING INDICATOR (Shows while loading from Firebase) -->
+    <!-- LOADING INDICATOR -->
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="wrap_content"
@@ -401,7 +419,6 @@
         android:layout_height="wrap_content"
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="120dp"
-        android:baselineAlignBottom="false"
         android:src="@drawable/ic_cart"
         app:backgroundTint="#3CB39B"
         app:fabCustomSize="64dp"

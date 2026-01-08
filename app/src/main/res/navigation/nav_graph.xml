@@ -10,16 +10,6 @@
         android:name="com.example.unitrade.HomeFragment"
         android:label="Home"
         tools:layout="@layout/fragment_home">
-        <action
-            android:id="@+id/action_homeFragment_to_searchFragment"
-            app:destination="@id/nav_search"
-            app:enterAnim="@android:anim/fade_in"
-            app:exitAnim="@android:anim/fade_out"
-            app:popEnterAnim="@android:anim/fade_in"
-            app:popExitAnim="@android:anim/fade_out"
-
-        />
-
     </fragment>
 
     <fragment
@@ -28,16 +18,6 @@
         android:label="Chat"
         tools:layout="@layout/fragment_chat" />
 
-    <fragment
-        android:id="@+id/nav_search"
-        android:name="com.example.unitrade.SearchFragment"
-        android:label="Search">
-
-        <argument
-            android:name="query"
-            app:argType="string"
-            android:defaultValue="" />
-    </fragment>
 
     <fragment
         android:id="@+id/nav_sell"

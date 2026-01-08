@@ -38,28 +38,17 @@ public class Filter {
     }
 
     public void chooseCondition(String condition, OnFilterResult callback) {
-        if(!condition.equals("Brand New")){
-            condition="Unused";
-        }
-        else{
-            condition="Used";
-        }
         db.collection("products")
                 .whereEqualTo("productUsed", condition)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     List<Product> products = new ArrayList<>();
-
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        Product product = doc.toObject(Product.class);
-                        products.add(product);
+                        products.add(doc.toObject(Product.class));
                     }
-
-                    callback.onSuccess(products); // 🔥 SEND DATA BACK
+                    callback.onSuccess(products);
                 })
-                .addOnFailureListener(e -> {
-                    Log.e("Firestore", "Error fetching products", e);
-                });
+                .addOnFailureListener(e -> Log.e("Firestore", "Error fetching products", e));
     }
 
 
@@ -84,7 +73,9 @@ public class Filter {
                         filteredProducts.add(product);
                     }
 
+                    callback.onSuccess(filteredProducts);
                 });
+
     }
 
     public interface OnFilterResult {

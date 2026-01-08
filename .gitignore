@@ -18,3 +18,8 @@ replay_pid*.log
 
 # macOS
 .DS_Store
+
+# Google Services & Secrets
+google-services.json
+service-account.json
+**/assets/service-account.json

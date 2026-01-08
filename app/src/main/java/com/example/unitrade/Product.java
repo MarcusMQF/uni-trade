@@ -22,6 +22,8 @@ public class Product implements Parcelable {
     private String productCondition;
     private int productUsedDaysTotal;
     private String productStatus;
+
+    private String productUsed;
     private String productCategory;
     private String location;
 
@@ -72,7 +74,9 @@ public class Product implements Parcelable {
             String category,
             String location,
             String sellerId,
-            String qrPaymentUrl) {
+            String qrPaymentUrl,
+            String productUsed
+    ) {
         this.productId = id;
         this.productName = name;
         this.productPrice = price;
@@ -85,7 +89,7 @@ public class Product implements Parcelable {
         this.location = location;
         this.sellerId = sellerId;
         this.qrPaymentUrl = qrPaymentUrl;
-
+        this.productUsed = productUsed;
         this.imageVersion = System.currentTimeMillis();
         this.listingDate = new Date();
     }
@@ -193,102 +197,40 @@ public class Product implements Parcelable {
         return stability;
     }
 
+    public String getProductUsed() {
+        return productUsed;
+    }
+
+
     // ---------------- SETTERS ----------------
-    public void setId(String id) {
-        this.productId = id;
+    public void setProductUsed(String productUsed) {
+        this.productUsed = productUsed;
     }
+    public void setId(String id) { this.productId = id; }
+    public void setName(String name) { this.productName = name; }
+    public void setPrice(double price) { this.productPrice = price; }
+    public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls == null ? new ArrayList<>() : new ArrayList<>(imageUrls); }
+    public void setDescription(String description) { this.productDescription = description; }
+    public void setCondition(String condition) { this.productCondition = condition; }
+    public void setUsedDaysTotal(int usedDaysTotal) { this.productUsedDaysTotal = usedDaysTotal; }
+    public void setStatus(String status) { this.productStatus = status; }
+    public void setCategory(String category) { this.productCategory = category; }
+    public void setLocation(String location) { this.location = location; }
+    public void setSellerId(String sellerId) { this.sellerId = sellerId; }
+    public void setBuyerId(String buyerId) { this.buyerId = buyerId; }
+    public void setQrPaymentUrl(String qrPaymentUrl) { this.qrPaymentUrl = qrPaymentUrl; }
+    public void setHeader(boolean header) { isHeader = header; }
+    public void setListingDate(Date listingDate) { this.listingDate = listingDate; }
+    public void setTransactionDate(long transactionDate) { this.transactionDate = transactionDate; }
+    public void setImageVersion(long imageVersion) { this.imageVersion = imageVersion; }
 
-    public void setName(String name) {
-        this.productName = name;
-    }
-
-    public void setPrice(double price) {
-        this.productPrice = price;
-    }
-
-    public void setImageUrls(List<String> imageUrls) {
-        this.imageUrls = imageUrls == null ? new ArrayList<>() : new ArrayList<>(imageUrls);
-    }
-
-    public void setDescription(String description) {
-        this.productDescription = description;
-    }
-
-    public void setCondition(String condition) {
-        this.productCondition = condition;
-    }
-
-    public void setUsedDaysTotal(int usedDaysTotal) {
-        this.productUsedDaysTotal = usedDaysTotal;
-    }
-
-    public void setStatus(String status) {
-        this.productStatus = status;
-    }
-
-    public void setCategory(String category) {
-        this.productCategory = category;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
-    }
-
-    public void setSellerId(String sellerId) {
-        this.sellerId = sellerId;
-    }
-
-    public void setBuyerId(String buyerId) {
-        this.buyerId = buyerId;
-    }
-
-    public void setQrPaymentUrl(String qrPaymentUrl) {
-        this.qrPaymentUrl = qrPaymentUrl;
-    }
-
-    public void setHeader(boolean header) {
-        isHeader = header;
-    }
-
-    public void setListingDate(Date listingDate) {
-        this.listingDate = listingDate;
-    }
-
-    public void setTransactionDate(long transactionDate) {
-        this.transactionDate = transactionDate;
-    }
-
-    public void setImageVersion(long imageVersion) {
-        this.imageVersion = imageVersion;
-    }
-
-    public void setSoldTo(String soldTo) {
-        this.soldTo = soldTo;
-    }
-
-    public void setSoldAt(Timestamp soldAt) {
-        this.soldAt = soldAt;
-    }
-
-    public void setPurchaseId(String purchaseId) {
-        this.purchaseId = purchaseId;
-    }
-
-    public void setBuyTransaction(boolean buyTransaction) {
-        this.buyTransaction = buyTransaction;
-    }
-
-    public void setSellTransaction(boolean sellTransaction) {
-        this.sellTransaction = sellTransaction;
-    }
-
-    public void setDonation(boolean donation) {
-        this.donation = donation;
-    }
-
-    public void setStability(int stability) {
-        this.stability = stability;
-    }
+    public void setSoldTo(String soldTo) { this.soldTo = soldTo; }
+    public void setSoldAt(Timestamp soldAt) { this.soldAt = soldAt; }
+    public void setPurchaseId(String purchaseId) { this.purchaseId = purchaseId; }
+    public void setBuyTransaction(boolean buyTransaction) { this.buyTransaction = buyTransaction; }
+    public void setSellTransaction(boolean sellTransaction) { this.sellTransaction = sellTransaction; }
+    public void setDonation(boolean donation) { this.donation = donation; }
+    public void setStability(int stability) { this.stability = stability; }
 
     // ---------------- PARCELABLE ----------------
     protected Product(Parcel in) {

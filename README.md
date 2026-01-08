@@ -17,7 +17,9 @@ This is a native Android application built with Java.
 
 1. Download `google-services.json` from Firebase Console
 2. Place it in `app/` folder
-3. Sync Gradle
+3. Go to project setting ->  service account -> generate new private key(Java) -> rename it to service-account.json
+4. Place it in /app/src/main/assets
+5. Sync Gradle
 
 ## Requirements
 

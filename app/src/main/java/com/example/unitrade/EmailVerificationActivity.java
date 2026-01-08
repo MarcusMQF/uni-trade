@@ -153,6 +153,14 @@ public class EmailVerificationActivity extends AppCompatActivity {
     private void saveUserToFirestore(String firebaseUid, String ascendingUserId, String name, String email,
                                      String phoneNumber, String studentId, String address) {
         Map<String, Object> userData = new HashMap<>();
+        Map<String, Object> categoryClicks = new HashMap<>();
+        String[] categories = {
+                "Textbooks", "Electronics", "Fashion", "Room Essentials",
+                "Sports", "Stationery", "Hobbies", "Food", "Personal Care", "Others"
+        };
+        for (String category : categories) {
+            categoryClicks.put(category, 0L); // 0 initial click count
+        }
         userData.put("userId", ascendingUserId);
         userData.put("fullName", name);
         userData.put("email", email);
@@ -166,6 +174,7 @@ public class EmailVerificationActivity extends AppCompatActivity {
         userData.put("isVerified", true);
         userData.put("createdAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
         userData.put("updatedAt", com.google.firebase.firestore.FieldValue.serverTimestamp());
+        userData.put("categoryClicks", categoryClicks);
 
         // Use Firebase UID as document ID
         db.collection("users").document(firebaseUid)

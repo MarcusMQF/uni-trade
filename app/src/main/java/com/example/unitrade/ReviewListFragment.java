@@ -72,7 +72,9 @@ public class ReviewListFragment extends Fragment {
                 review -> {
                     // Pass event to parent activity
                     if (getActivity() instanceof RatingReviewsActivity) {
-                        ((RatingReviewsActivity) getActivity()).onReportClick(review);
+                        if (reportListener != null) {
+                            reportListener.onReportClick(review);
+                        }
                     }
                 }
         );

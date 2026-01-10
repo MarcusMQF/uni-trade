@@ -10,6 +10,7 @@ public class Review implements Parcelable {
     private String comment;
     private double rating;
     private String date;
+    private long timestamp;
     private String type; // "user" or "seller" or "all"
 
     private String targetUserId;
@@ -19,13 +20,13 @@ public class Review implements Parcelable {
     }
 
     public Review(String id, User reviewer, String targetUserId, String comment,
-            double rating, String date, String type) {
+            double rating, long timestamp, String type) {
         this.id = id;
         this.reviewer = reviewer;
         this.targetUserId = targetUserId;
         this.comment = comment;
         this.rating = rating;
-        this.date = date;
+        this.timestamp = timestamp;
         this.type = type;
     }
 
@@ -35,7 +36,7 @@ public class Review implements Parcelable {
         targetUserId = in.readString();
         comment = in.readString();
         rating = in.readDouble();
-        date = in.readString();
+        timestamp = in.readLong();
         type = in.readString();
     }
 
@@ -75,6 +76,8 @@ public class Review implements Parcelable {
     public String getType() {
         return type;
     }
+
+    public long getTimestamp() { return timestamp; }
 
     public String getTargetUserId() {
         return targetUserId;
@@ -122,7 +125,7 @@ public class Review implements Parcelable {
         dest.writeString(targetUserId);
         dest.writeString(comment);
         dest.writeDouble(rating);
-        dest.writeString(date);
+        dest.writeLong(timestamp);
         dest.writeString(type);
     }
 }

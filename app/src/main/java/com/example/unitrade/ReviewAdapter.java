@@ -14,7 +14,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.signature.ObjectKey;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewViewHolder> {
 
@@ -22,7 +25,7 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
     private List<Review> list;
     private OnReportClickListener reportListener;
 
-    // ✅ Constructor with listener
+
     public ReviewAdapter(Context context, List<Review> list, OnReportClickListener listener) {
         this.context = context;
         this.list = list;
@@ -41,7 +44,6 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
         Review r = list.get(position);
 
         holder.txtName.setText(r.getReviewer().getFullName());
-        holder.txtDate.setText(r.getDate());
         holder.txtComment.setText(r.getComment());
         holder.ratingBar.setRating((float) r.getRating());
 
@@ -52,7 +54,16 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
                 .placeholder(R.drawable.circle_profile)
                 .into(holder.imgProfile);
 
-        // ✅ REPORT CLICK — CORRECT PLACE
+        long ts = r.getTimestamp();
+
+        if (ts > 0) {
+            SimpleDateFormat sdf =
+                    new SimpleDateFormat("dd MMM yyyy • HH:mm", Locale.getDefault());
+            holder.txtDate.setText(sdf.format(new Date(ts)));
+        } else {
+            holder.txtDate.setText("—"); // or "Unknown date"
+        }
+
         holder.txtReport.setOnClickListener(v -> {
             if (reportListener != null) {
                 reportListener.onReportClick(r);
@@ -80,7 +91,6 @@ public class ReviewAdapter extends RecyclerView.Adapter<ReviewAdapter.ReviewView
             txtComment = itemView.findViewById(R.id.txtReviewComment);
             ratingBar = itemView.findViewById(R.id.ratingBarReview);
 
-            // ✅ MUST EXIST IN item_review.xml
             txtReport = itemView.findViewById(R.id.btnReport);
         }
     }

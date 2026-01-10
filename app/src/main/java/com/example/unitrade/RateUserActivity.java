@@ -161,9 +161,10 @@ public class RateUserActivity extends BaseActivity {
                     targetUser.getId(),
                     reviewText,
                     rating,
-                    "Today",
+                    System.currentTimeMillis(),
                     ratingRole.equals("buyer") ? "user" : "seller"
             );
+
             // Send back result
             Intent data = new Intent();
             data.putExtra("new_review", review);

@@ -20,6 +20,8 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -98,11 +100,18 @@ public class RatingReviewsActivity extends AppCompatActivity {
                             pagerAdapter.notifyDataSetChanged();
                             refreshRatingsAndUser();
 
-                            // Save to Firestore
+                            Map<String, Object> data = new HashMap<>();
+                            data.put("reviewer", newReview.getReviewer());
+                            data.put("targetUserId", newReview.getTargetUserId());
+                            data.put("comment", newReview.getComment());
+                            data.put("rating", newReview.getRating());
+                            data.put("type", newReview.getType());
+                            data.put("timestamp", newReview.getTimestamp()); // ✅ CRITICAL
+
                             db.collection("reviews")
-                                    .add(newReview)
+                                    .add(data)
                                     .addOnSuccessListener(docRef -> {
-                                        newReview.setId(docRef.getId()); // optional
+                                        newReview.setId(docRef.getId());
                                     })
                                     .addOnFailureListener(e ->
                                             Toast.makeText(this, "Failed to save review", Toast.LENGTH_SHORT).show()
@@ -168,15 +177,21 @@ public class RatingReviewsActivity extends AppCompatActivity {
                     loadReviewsFromDatabase();
 
                     // FAB action
-                    boolean hideFab = getIntent().getBooleanExtra("hide_fab", false);
-                    if (hideFab)
+                    FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+
+                    boolean isSelfProfile =
+                            currentUser != null && currentUser.getUid().equals(user.getId());
+
+                    if (isSelfProfile) {
                         btnWriteReview.setVisibility(View.GONE);
-                    else
+                    } else {
+                        btnWriteReview.setVisibility(View.VISIBLE);
                         btnWriteReview.setOnClickListener(v -> {
                             Intent intent = new Intent(this, RateUserActivity.class);
                             intent.putExtra("user_id", user.getId());
                             reviewLauncher.launch(intent);
                         });
+                    }
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(this, "Network error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -196,6 +211,8 @@ public class RatingReviewsActivity extends AppCompatActivity {
                         try {
                             Review r = doc.toObject(Review.class);
                             if (r != null) {
+                                r.setId(doc.getId());
+
                                 allReviews.add(r);
                             }
                         } catch (Exception e) {
@@ -231,42 +248,91 @@ public class RatingReviewsActivity extends AppCompatActivity {
     }
 
     private void showReportDialog(Review review) {
+
+        String[] reasons = {"Spam", "Abusive content", "Fake review", "Other"};
+
         new AlertDialog.Builder(this)
                 .setTitle("Report review")
-                .setMessage("Why are you reporting this review?")
-                .setItems(
-                        new String[]{"Spam", "Abusive content", "Fake review", "Other"},
-                        (dialog, which) -> saveReport(review, which)
-                )
-                .setNegativeButton("Cancel", null)
-                .show();
-    }
+                .setItems(reasons, (dialog, which) -> {
 
-    public void onReportClick(Review review) {
-        new AlertDialog.Builder(this)
-                .setTitle("Report Review")
-                .setMessage("Are you sure you want to report this review?")
-                .setPositiveButton("Report", (dialog, which) -> {
-
-                    FirebaseFirestore.getInstance()
-                            .collection("reported_reviews")
-                            .add(new Report(
-                                    review.getId(),
-                                    UserSession.get().getId(),
-                                    review.getTargetUserId(),
-                                    "Inappropriate content",
-                                    System.currentTimeMillis()
-                            ))
-                            .addOnSuccessListener(r ->
-                                    Toast.makeText(this, "Review reported", Toast.LENGTH_SHORT).show()
+                    // Confirm before action
+                    new AlertDialog.Builder(this)
+                            .setTitle("Confirm report")
+                            .setMessage("Are you sure you want to report and remove this review?")
+                            .setPositiveButton("Report", (d, w) ->
+                                    reportAndDeleteReview(review, reasons[which])
                             )
-                            .addOnFailureListener(e ->
-                                    Toast.makeText(this, "Failed to report review", Toast.LENGTH_SHORT).show()
-                            );
+                            .setNegativeButton("Cancel", null)
+                            .show();
+
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
     }
+
+    private void reportAndDeleteReview(Review review, String reason) {
+
+        if (review == null || review.getId() == null) {
+            Toast.makeText(this,
+                    "Unable to report review",
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        FirebaseUser fbUser = FirebaseAuth.getInstance().getCurrentUser();
+
+        if (fbUser == null) {
+            Toast.makeText(this,
+                    "Please log in to report reviews",
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String reporterId = fbUser.getUid();
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        Report report = new Report(
+                review.getId(),
+                reporterId,
+                review.getTargetUserId(),
+                reason,
+                System.currentTimeMillis()
+        );
+
+        db.collection("reported_reviews")
+                .add(report)
+                .addOnSuccessListener(docRef -> {
+
+                    db.collection("reviews")
+                            .document(review.getId())
+                            .delete()
+                            .addOnSuccessListener(v -> {
+
+                                allReviews.remove(review);
+                                pagerAdapter.notifyDataSetChanged();
+                                refreshRatingsAndUser();
+
+                                Toast.makeText(this,
+                                        "Review reported and removed",
+                                        Toast.LENGTH_SHORT).show();
+                            })
+                            .addOnFailureListener(e ->
+                                    Toast.makeText(this,
+                                            "Reported, but failed to delete review",
+                                            Toast.LENGTH_SHORT).show()
+                            );
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this,
+                                "Failed to report review",
+                                Toast.LENGTH_SHORT).show()
+                );
+    }
+
+
+
+
+
 
     private void testReportDatabase() {
         FirebaseFirestore.getInstance()
@@ -296,28 +362,7 @@ public class RatingReviewsActivity extends AppCompatActivity {
                 });
     }
 
-    private void saveReport(Review review, int reasonIndex) {
-        String[] reasons = {"Spam", "Abusive", "Fake", "Other"};
 
-        Map<String, Object> report = new HashMap<>();
-        report.put("reviewId", review.getId());
-        report.put("reportedUserId", user.getId());
-        report.put("reporterId", UserSession.get().getId());
-        report.put("reason", reasons[reasonIndex]);
-        report.put("timestamp", FieldValue.serverTimestamp());
-
-        FirebaseFirestore.getInstance()
-                .collection("review_reports")
-                .add(report)
-                .addOnSuccessListener(doc -> {
-                    Toast.makeText(this, "Report submitted", Toast.LENGTH_SHORT).show();
-                    testReportDatabase();
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Failed to submit report", Toast.LENGTH_SHORT).show()
-                );
-
-    }
 
     private void refreshRatingsAndUser() {
         double userSum = 0, sellerSum = 0;

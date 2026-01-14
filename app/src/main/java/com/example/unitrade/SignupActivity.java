@@ -22,6 +22,8 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
+import com.google.firebase.firestore.FirebaseFirestore;
+
 public class SignupActivity extends AppCompatActivity {
 
     private static final String TAG = "SignupActivity";
@@ -97,13 +99,44 @@ public class SignupActivity extends AppCompatActivity {
             Toast.makeText(
                     this,
                     "Please wait before requesting another code",
-                    Toast.LENGTH_SHORT
-            ).show();
+                    Toast.LENGTH_SHORT).show();
             return;
         }
 
         btnCreateAccount.setEnabled(false);
 
+        final String finalName = name;
+        final String finalPhone = phoneNumber;
+        final String finalAddress = address;
+
+        // Check if email already exists in Firestore users collection
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("users")
+                .whereEqualTo("email", email)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        if (!task.getResult().isEmpty()) {
+                            // Email already exists in Firestore
+                            Toast.makeText(SignupActivity.this, "This siswamail already been used", Toast.LENGTH_SHORT)
+                                    .show();
+                            btnCreateAccount.setEnabled(true);
+                        } else {
+                            // Email does not exist in Firestore, proceed with OTP
+                            proceedWithOtp(email, finalName, finalPhone, finalAddress, password);
+                        }
+                    } else {
+                        // Handle error (e.g., network issue)
+                        Log.e(TAG, "Error checking email in Firestore", task.getException());
+                        Toast.makeText(SignupActivity.this, "Error checking email. Please try again.",
+                                Toast.LENGTH_SHORT).show();
+                        btnCreateAccount.setEnabled(true);
+                    }
+                });
+    }
+
+    private void proceedWithOtp(String email, String name, String phoneNumber, String address, String password) {
+        SharedPreferences prefs = getSharedPreferences("OTP_PREF", MODE_PRIVATE);
         // Generate 6-digit OTP
         String otp = String.valueOf(100000 + new Random().nextInt(900000));
 
@@ -116,32 +149,26 @@ public class SignupActivity extends AppCompatActivity {
                 .putString("password", password)
                 .apply();
 
-        final String finalName = name;
-        final String finalPhone = phoneNumber;
-        final String finalAddress = address;
-
-        sendOtpEmail(otp,email, finalName, finalPhone, finalAddress);
+        sendOtpEmail(otp, email, name, phoneNumber, address);
     }
 
     private void sendOtpEmail(String otp, String email, String name, String phoneNumber, String address) {
         OkHttpClient client = new OkHttpClient();
 
-        String json =
-                "{"
-                        + "\"service_id\":\"" + EMAILJS_SERVICE_ID + "\","
-                        + "\"template_id\":\"" + EMAILJS_TEMPLATE_ID + "\","
-                        + "\"user_id\":\"" + EMAILJS_PUBLIC_KEY + "\","
-                        + "\"template_params\":{"
-                        + "\"email\":\"" + email + "\","
-                        + "\"passcode\":\"" + otp + "\","
-                        + "\"time\":\"15 minutes\""
-                        + "}"
-                        + "}";
+        String json = "{"
+                + "\"service_id\":\"" + EMAILJS_SERVICE_ID + "\","
+                + "\"template_id\":\"" + EMAILJS_TEMPLATE_ID + "\","
+                + "\"user_id\":\"" + EMAILJS_PUBLIC_KEY + "\","
+                + "\"template_params\":{"
+                + "\"email\":\"" + email + "\","
+                + "\"passcode\":\"" + otp + "\","
+                + "\"time\":\"15 minutes\""
+                + "}"
+                + "}";
 
         RequestBody body = RequestBody.create(
                 MediaType.parse("application/json; charset=utf-8"),
-                json
-        );
+                json);
 
         Request request = new Request.Builder()
                 .url("https://api.emailjs.com/api/v1.0/email/send")
@@ -160,16 +187,14 @@ public class SignupActivity extends AppCompatActivity {
                     Toast.makeText(
                             SignupActivity.this,
                             "Failed to send verification code. Try again.",
-                            Toast.LENGTH_LONG
-                    ).show();
+                            Toast.LENGTH_LONG).show();
                 });
             }
 
             @Override
             public void onResponse(Call call, Response response) {
                 try {
-                    String responseBody =
-                            response.body() != null ? response.body().string() : "empty";
+                    String responseBody = response.body() != null ? response.body().string() : "empty";
 
                     Log.d(TAG, "EmailJS response code: " + response.code());
                     Log.d(TAG, "EmailJS response body: " + responseBody);
@@ -185,16 +210,14 @@ public class SignupActivity extends AppCompatActivity {
                         Toast.makeText(
                                 SignupActivity.this,
                                 "Failed to send verification code. Please retry.",
-                                Toast.LENGTH_LONG
-                        ).show();
+                                Toast.LENGTH_LONG).show();
                         return;
                     }
 
                     Toast.makeText(
                             SignupActivity.this,
                             "Verification code sent to email",
-                            Toast.LENGTH_SHORT
-                    ).show();
+                            Toast.LENGTH_SHORT).show();
 
                     Intent intent = new Intent(SignupActivity.this, EmailVerificationActivity.class);
                     intent.putExtra("email", email);

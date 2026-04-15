@@ -3,7 +3,7 @@ package com.example.unitrade;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-public class Chat implements Parcelable {
+public class Chat implements Parcelable { //convert object into format that can send via intent 
 
     private String userId; // Seller / receiver ID
     private String lastMessage;

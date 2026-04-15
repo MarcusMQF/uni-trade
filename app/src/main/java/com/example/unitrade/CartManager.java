@@ -2,12 +2,16 @@ package com.example.unitrade;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+// Context provides app environment info; SharedPreferences stores simple data locally
 
 import com.google.firebase.firestore.FirebaseFirestore;
+//Cloud database service for storing/retrieving data online
 import com.google.gson.Gson;
+//Converts Java objects to JSON and vice versa
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
+// Used for generic type information
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,8 +62,8 @@ public class CartManager {
     }
 
     // ---------------- RESOLVE PRODUCTS (Firestore) ----------------
-    public interface OnProductsLoadedListener {
-        void onLoaded(List<Product> products);
+    public interface OnProductsLoadedListener { //callback interface
+        void onLoaded(List<Product> products); //call when products are loaded from firebase
     }
 
     public static void getCartProducts(Context context, OnProductsLoadedListener listener) {
@@ -75,8 +79,8 @@ public class CartManager {
         for (String id : cartProductIds) {
             db.collection("products")
                     .document(id)
-                    .get()
-                    .addOnSuccessListener(doc -> {
+                    .get() //retrieve the document
+                    .addOnSuccessListener(doc -> { //successfully retrieve the document
                         Product p = doc.toObject(Product.class);
                         if (p != null) products.add(p);
 

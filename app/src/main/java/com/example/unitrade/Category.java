@@ -14,6 +14,6 @@ public class Category {
     }
 
     public int getImageRes() {
-        return imageRes;
+        return imageRes; //return image resource id (e.g., R.drawable.category_image)
     }
 }

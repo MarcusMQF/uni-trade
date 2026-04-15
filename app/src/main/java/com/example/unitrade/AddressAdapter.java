@@ -1,7 +1,7 @@
 package com.example.unitrade;
 //ui
 import android.content.Context;
-import android.view.LayoutInflater;
+import android.view.LayoutInflater;//Converts XML layouts to View objects
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RadioButton;

@@ -17,7 +17,7 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
     private OnCategoryClickListener listener;
 
     public interface OnCategoryClickListener {
-        void onCategoryClick(Category category);
+        void onCategoryClick(Category category); // Called when user taps a category
     }
 
     public CategoryAdapter(List<Category> list, OnCategoryClickListener listener) {

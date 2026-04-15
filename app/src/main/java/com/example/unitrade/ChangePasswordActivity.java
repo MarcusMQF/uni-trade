@@ -4,7 +4,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.Toast;
+import android.widget.Toast;// Short popup messages.
 
 import androidx.appcompat.widget.Toolbar;
 
@@ -25,9 +25,9 @@ public class ChangePasswordActivity extends BaseActivity {
         Toolbar toolbar = findViewById(R.id.appBarChangePassword);
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("Change Password");
-            getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_arrow_back_white);
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);//Enables the back arrow in the toolbar.
+            getSupportActionBar().setTitle("Change Password");//Sets the toolbar title to "Change Password".
+            getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_arrow_back_white);//Changes the back arrow icon to a white arrow drawable.
         }
         tintToolbarOverflow(toolbar);
         toolbar.setNavigationOnClickListener(v -> onBackPressed());
@@ -44,6 +44,7 @@ public class ChangePasswordActivity extends BaseActivity {
         // Step 1: Verify Current Password
         btnNext.setOnClickListener(v -> {
             String current = etCurrentPassword.getText().toString();
+            //It gets the text entered by the user in an EditText (password field) and converts it into a String.
             if (current.isEmpty()) {
                 etCurrentPassword.setError("Please enter your password");
                 return;
@@ -81,11 +82,20 @@ public class ChangePasswordActivity extends BaseActivity {
             // Simulate saving
             Toast.makeText(this, "Password changed successfully", Toast.LENGTH_SHORT).show();
             finish();
+            /*
+            Shows a success message.
+Calls finish() to close the activity and return to the previous screen.
+             */
         });
     }
 
     private void showStep2() {
         layoutStep1.setVisibility(View.GONE);
         layoutStep2.setVisibility(View.VISIBLE);
+        /*
+        Hides step 1 layout.
+Shows step 2 layout.
+This swaps the visible part of the screen from verification to password entry.
+         */
     }
 }

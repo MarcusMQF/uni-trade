@@ -1,8 +1,8 @@
 package com.example.unitrade;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
+import android.os.Parcel;// write/read data for Android IPC.
+import android.os.Parcelable;//Imports the Parcelable interface so this object can be passed between activities.
+//Address.java is used for profile address list and can be passed if the app sends it via Intent
 public class Address implements Parcelable {
     private String address;
     private boolean isDefault;

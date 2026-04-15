@@ -1,8 +1,11 @@
 package com.example.unitrade.model;
+//This is a model class that holds data for a single pie chart slice (category, amount, color, percentage).
+
 
 /**
  * Model class representing data for a pie chart in transaction statistics.
  */
+
 public class PieChartModel {
     private String category;
     private float amount;

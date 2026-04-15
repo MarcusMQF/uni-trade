@@ -19,12 +19,13 @@ public class AboutUsActivity extends BaseActivity{
         setSupportActionBar(toolbar);
 
 
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("About Us");
+        if (getSupportActionBar() != null) { //check action bar exist 
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true); //show the back/up arrow
+            getSupportActionBar().setTitle("About Us");//set the title shown on the toolbar
         }
 
-        tintToolbarOverflow(toolbar);
+
+        tintToolbarOverflow(toolbar); //call helper method to tint the overflow menu icon to match the theme
         // Set up the about us content
         setupAboutUsContent();
     }

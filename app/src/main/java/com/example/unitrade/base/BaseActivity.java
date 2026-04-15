@@ -23,7 +23,7 @@ public class BaseActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.toolbar_menu, menu);
+        getMenuInflater().inflate(R.menu.toolbar_menu, menu);//loads toolbar menu from xml file 
         return true;
     }
 
@@ -40,10 +40,12 @@ public class BaseActivity extends AppCompatActivity {
         } else if (id == R.id.action_logout) {
             Intent intent = new Intent(this, LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            //FLAG_ACTIVITY_NEW_TASK = start fresh task
+            //FLAG_ACTIVITY_CLEAR_TASK = clear the task stack
             startActivity(intent);
             return true;
         }
 
-        return super.onOptionsItemSelected(item);
+        return super.onOptionsItemSelected(item);//If no item matched, let parent class handle it
     }
 }

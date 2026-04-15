@@ -14,6 +14,8 @@ import java.util.List;
 
 public class Filter {
     FirebaseFirestore db = FirebaseFirestore.getInstance();
+    //Gets Firebase database connection
+
     public Filter(){}
 
     public void filterPrice(String min, String max,OnFilterResult callback){
@@ -32,6 +34,12 @@ public class Filter {
                     }
                     callback.onSuccess(products);
                 })
+/*If successful:
+Create empty ArrayList
+Loop through each document
+Convert to Product object
+Add to ArrayList
+Send results back via callback*/
                 .addOnFailureListener(e ->{
                     Log.e("Firestore","Error Fetching Items",e);
                 });
@@ -40,7 +48,7 @@ public class Filter {
     public void chooseCondition(String condition, OnFilterResult callback) {
         db.collection("products")
                 .whereEqualTo("productUsed", condition)
-                .get()
+                .get()//execute query
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     List<Product> products = new ArrayList<>();
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
@@ -64,6 +72,7 @@ public class Filter {
 
         db.collection("products")
                 .whereGreaterThan("listingDate", selectedDate)
+                //whereGreaterThan = find date later than the selected date
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     List<Product> filteredProducts = new ArrayList<>();
@@ -80,6 +89,8 @@ public class Filter {
 
     public interface OnFilterResult {
         void onSuccess(List<Product> products);
+        //callback interface to return result 
+        //when filtering is successful, this method is called with the list of filtered products
     }
 
 }

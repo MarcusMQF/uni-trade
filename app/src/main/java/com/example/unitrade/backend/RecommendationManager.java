@@ -1,15 +1,17 @@
 package com.example.unitrade.backend;
 
 import com.example.unitrade.Product;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FieldValue;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.auth.FirebaseAuth; // to get current user
+import com.google.firebase.firestore.FieldValue; //to implement counter increment in Firestore
+import com.google.firebase.firestore.FirebaseFirestore; //firebase database connection
 import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+
+//Tracks user clicks on product categories and shows personalized product recommendations based on their click history.
 
 public class RecommendationManager {
 
@@ -32,7 +34,8 @@ public class RecommendationManager {
                     .document(userId)
                     .update("categoryClicks." + category, FieldValue.increment(1))
                     .addOnFailureListener(e -> Log.e("RecommendationManager", "Failed to update category click", e));
-        }
+        }//If Firebase update fails, log the error
+        //log error - A message recorded by a program to indicate that something went wrong during execution.
     }
 
     public static int getClicks(String category) {
@@ -41,6 +44,11 @@ public class RecommendationManager {
 
     public static HashMap<String, Integer> getCategoryClicks() {
         return new HashMap<>(categoryClicks);
+        /*
+        Returns a COPY of the entire click map
+new HashMap<>(categoryClicks) = creates a copy (not the original)
+This protects the original from being accidentally modified by external code that calls this method.
+         */
     }
 
 

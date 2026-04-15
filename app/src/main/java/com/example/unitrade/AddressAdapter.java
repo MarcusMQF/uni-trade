@@ -14,6 +14,8 @@ import java.util.List;
 
 public class AddressAdapter extends RecyclerView.Adapter<AddressAdapter.AddressViewHolder> {
 
+//Defines an adapter for a RecyclerView.
+//Uses a custom inner AddressViewHolder.
     private final Context context;
     private final List<Address> addresses;
     private int selectedPosition = -1;
@@ -35,6 +37,10 @@ public class AddressAdapter extends RecyclerView.Adapter<AddressAdapter.AddressV
         View view = LayoutInflater.from(context).inflate(R.layout.address_item, parent, false);
         return new AddressViewHolder(view);
     }
+    /*
+    Called when RecyclerView needs a new item view.
+Inflates R.layout.address_item into a View.
+Wraps it in AddressViewHolder.*/
 
     @Override
     public void onBindViewHolder(@NonNull AddressViewHolder holder, int position) {

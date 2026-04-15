@@ -15,6 +15,7 @@ public class ContactUsActivity extends BaseActivity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_contact_us);
+        //setContentView() → Loads activity_contact_us.xml layout
 
         Toolbar toolbar = findViewById(R.id.appBarContactUs);
         setSupportActionBar(toolbar);
@@ -26,6 +27,7 @@ public class ContactUsActivity extends BaseActivity{
         }
 
         tintToolbarOverflow(toolbar);
+        //Make it white (inherited from BaseActivity)
 
         // Setup contact methods
         setupContactMethods();
@@ -39,7 +41,9 @@ public class ContactUsActivity extends BaseActivity{
                 Intent intent = new Intent(Intent.ACTION_SENDTO);
                 intent.setData(Uri.parse("mailto:support@unitrade.com"));
                 intent.putExtra(Intent.EXTRA_SUBJECT, "Support Request");
+                //Set subject → "Support Request"
                 startActivity(Intent.createChooser(intent, "Send email"));
+                //Start activity → Launch email app with chooser
             });
         }
 

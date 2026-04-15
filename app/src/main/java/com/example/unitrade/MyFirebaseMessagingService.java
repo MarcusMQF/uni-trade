@@ -1,5 +1,7 @@
 package com.example.unitrade;
-
+//MyFirebaseMessagingService is an Android service that handles Firebase 
+// Cloud Messaging (FCM) push notifications. It receives messages from 
+// FCM and displays them as Android notifications.
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;

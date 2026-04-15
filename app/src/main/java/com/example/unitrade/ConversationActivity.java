@@ -1,5 +1,7 @@
 package com.example.unitrade;
-
+/*ConversationActivity is a real-time chat interface that handles text messages, media sharing, voice input, and push notifications. 
+It uses Firebase for data storage and real-time updates.
+*/
 import android.Manifest;
 import android.content.ClipData;
 import android.content.Intent;
@@ -73,7 +75,8 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.graphics.Insets;
 
-public class ConversationActivity extends AppCompatActivity {
+public class ConversationActivity extends AppCompatActivity //Standard Android activity
+ {
 
     private static final int REQUEST_CALL_PERMISSION = 101;
     private static final int REQUEST_CAMERA_PERMISSION = 100;
@@ -120,6 +123,10 @@ public class ConversationActivity extends AppCompatActivity {
                 }
             });
 
+/*
+Launchers for: Camera, video, gallery picker, speech recognition
+Process results: Add media URIs, show previews, handle speech text
+*/
     private final ActivityResultLauncher<Intent> pickMediaLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
@@ -281,6 +288,7 @@ public class ConversationActivity extends AppCompatActivity {
                 .collection("messages")
                 .orderBy("timestamp", Query.Direction.ASCENDING)
                 .addSnapshotListener((snapshots, e) -> {
+                    //realtime updates
                     if (e != null) {
                         return;
                     }

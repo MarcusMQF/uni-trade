@@ -1,5 +1,6 @@
 package com.example.unitrade;
-
+//ConfirmDialog.java is a utility class that creates and manages confirmation dialog popups. 
+// It's not an adapter - it's a helper class for showing custom dialogs.
 import android.app.Dialog;
 import android.content.Context;
 import android.view.Window;

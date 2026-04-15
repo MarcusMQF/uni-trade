@@ -24,7 +24,10 @@ public class CheckoutItemAdapter extends RecyclerView.Adapter<CheckoutItemAdapte
         this.list = list;
         this.ctx = ctx;
     }
-
+/*
+List<Product> list → Products to display
+Context ctx → App context for UI operations
+*/
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -37,17 +40,18 @@ public class CheckoutItemAdapter extends RecyclerView.Adapter<CheckoutItemAdapte
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder h, int pos) {
+        //bind data to viewholder at given position
 
-        Product p = list.get(pos);
+        Product p = list.get(pos); //retrive product from list at position pos
 
         Glide.with(ctx)
                 .load(p.getImageUrls().get(0))
                 .signature(new ObjectKey(p.getImageVersion()))
                 .into(h.imgItem);
 
-        h.txtItemName.setText(p.getName());
-        h.txtItemPrice.setText("RM " + p.getPrice());
-        h.txtDescription.setText(p.getCondition());
+        h.txtItemName.setText(p.getName());//Display product title
+        h.txtItemPrice.setText("RM " + p.getPrice());// Format as "RM X.XX"
+        h.txtDescription.setText(p.getCondition());// Display product condition (new/used)
     }
 
     @Override
@@ -60,7 +64,7 @@ public class CheckoutItemAdapter extends RecyclerView.Adapter<CheckoutItemAdapte
         ImageView imgItem;
         TextView txtItemName, txtItemPrice, txtDescription;
 
-        ViewHolder(@NonNull View v) {
+        ViewHolder(@NonNull View v) {//find and store view references
             super(v);
             imgItem = v.findViewById(R.id.imgItem);
             txtItemName = v.findViewById(R.id.txtItemName);

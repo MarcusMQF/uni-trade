@@ -27,10 +27,11 @@ public class Chat implements Parcelable { //convert object into format that can 
     }
 
     public static final Creator<Chat> CREATOR = new Creator<Chat>() {
+        //CREATOR is required for Parcelable.
         @Override
         public Chat createFromParcel(Parcel in) {
             return new Chat(in);
-        }
+        }//createFromParcel builds a Chat object from a Parcel.
 
         @Override
         public Chat[] newArray(int size) {

@@ -134,6 +134,8 @@ public abstract class BaseActivity extends AppCompatActivity {
         Drawable overflow = toolbar.getOverflowIcon();
         if (overflow != null) {
             overflow.setTint(Color.WHITE);
+            //If icon exists → Set its color to WHITE
+            //setTint() → Changes the color
         }
     }
 }

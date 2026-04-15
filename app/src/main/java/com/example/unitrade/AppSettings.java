@@ -13,14 +13,15 @@ public class AppSettings {
 
     public static String getCurrency(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        //Access SharedPreferences (private to this app)
         return prefs.getString(KEY_CURRENCY, DEFAULT_CURRENCY);
     }
 
     public static void setCurrency(Context context, String currencyCode) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
+        SharedPreferences.Editor editor = prefs.edit();//create editor to modify data 
         editor.putString(KEY_CURRENCY, currencyCode);
-        editor.apply();
+        editor.apply();//apply change (save asynchronously)
     }
 
     public static String formatPrice(Context context, double price) {
@@ -48,8 +49,13 @@ public class AppSettings {
         double convertedPrice = price * conversionRate;
 
         if ("¥".equals(currencyCode)) {
-            return String.format(Locale.getDefault(), "%s%.0f", currencyCode, convertedPrice);
+            return String.format(Locale.getDefault(), "%s%.0f", currencyCode, convertedPrice);//no decimal places
         }
-        return String.format(Locale.getDefault(), "%s%.2f", currencyCode, convertedPrice);
+        return String.format(Locale.getDefault(), "%s%.2f", currencyCode, convertedPrice);//2 decimal places
     }
-}
+}//It returns the user’s current region and language settings on their device.
+//so must formate the price follow the user region 
+/*
+Locale.getDefault() returns the device’s current locale, which includes
+language and region settings. It is used to format data like numbers,
+ currency, and dates according to the user’s regional preferences.*/

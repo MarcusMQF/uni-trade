@@ -1,5 +1,5 @@
 package com.example.unitrade;
-
+//ui
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -36,7 +36,7 @@ public class AddressAdapter extends RecyclerView.Adapter<AddressAdapter.AddressV
     public AddressViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(context).inflate(R.layout.address_item, parent, false);
         return new AddressViewHolder(view);
-    }
+    }//Create a new item UI (row)
     /*
     Called when RecyclerView needs a new item view.
 Inflates R.layout.address_item into a View.

@@ -1,6 +1,6 @@
 package com.example.unitrade;
 
-import com.google.firebase.Timestamp;
+import java.util.Date;
 
 public class Purchase {
     private String id;
@@ -8,13 +8,13 @@ public class Purchase {
     private String buyerId;
     private String sellerId;
     private double price;
-    private Timestamp purchaseDate;
+    private Date purchaseDate;
     private String status; // "completed", "pending", "cancelled"
     private String receivingMethod; // "Face-to-face handover" or "Delivery"
     private String deliveryAddress;
 
     public Purchase() {
-        // Required empty constructor for Firebase
+        // Required empty constructor
     }
 
     public Purchase(String productId, String buyerId, String sellerId, double price) {
@@ -22,7 +22,7 @@ public class Purchase {
         this.buyerId = buyerId;
         this.sellerId = sellerId;
         this.price = price;
-        this.purchaseDate = Timestamp.now();
+        this.purchaseDate = new Date();
         this.status = "completed";
     }
 
@@ -42,8 +42,8 @@ public class Purchase {
     public double getPrice() { return price; }
     public void setPrice(double price) { this.price = price; }
 
-    public Timestamp getPurchaseDate() { return purchaseDate; }
-    public void setPurchaseDate(Timestamp purchaseDate) { this.purchaseDate = purchaseDate; }
+    public Date getPurchaseDate() { return purchaseDate; }
+    public void setPurchaseDate(Date purchaseDate) { this.purchaseDate = purchaseDate; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }

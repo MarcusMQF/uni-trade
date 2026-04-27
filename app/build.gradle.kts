@@ -1,3 +1,18 @@
+import java.util.Properties
+
+fun loadEnvFile(envFile: File) {
+    if (!envFile.exists()) return
+    val props = Properties()
+    envFile.inputStream().use { props.load(it) }
+    props.forEach { key, value ->
+        if (!project.hasProperty(key.toString())) {
+            project.extensions.extraProperties.set(key.toString(), value.toString())
+        }
+    }
+}
+
+loadEnvFile(rootProject.file(".env"))
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)  // Use the alias from libs.versions.toml
@@ -6,19 +21,29 @@ plugins {
 
 android {
     namespace = "com.example.unitrade"
-    compileSdk = 36
+    compileSdk = 33
 
     defaultConfig {
         applicationId = "com.example.unitrade"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 33
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val supabaseUrl = project.findProperty("NEXT_PUBLIC_SUPABASE_URL")?.toString()
+            ?: project.findProperty("SUPABASE_URL")?.toString()
+            ?: ""
+        val supabaseKey = project.findProperty("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY")?.toString()
+            ?: project.findProperty("SUPABASE_ANON_KEY")?.toString()
+            ?: ""
+
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseKey\"")
     }
 
-    packaging {
+    packagingOptions {
         resources {
             excludes += "/META-INF/DEPENDENCIES"
             excludes += "/META-INF/NOTICE"
@@ -72,6 +97,9 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.storage)
     implementation(libs.firebase.analytics)
+
+    // Supabase
+    implementation(libs.supabase.kt)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
